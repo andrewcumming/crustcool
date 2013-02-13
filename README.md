@@ -18,6 +18,9 @@ The file `init.dat` sets up the run. The parameters are
 	radius	neutron star radius in km
 
 	Bfield  magnetic field strength in the crust in G
+	angle_mu	determines the Teff-Tb relation used for B>0. If angle_mu = -1 (default)
+		then an angle-averaged relation is used; otherwise angle_mu in the range 0 to 1
+		specifies the local angle of the field relative to the vertical
 
 	mdot	accretion rate in Eddington units (1.0 == 8.8e4 g/cm^2/s)
 

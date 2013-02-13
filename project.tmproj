@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>c/eos.cc</string>
+	<string>c/crustcool.cc</string>
 	<key>documents</key>
 	<array>
 		<dict>
@@ -22,7 +22,9 @@
 			<key>filename</key>
 			<string>c/crustcool.cc</string>
 			<key>lastUsed</key>
-			<date>2013-02-13T17:23:02Z</date>
+			<date>2013-02-13T17:59:58Z</date>
+			<key>selected</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>filename</key>
@@ -46,7 +48,7 @@
 			<key>filename</key>
 			<string>c/eos.cc</string>
 			<key>lastUsed</key>
-			<date>2013-02-13T17:26:32Z</date>
+			<date>2013-02-13T17:59:58Z</date>
 		</dict>
 	</array>
 	<key>fileHierarchyDrawerWidth</key>
@@ -72,14 +74,30 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>6</integer>
+				<integer>28</integer>
 				<key>line</key>
-				<integer>1121</integer>
+				<integer>664</integer>
 			</dict>
+			<key>columnSelection</key>
+			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>1118</integer>
+			<integer>659</integer>
+			<key>selectFrom</key>
+			<dict>
+				<key>column</key>
+				<integer>23</integer>
+				<key>line</key>
+				<integer>664</integer>
+			</dict>
+			<key>selectTo</key>
+			<dict>
+				<key>column</key>
+				<integer>28</integer>
+				<key>line</key>
+				<integer>664</integer>
+			</dict>
 		</dict>
 		<key>c/eos.cc</key>
 		<dict>
@@ -164,6 +182,6 @@
 	<key>showFileHierarchyDrawer</key>
 	<true/>
 	<key>windowFrame</key>
-	<string>{{339, -692}, {798, 1420}}</string>
+	<string>{{374, 4}, {798, 1024}}</string>
 </dict>
 </plist>
