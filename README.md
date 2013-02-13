@@ -26,7 +26,13 @@ The file `init.dat` sets up the run. The parameters are
 
 	precalc	force a precalc (1) or instead load in previously saved precalc (0)
 	ngrid	number of grid points
-	SFgap	neutron superfluid gap (0=normal neutrons)
+	
+	SFgap	neutron superfluid gap. Choices are
+			0=normal neutrons (not SF)
+			1=SFB03, 2=AWPII, 3=Gaussian Tc(k)
+			4=all or nothing, the neutrons are normal for k<kncrit
+			5=B1 from Reddy and Page
+			6=BCS from Reddy and Page
 	kncrit	neutrons are normal for kn<kncrit (to use this set SFgap=4)
 	sph		whether to inlcude SF phonons (0=no 1=yes)
 
@@ -47,3 +53,7 @@ If you give an argument, e.g.
 
 then the code will look for the file `init/init.dat.source` instead of `init.dat`. This is useful to keep different setups for modelling different data sets for example.
 
+Published cooling curves from this code:
+* An et al. (2013) Fig. 1 (see `init.dat.1647`)
+* Scholz et al. (2012) Fig. 8 (`init.dat.1822`)
+* An et al. (2012) Fig.3 (1998 and 2008 outbursts, see `init.dat.1627`)
