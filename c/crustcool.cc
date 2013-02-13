@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 	G.Qrho=1e12;
 	G.instant_heat = 0;
 	G.include_sph=1;
-	G.angle_mu=1.0;
+	G.angle_mu=-1.0;
 	
 	// now read from the file 'init.dat'
 	char fname[40];

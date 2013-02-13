@@ -22,7 +22,7 @@
 			<key>filename</key>
 			<string>c/crustcool.cc</string>
 			<key>lastUsed</key>
-			<date>2013-02-13T17:59:58Z</date>
+			<date>2013-02-13T21:54:56Z</date>
 			<key>selected</key>
 			<true/>
 		</dict>
@@ -74,30 +74,14 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>28</integer>
+				<integer>13</integer>
 				<key>line</key>
-				<integer>664</integer>
+				<integer>144</integer>
 			</dict>
-			<key>columnSelection</key>
-			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>659</integer>
-			<key>selectFrom</key>
-			<dict>
-				<key>column</key>
-				<integer>23</integer>
-				<key>line</key>
-				<integer>664</integer>
-			</dict>
-			<key>selectTo</key>
-			<dict>
-				<key>column</key>
-				<integer>28</integer>
-				<key>line</key>
-				<integer>664</integer>
-			</dict>
+			<integer>108</integer>
 		</dict>
 		<key>c/eos.cc</key>
 		<dict>
