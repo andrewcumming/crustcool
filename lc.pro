@@ -1959,7 +1959,7 @@ pro prof2, delay=delay, png=png, source=source
 	FFx = 1.38d-16*(FFx/5.67d-5)^0.25/(1.6d-12)
 	;ttx*=1.31
 	; read observations
-	if not keyword_set(source) then source='1659'
+	if not keyword_set(source) then source='tc'
 	readcol, 'data/'+source, t00, n, format=('D,I'), numline=1
 	readcol, 'data/'+source, t, temp, tempe, skipline=1, format=('D,X,X,D,D')
 	tobs=t-t00[0]
