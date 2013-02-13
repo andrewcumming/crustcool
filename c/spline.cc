@@ -299,7 +299,7 @@ void Spline::spline(double x[], double y[], int n, double yp1, double ypn, doubl
 
 void Spline::splint(double xa[], double ya[], double y2a[], int n, double x, double *y)
 {
-  void nrerror(char error_text[]);
+  void nrerror(const char error_text[]);
   int klo,khi,k;
   double h,b,a;
   

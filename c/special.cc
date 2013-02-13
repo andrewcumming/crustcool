@@ -41,7 +41,7 @@ float gammq(float a, float x)
 {
 	void gcf(float *gammcf, float a, float x, float *gln);
 	void gser(float *gamser, float a, float x, float *gln);
-	void nrerror(char error_text[]);
+	void nrerror(const char error_text[]);
 	float gamser,gammcf,gln;
 
 	if (x < 0.0 || a <= 0.0) nrerror("Invalid arguments in routine gammq");
@@ -60,7 +60,7 @@ float gammp(float a, float x)
 {
 	void gcf(float *gammcf, float a, float x, float *gln);
 	void gser(float *gamser, float a, float x, float *gln);
-	void nrerror(char error_text[]);
+	void nrerror(const char error_text[]);
 	float gamser,gammcf,gln;
 
 	if (x < 0.0 || a <= 0.0) nrerror("Invalid arguments in routine gammp");
@@ -82,7 +82,7 @@ float gammp(float a, float x)
 void gser(float *gamser, float a, float x, float *gln)
 {
 	float gammln(float xx);
-	void nrerror(char error_text[]);
+	void nrerror(const char error_text[]);
 	int n;
 	float sum,del,ap;
 
@@ -141,7 +141,7 @@ float gammln(float xx)
 void gcf(float *gammcf, float a, float x, float *gln)
 {
 	float gammln(float xx);
-	void nrerror(char error_text[]);
+	void nrerror(const char error_text[]);
 	int i;
 	float an,b,c,d,del,h;
 
@@ -200,7 +200,7 @@ float betai(float a, float b, float x)
 {
         float betacf(float a, float b, float x);
         float gammln(float xx);
-        void nrerror(char error_text[]);
+        void nrerror(const char error_text[]);
         float bt;
 
         if (x < 0.0 || x > 1.0) nrerror("Bad x in routine betai");
@@ -220,7 +220,7 @@ float betai(float a, float b, float x)
 
 float betacf(float a, float b, float x)
 {
-        void nrerror(char error_text[]);
+        void nrerror(const char error_text[]);
         int m,m2;
         float aa,c,d,del,h,qab,qam,qap;
 
@@ -266,7 +266,7 @@ float betacf(float a, float b, float x)
 
 float expint(int n, float x)
 {
-	void nrerror(char error_text[]);
+	void nrerror(const char error_text[]);
 	int i,ii,nm1;
 	float a,b,c,d,del,fact,h,psi,ans;
 

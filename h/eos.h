@@ -27,7 +27,34 @@ public:
   double del_ad(void);
   double chi(double *x);
   double Gamma1(void);
-
+  // reaction rates
+  double triple_alpha(void);
+  double O14AP(void);
+  double O14AG(void);
+  double O15AG(void);
+  double N14PG(void);
+  double O16PG(void);
+  double O17PG(void);
+  double N14AG(void);
+  double C12PG(void);
+  double C14AG(void);
+  double C12AG(void);
+  double Ne19PG(void);
+  double F17PG(void);
+  double F18PA(void);
+  double C12C12(void);
+  double fC12C12(void);
+  double O16O16(void);
+  double fO16O16(void);
+  double C12O16(void);
+  double fC12O16(void);
+  double screen(double Z1, double Z2);
+  double ogata(int i, int j);
+  double fC12PG(void);
+  double fC13PG(void);
+  double fN14PG(void);
+  double fN13PG(void);
+  double fN15PA(void);
   // opacity
   double eps_nu(void);
   double K_cond(double ef);
@@ -35,6 +62,7 @@ public:
   double opac(void);
   double gff(double Z, double eta);
   double J(double x,double y);
+  double iben(void);
 
   double lambda1, lambda2;
   double x(void);
