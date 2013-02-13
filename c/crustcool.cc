@@ -145,12 +145,15 @@ int main(int argc, char *argv[])
 	G.angle_mu=1.0;
 	
 	// now read from the file 'init.dat'
-	char fname[30]="init.dat";
+	char fname[40];
+	char fnamedefault[10]="init.dat";
 	if (argc >1) {
-		strcat(fname,".");
+		strcat(fname,"init/init.dat.");
 		strcat(fname,argv[1]);
-		printf("Reading input data from %s\n",fname);
+	} else {
+		strcat(fname,fnamedefault);
 	}
+	printf("Reading input data from %s\n",fname);
 	FILE *fp = fopen(fname,"r");
 	char s1[100];
 	char s[100];

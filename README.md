@@ -42,5 +42,5 @@ If you give an argument, e.g.
 
 	crustcool source
 
-then the code will look for the file `init.dat.source` instead of `init.dat`. This is useful to keep different setups for modelling different data sets for example.
+then the code will look for the file `init/init.dat.source` instead of `init.dat`. This is useful to keep different setups for modelling different data sets for example.
 
