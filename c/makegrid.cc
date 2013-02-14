@@ -69,7 +69,7 @@ int main(void)
   	// now try different surface fluxes
  //	for (int i=0; i<=5; i++) {
    // 	double F=17.0+i*1.25;
-	for (int i=0; i<=125; i++) {
+	for (int i=0; i<=120; i++) {
 	    	double F=17.0+i*0.05;
    		doint(F);
     	printf("."); fflush(stdout);
@@ -130,8 +130,8 @@ void doint(double F)
 
   	// set surface temperature. We integrate from tau=2/3
   	double Tt,yt;
-  	yt=zbrent(find_surf_eqn,1e-3,1e2,1e-5);
-  	if (yt==1e-3 || yt==1e2) printf("yt out of bounds (%lg)\n", yt);
+  	yt=zbrent(find_surf_eqn,1e-5,1e3,1e-5);
+  	if (yt==1e-5 || yt==1e3) printf("yt out of bounds (%lg)\n", yt);
 	//printf("yt=%lg\n", yt);
   	Tt=pow(F/5.67e-5,0.25);
   	ODE2.set_bc(1,Tt);
@@ -150,7 +150,7 @@ void doint(double F)
   	EOS.A[1]=56.0; EOS.Z[1]=26.0;  EOS.X[1]=1.0;
   
   	// integrate through the ocean to the desired depth 
-  	ODE.go_simple(G.yi,18.5,(int)(40*(18.5-G.yi)),lc_derivs);
+  	ODE.go_simple(G.yi,18.5,(int)(80*(18.5-G.yi)),lc_derivs);
 
 	int flag =0;
 	for (int ii=1; ii<=ODE.kount; ii++) {

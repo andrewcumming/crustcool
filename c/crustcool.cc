@@ -87,6 +87,7 @@ struct globals {
 	int instant_heat;
 	double surfF, surfy;
 	double angle_mu;
+	int gpe;
 } G;
 
 Ode_Int ODE;
@@ -143,6 +144,7 @@ int main(int argc, char *argv[])
 	G.instant_heat = 0;
 	G.include_sph=1;
 	G.angle_mu=-1.0;
+	G.gpe=0;
 	
 	// now read from the file 'init.dat'
 	char fname[40];
@@ -173,6 +175,7 @@ int main(int argc, char *argv[])
 			if (!strncmp(s,"mdot",4)) G.mdot=x;
 			if (!strncmp(s,"mass",4)) mass=x;
 			if (!strncmp(s,"sph",3)) G.include_sph=(int) x;
+			if (!strncmp(s,"gpe",3)) G.gpe=(int) x;
 			if (!strncmp(s,"radius",6)) G.radius=x;
 			if (!strncmp(s,"Edep",4)) G.energy_deposited_outer=x;
 			if (!strncmp(s,"Einner",6)) G.energy_deposited_inner=x;
@@ -197,8 +200,8 @@ int main(int argc, char *argv[])
 	if (G.Qinner == -1.0) G.Qinner=EOS.Q;
 	if (G.energy_deposited_inner == -1.0) G.energy_deposited_inner = G.energy_deposited_outer;
 	
-	//	read_in_data("data/1731");  // READ IN observed lightcurve
-		read_in_data("data/1659");  // READ IN observed lightcurve
+		read_in_data("data/1731");  // READ IN observed lightcurve
+	//	read_in_data("data/1659");  // READ IN observed lightcurve
 	//	read_in_data("data/XTEJ");  // READ IN observed lightcurve
 	//	read_in_data("data/terz");  // READ IN observed lightcurve
 	//	read_in_data("data/terz2");  // READ IN observed lightcurve
@@ -1236,7 +1239,9 @@ void get_TbTeff_relation(void)
 	
 	// the file "out/grid" is made by makegrid.cc
 	// it contains  (column depth, T, flux)  in cgs
-	FILE *fp = fopen("out/grid","r");
+	FILE *fp;
+	if (G.gpe) fp = fopen("out/grid_He4","r");
+	else fp = fopen("out/grid_He9","r");
 	//FILE *fp = fopen("grid_sorty","r");
 	FILE *fp2 = fopen("gon_out/TbTeff", "w");
 	

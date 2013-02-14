@@ -1622,16 +1622,16 @@ pro surf3, ps=ps
 
 	if keyword_set(ps) then init_ps,'surf3.ps'
 	
-	surf3plot, 1d13, /nocorr
-	surf3plot, 1d16,/overplot, ls=0, /nocorr
-	surf3plot, 1d15,/overplot, ls=0, /nocorr
+;	surf3plot, 1d13, /nocorr
+;	surf3plot, 1d16,/overplot, ls=0, /nocorr;
+;	surf3plot, 1d15,/overplot, ls=0, /nocorr
 ;	surf3plot, 1d15,/overplot, ls=3, /nocorr
-	surf3plot, 1d14,/overplot, ls=0, /nocorr
-	surf3plot, 1.0, /overplot, ls=0,/nocorr	
-;	surf3plot, 1.0,/overplot, /usearras,ls=2
+;	surf3plot, 1d14,/overplot, ls=0, /nocorr
+	surf3plot, 1.0, ls=0,/nocorr	
+;	surf3plot, 1.0,/overp, /usearras,ls=2
 	surf3plot, 1.0,/overplot, /usegpe,ls=4
 
-	xyouts, 2d33, 2d7, textoidl('B=10^{13},10^{14},10^{15},10^{16}G'), charsize=1.3
+;	xyouts, 2d33, 2d7, textoidl('B=10^{13},10^{14},10^{15},10^{16}G'), charsize=1.3
 
 ;	readcol, 'gon_out/prof', Teff,T, format=('X,X,D,X,X,D')
 ;	F=Teff*4.0*!dpi*(11.2*1d5)^2
@@ -1647,7 +1647,7 @@ pro surf3, ps=ps
 	F/=ZZ^2
 	;oplot, F, T, col=250
 
-	ytop=14.0
+	ytop=12.0
 		print, 'out/grid'
 		readcol, 'out/grid', y, T, F, format=('D,D,D')
 		F=10^F

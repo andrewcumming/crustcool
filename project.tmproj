@@ -3,26 +3,28 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>c/eos.cc</string>
+	<string>c/crustcool.cc</string>
 	<key>documents</key>
 	<array>
 		<dict>
 			<key>filename</key>
 			<string>c/makegrid.cc</string>
 			<key>lastUsed</key>
-			<date>2013-02-13T17:26:32Z</date>
+			<date>2013-02-14T01:13:13Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>lc.pro</string>
 			<key>lastUsed</key>
-			<date>2013-02-13T17:20:15Z</date>
+			<date>2013-02-14T01:11:18Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>c/crustcool.cc</string>
 			<key>lastUsed</key>
-			<date>2013-02-14T00:22:40Z</date>
+			<date>2013-02-14T01:13:13Z</date>
+			<key>selected</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>filename</key>
@@ -46,9 +48,7 @@
 			<key>filename</key>
 			<string>c/eos.cc</string>
 			<key>lastUsed</key>
-			<date>2013-02-14T00:22:41Z</date>
-			<key>selected</key>
-			<true/>
+			<date>2013-02-14T01:01:53Z</date>
 		</dict>
 	</array>
 	<key>fileHierarchyDrawerWidth</key>
@@ -74,14 +74,14 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>13</integer>
+				<integer>0</integer>
 				<key>line</key>
-				<integer>144</integer>
+				<integer>1228</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>144</integer>
+			<integer>509</integer>
 		</dict>
 		<key>c/eos.cc</key>
 		<dict>
@@ -102,14 +102,14 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>0</integer>
+				<integer>34</integer>
 				<key>line</key>
-				<integer>194</integer>
+				<integer>152</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>44</integer>
+			<integer>160</integer>
 		</dict>
 		<key>init.dat</key>
 		<dict>
@@ -130,14 +130,14 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>2</integer>
+				<integer>8</integer>
 				<key>line</key>
-				<integer>408</integer>
+				<integer>1687</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>410</integer>
+			<integer>1635</integer>
 		</dict>
 		<key>makefile</key>
 		<dict>
@@ -164,8 +164,8 @@
 		<string>c/makegrid.cc</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
-	<true/>
+	<false/>
 	<key>windowFrame</key>
-	<string>{{390, -173}, {798, 774}}</string>
+	<string>{{84, 4}, {798, 774}}</string>
 </dict>
 </plist>

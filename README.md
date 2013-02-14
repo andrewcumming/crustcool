@@ -17,6 +17,9 @@ The file `init.dat` sets up the run. The parameters are
 	mass	neutron star mass in solar masses
 	radius	neutron star radius in km
 
+	gpe		1=iron envelope (use out/grid_He4 as the outer boundary)
+			0=He envelope (use out/grid_He9 as the outer boundary; as BC09)
+
 	Bfield  magnetic field strength in the crust in G
 	angle_mu	determines the Teff-Tb relation used for B>0. If angle_mu = -1 (default)
 		then an angle-averaged relation is used; otherwise angle_mu in the range 0 to 1

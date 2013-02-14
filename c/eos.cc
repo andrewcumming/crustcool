@@ -991,7 +991,7 @@ double Eos::opac(void)
 	double f=this->kff/this->kappa_rad;
 	double TRy = 100.0*this->T8/(0.15789*this->YZ2()/this->Yi());
 	double A = 1.0 + (1.097+0.777*TRy)*pow(f,0.617)*pow(1.0-f,0.77)/(1.0+0.536*TRy);
-	//this->kappa_rad*=A;
+	this->kappa_rad*=A;
 
 //	if (this->B > 0.0) {
 		if (0) {
