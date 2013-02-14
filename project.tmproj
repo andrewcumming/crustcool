@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>c/crustcool.cc</string>
+	<string>c/eos.cc</string>
 	<key>documents</key>
 	<array>
 		<dict>
@@ -22,9 +22,7 @@
 			<key>filename</key>
 			<string>c/crustcool.cc</string>
 			<key>lastUsed</key>
-			<date>2013-02-13T21:54:56Z</date>
-			<key>selected</key>
-			<true/>
+			<date>2013-02-14T00:22:40Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
@@ -42,13 +40,15 @@
 			<key>filename</key>
 			<string>README.md</string>
 			<key>lastUsed</key>
-			<date>2013-02-13T16:48:30Z</date>
+			<date>2013-02-14T00:22:41Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>c/eos.cc</string>
 			<key>lastUsed</key>
-			<date>2013-02-13T17:59:58Z</date>
+			<date>2013-02-14T00:22:41Z</date>
+			<key>selected</key>
+			<true/>
 		</dict>
 	</array>
 	<key>fileHierarchyDrawerWidth</key>
@@ -60,7 +60,7 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>72</integer>
+				<integer>47</integer>
 				<key>line</key>
 				<integer>44</integer>
 			</dict>
@@ -81,21 +81,21 @@
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>108</integer>
+			<integer>144</integer>
 		</dict>
 		<key>c/eos.cc</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>18</integer>
+				<integer>0</integer>
 				<key>line</key>
-				<integer>943</integer>
+				<integer>778</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>1031</integer>
+			<integer>749</integer>
 		</dict>
 		<key>c/makegrid.cc</key>
 		<dict>
@@ -166,6 +166,6 @@
 	<key>showFileHierarchyDrawer</key>
 	<true/>
 	<key>windowFrame</key>
-	<string>{{374, 4}, {798, 1024}}</string>
+	<string>{{390, -173}, {798, 774}}</string>
 </dict>
 </plist>
