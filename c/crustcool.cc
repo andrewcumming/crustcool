@@ -644,7 +644,7 @@ void derivs(double t, double T[], double dTdt[])
 double calculate_heat_flux(int i, double *T)
 {
 	double flux;
-	if (i>1 || (G.accreting && G.outburst_duration > 1.0))   
+	if (i>1 || (G.accreting && G.outburst_duration > 0.0))   
 //		if (i>1 || (G.accreting && EOS.B == 0.0))   
 		// use this inside the grid, or at the surface when we are accreting (which 
 		// fixes the outer temperature)
@@ -1188,7 +1188,7 @@ double crust_heating(int i)
 	// if B>0 we are doing a magnetar
 	// changed this to:
 	// if we are heating on < 1day timescale then its a magnetar
-	if (G.outburst_duration<1.0) {
+	if (G.outburst_duration<1.0/365.0) {
 		
 		// eps in erg/g/s
 		eps = 1e25/(G.rho[i]*G.outburst_duration*3.15e7);

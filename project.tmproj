@@ -16,7 +16,7 @@
 			<key>filename</key>
 			<string>lc.pro</string>
 			<key>lastUsed</key>
-			<date>2013-02-14T04:08:07Z</date>
+			<date>2013-02-14T16:27:38Z</date>
 			<key>selected</key>
 			<true/>
 		</dict>
@@ -24,7 +24,7 @@
 			<key>filename</key>
 			<string>c/crustcool.cc</string>
 			<key>lastUsed</key>
-			<date>2013-02-14T04:08:07Z</date>
+			<date>2013-02-14T14:44:58Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
@@ -42,7 +42,7 @@
 			<key>filename</key>
 			<string>README.md</string>
 			<key>lastUsed</key>
-			<date>2013-02-14T02:15:05Z</date>
+			<date>2013-02-14T16:27:38Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
@@ -74,14 +74,14 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>3</integer>
+				<integer>34</integer>
 				<key>line</key>
-				<integer>204</integer>
+				<integer>1190</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>189</integer>
+			<integer>1170</integer>
 		</dict>
 		<key>c/eos.cc</key>
 		<dict>
@@ -130,14 +130,14 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>43</integer>
+				<integer>24</integer>
 				<key>line</key>
-				<integer>440</integer>
+				<integer>445</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>412</integer>
+			<integer>439</integer>
 		</dict>
 		<key>makefile</key>
 		<dict>
@@ -164,8 +164,8 @@
 		<string>c/makegrid.cc</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
-	<false/>
+	<true/>
 	<key>windowFrame</key>
-	<string>{{687, 4}, {693, 774}}</string>
+	<string>{{126, 4}, {693, 774}}</string>
 </dict>
 </plist>

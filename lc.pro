@@ -397,6 +397,16 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 		xr=[1.0,10000.0]
 		yr=[100,180]
 	endif
+	if (source eq 'terz2' or source eq 'terz') then begin
+		xr=[10.0,3000.0]
+		yr=[40,140]
+	endif
+
+
+	if (source eq 'XTEJ2') then begin
+		xr=[0.1,100.0]
+		yr=[100,180]
+	endif
 	
 
 
@@ -415,9 +425,18 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 		; the output is already redshifted
 		; but needs to be converted to eV
 		FF = 1.38d-16*Teff/(1.6d-12)
-		oplot, tt,FF,linestyle=0,col=250
+		oplot, tt,FF,linestyle=0;,col=250
 		endif
 	
+		if (source eq 'terz2' or source eq 'terz') then begin
+			readcol, 'gon_out/prof_terz', tt,Teff, format=('F,X,X,X,F')
+			tt/=(24*3600.0)
+			; the output is already redshifted
+			; but needs to be converted to eV
+			FF = 1.38d-16*Teff/(1.6d-12)
+			oplot, tt,FF,linestyle=0
+		endif
+
 		if (source eq '1659' or source eq '1731' or source eq 'XTEJ' or source eq '0748') and not keyword_set(noextras) then  begin
 		; plot lightcurve from simulation
 		readcol, 'gon_out/prof_'+source+'_1', tt,Teff, format=('F,X,X,X,F')
@@ -438,7 +457,9 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 		if (source eq '1731') then xyouts, 700,132,textoidl('KS 1731-260')
 		if (source eq '1659') then xyouts, 700,132,textoidl('MXB 1659-29')
 		if (source eq 'XTEJ') then xyouts, 500,170,textoidl('XTE J1701-462')
+		if (source eq 'XTEJ2') then xyouts, 10,170,textoidl('XTE J1709-267')
 		if (source eq '0748') then xyouts, 400,130,textoidl('EXO 0748-676')
+		if (source eq 'terz' || source eq 'terz2') then xyouts, 200,125,textoidl('IGR J17480-2446')
 
 	if keyword_set(ps) then close_ps
 end
