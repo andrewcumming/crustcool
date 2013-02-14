@@ -200,12 +200,12 @@ int main(int argc, char *argv[])
 	if (G.Qinner == -1.0) G.Qinner=EOS.Q;
 	if (G.energy_deposited_inner == -1.0) G.energy_deposited_inner = G.energy_deposited_outer;
 	
-		read_in_data("data/1731");  // READ IN observed lightcurve
+	//	read_in_data("data/1731");  // READ IN observed lightcurve
 	//	read_in_data("data/1659");  // READ IN observed lightcurve
 	//	read_in_data("data/XTEJ");  // READ IN observed lightcurve
 	//	read_in_data("data/terz");  // READ IN observed lightcurve
 	//	read_in_data("data/terz2");  // READ IN observed lightcurve
-	//	read_in_data("data/0748");  // READ IN observed lightcurve
+		read_in_data("data/0748");  // READ IN observed lightcurve
 
 	set_ns_parameters(mass,G.radius);
 	G.outburst_duration /= G.ZZ;   // redshift the outburst duration (shorter time on the NS surface)

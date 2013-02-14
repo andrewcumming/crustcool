@@ -385,13 +385,28 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 
 	if (not keyword_set(source)) then source='1659'
 
+	if (source eq '1659' or source eq '1731') then begin
+		xr=[10.0,10000.0]
+		yr=[50,140]
+	endif
+	if (source eq '0748') then begin
+		xr=[10.0,3000.0]
+		yr=[50,140]
+	endif
+	if (source eq 'XTEJ') then begin
+		xr=[1.0,10000.0]
+		yr=[100,180]
+	endif
+	
+
+
 	; read in the observations and plot
 	readcol, 'data/'+source, t0, n, format=('D,I'), numline=1
 	readcol, 'data/'+source, t, F, Fe, temp, tempe, skipline=1, format=('D,D,D,D,D')	
 	t=t-t0[0]
 	ploterror, t, temp, tempe, psym=1, /xlog, xtitle=textoidl('Time (d)'),$
-			ytitle=textoidl('T_{eff} (keV)'), charsize=1.4, xrange=[10.0,10000.0],xstyle=1,$
-			yrange=[50,140], ystyle=1
+			ytitle=textoidl('T_{eff} (keV)'), charsize=1.4, xrange=xr,xstyle=1,$
+			yrange=yr, ystyle=1
 
 		if not keyword_set(noplot) then begin
 		; plot lightcurve from simulation
@@ -400,28 +415,30 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 		; the output is already redshifted
 		; but needs to be converted to eV
 		FF = 1.38d-16*Teff/(1.6d-12)
-		oplot, tt,FF,linestyle=0
+		oplot, tt,FF,linestyle=0,col=250
 		endif
 	
-		if (source eq '1659' or source eq '1731') and not keyword_set(noextras) then  begin
+		if (source eq '1659' or source eq '1731' or source eq 'XTEJ' or source eq '0748') and not keyword_set(noextras) then  begin
 		; plot lightcurve from simulation
 		readcol, 'gon_out/prof_'+source+'_1', tt,Teff, format=('F,X,X,X,F')
 		tt/=(24*3600.0)
 		; the output is already redshifted
 		; but needs to be converted to eV
 		FF = 1.38d-16*Teff/(1.6d-12)
-		oplot, tt,FF,linestyle=2
+		oplot, tt,FF,linestyle=0
 		; plot lightcurve from simulation
 		readcol, 'gon_out/prof_'+source+'_2', tt,Teff, format=('F,X,X,X,F')
 		tt/=(24*3600.0)
 		; the output is already redshifted
 		; but needs to be converted to eV
 		FF = 1.38d-16*Teff/(1.6d-12)
-		oplot, tt,FF,linestyle=1
+		oplot, tt,FF,linestyle=2
 		endif
 
 		if (source eq '1731') then xyouts, 700,132,textoidl('KS 1731-260')
 		if (source eq '1659') then xyouts, 700,132,textoidl('MXB 1659-29')
+		if (source eq 'XTEJ') then xyouts, 500,170,textoidl('XTE J1701-462')
+		if (source eq '0748') then xyouts, 400,130,textoidl('EXO 0748-676')
 
 	if keyword_set(ps) then close_ps
 end
