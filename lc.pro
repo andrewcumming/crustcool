@@ -386,8 +386,8 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 	if (not keyword_set(source)) then source='1659'
 
 	if (source eq '1659' or source eq '1731') then begin
-		xr=[10.0,10000.0]
-		yr=[50,140]
+		xr=[1.0,5000.0]
+		yr=[50,160]
 	endif
 	if (source eq '0748') then begin
 		xr=[10.0,3000.0]
@@ -439,19 +439,19 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 
 		if (source eq '1659' or source eq '1731' or source eq 'XTEJ' or source eq '0748') and not keyword_set(noextras) then  begin
 		; plot lightcurve from simulation
-		readcol, 'gon_out/prof_'+source+'_1', tt,Teff, format=('F,X,X,X,F')
+		readcol, 'gon_out/prof_'+source+'_1_y10', tt,Teff, format=('F,X,X,X,F')
 		tt/=(24*3600.0)
 		; the output is already redshifted
 		; but needs to be converted to eV
 		FF = 1.38d-16*Teff/(1.6d-12)
-		oplot, tt,FF,linestyle=0
+		oplot, tt,FF,linestyle=1
 		; plot lightcurve from simulation
 		readcol, 'gon_out/prof_'+source+'_2', tt,Teff, format=('F,X,X,X,F')
 		tt/=(24*3600.0)
 		; the output is already redshifted
 		; but needs to be converted to eV
 		FF = 1.38d-16*Teff/(1.6d-12)
-		oplot, tt,FF,linestyle=2
+;		oplot, tt,FF,linestyle=2
 		endif
 
 		if (source eq '1731') then xyouts, 700,132,textoidl('KS 1731-260')
@@ -1992,10 +1992,10 @@ pro prof2, delay=delay, png=png, source=source
 	;FF = 1.38d-16*(FF/5.67d-5)^0.25/(1.6d-12*1.31)
 	;tt*=1.31
 	; read lightcurve for 1659
-	readcol, 'gon_out/prof_1659', ttx,FFx, format=('F,X,X,X,F')
+	readcol, 'gon_out/prof_1659_1_y10', ttx,FFx, format=('D,X,X,X,D')
 	ttx/=(24*3600.0)
-	FFx = 1.38d-16*(FFx/5.67d-5)^0.25/(1.6d-12)
-	;ttx*=1.31
+	FFx = 1.38d-16*FFx/1.6d-12  ;(FFx/5.67d-5)^0.25/(1.6d-12)
+	;ttx/=1.31
 	; read observations
 	if not keyword_set(source) then source='tc'
 	readcol, 'data/'+source, t00, n, format=('D,I'), numline=1
@@ -2040,18 +2040,18 @@ pro prof2, delay=delay, png=png, source=source
 				xtitle=textoidl('P (g cm^{-2})'), yrange=[1e7,1e10],ystyle=1, $
 				xrange=[2d24,8d32], xstyle=1
 		oplot, y0, T0, linestyle=1
-	;	oplot, ym, Tm, linestyle=2
+		oplot, ym, Tm, linestyle=2
 
 		; plot lower panel
 		tt2=tt[where(tt*24*3600.0 le time,ntt)]
 		ff2=ff[where(tt*24*3600.0 le time)]
 		ploterror, tobs, Fobs, Fobse,/xlog, xtitle=textoidl('Time (d)'), $
 			ytitle=textoidl('T_{eff} (eV)'), charsize=1.5, $
-			xrange=[1.0,5d3],xstyle=1,psym=2,yrange=[min(Fobs)-20.0,max(Fobs)+20.0], ystyle=1
+			xrange=[1.0,5d3],xstyle=1,psym=2,yrange=[min(Fobs)-20.0,max(Fobs)+40.0], ystyle=1
 		if (ntt gt 1) then begin
 			oplot,tt2,FF2,linestyle=0
 		endif
-		;oplot, ttx, FFx, linestyle=1
+		oplot, ttx, FFx, linestyle=1
 
 		if keyword_set(delay) then begin
 			for i=1L,delay do begin

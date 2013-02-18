@@ -27,7 +27,7 @@ double calculate_heat_flux(int i, double *T);
 void set_up_initial_temperature_profile(void);
 void set_up_initial_temperature_profile_piecewise(char *fname);
 void precalculate_vars(void);
-void set_up_grid(int ngrid,const char*fname,double ytop);
+void set_up_grid(int ngrid,const char*fname);
 void get_TbTeff_relation(void);
 double crust_heating_rate(double y);
 double crust_heating(int i);
@@ -145,6 +145,7 @@ int main(int argc, char *argv[])
 	G.include_sph=1;
 	G.angle_mu=-1.0;
 	G.gpe=0;
+	G.yt=1e12;
 	
 	// now read from the file 'init.dat'
 	char fname[40];
@@ -155,6 +156,7 @@ int main(int argc, char *argv[])
 	} else {
 		strcat(fname,fnamedefault);
 	}
+	printf("============================================\n");
 	printf("Reading input data from %s\n",fname);
 	FILE *fp = fopen(fname,"r");
 	char s1[100];
@@ -178,6 +180,7 @@ int main(int argc, char *argv[])
 			if (!strncmp(s,"gpe",3)) G.gpe=(int) x;
 			if (!strncmp(s,"radius",6)) G.radius=x;
 			if (!strncmp(s,"Edep",4)) G.energy_deposited_outer=x;
+			if (!strncmp(s,"ytop",4)) G.yt=x;
 			if (!strncmp(s,"Einner",6)) G.energy_deposited_inner=x;
 			if (!strncmp(s,"Qimp",4)) EOS.Q=x;
 			if (!strncmp(s,"Qrho",4)) G.Qrho=x;
@@ -192,6 +195,7 @@ int main(int argc, char *argv[])
 			if (!strncmp(s,"neutrinos",9)) G.nuflag=(int) x;
 			if (!strncmp(s,"accreted",8)) EOS.accr=(int) x;
 			if (!strncmp(s,"angle_mu",8)) G.angle_mu=x;
+			if (!strncmp(s,"latent_heat",11)) G.include_latent_heat=(int) x;
 		}
 	}
 
@@ -199,20 +203,19 @@ int main(int argc, char *argv[])
 
 	if (G.Qinner == -1.0) G.Qinner=EOS.Q;
 	if (G.energy_deposited_inner == -1.0) G.energy_deposited_inner = G.energy_deposited_outer;
-	
+		
 	//	read_in_data("data/1731");  // READ IN observed lightcurve
-	//	read_in_data("data/1659");  // READ IN observed lightcurve
+		read_in_data("data/1659");  // READ IN observed lightcurve
 	//	read_in_data("data/XTEJ");  // READ IN observed lightcurve
 	//	read_in_data("data/terz");  // READ IN observed lightcurve
 	//	read_in_data("data/terz2");  // READ IN observed lightcurve
-		read_in_data("data/0748");  // READ IN observed lightcurve
+	//	read_in_data("data/0748");  // READ IN observed lightcurve
 
 	set_ns_parameters(mass,G.radius);
 	G.outburst_duration /= G.ZZ;   // redshift the outburst duration (shorter time on the NS surface)
 
  	// set up the hydrostatic grid
-  	set_up_grid(ngrid,"data/crust_model_shell",1e12);
-
+	set_up_grid(ngrid,"data/crust_model_shell");
 
 	// ----------------------------------------------------------------------------------
 
@@ -1274,15 +1277,14 @@ void get_TbTeff_relation(void)
 
 
 
-void set_up_grid(int ngrid, const char *fname, double ytop)
+void set_up_grid(int ngrid, const char *fname)
 // allocates storage for the grid and also computes the density
 // and composition at each grid point
 {
   	G.N=ngrid;   // number of grid points
 	G.Pb=6.5e32; // column depth at the crust/core boundary
 						  // we used to set this to y=3e18 but now fix pressure
-  	G.Pt=ytop*2.28e14;   // pressure at the top
-	G.yt=ytop;  // column depth at the top, used to get the Tb-Teff relation
+  	G.Pt=G.yt*2.28e14;   // pressure at the top
 
 	Spline QiSpline;
 	Spline QhSpline;
