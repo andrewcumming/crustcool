@@ -387,7 +387,7 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 
 	if (source eq '1659' or source eq '1731') then begin
 		xr=[1.0,5000.0]
-		yr=[50,160]
+		yr=[50,175]
 	endif
 	if (source eq '0748') then begin
 		xr=[10.0,3000.0]
@@ -1992,7 +1992,7 @@ pro prof2, delay=delay, png=png, source=source
 	;FF = 1.38d-16*(FF/5.67d-5)^0.25/(1.6d-12*1.31)
 	;tt*=1.31
 	; read lightcurve for 1659
-	readcol, 'gon_out/prof_1659_1_y10', ttx,FFx, format=('D,X,X,X,D')
+	readcol, 'gon_out/prof_1659_1_y9', ttx,FFx, format=('D,X,X,X,D')
 	ttx/=(24*3600.0)
 	FFx = 1.38d-16*FFx/1.6d-12  ;(FFx/5.67d-5)^0.25/(1.6d-12)
 	;ttx/=1.31
@@ -2038,7 +2038,7 @@ pro prof2, delay=delay, png=png, source=source
 		erase
 		plot, y, T, /xlog, /ylog,charsize=1.2, ytitle=textoidl('T (K)'),$
 				xtitle=textoidl('P (g cm^{-2})'), yrange=[1e7,1e10],ystyle=1, $
-				xrange=[2d24,8d32], xstyle=1
+				xrange=[1d23,8d32], xstyle=1
 		oplot, y0, T0, linestyle=1
 		oplot, ym, Tm, linestyle=2
 
