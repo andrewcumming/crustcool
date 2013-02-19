@@ -14,6 +14,8 @@ The file `init.dat` sets up the run. The parameters are
 	cooling_bc	if set to 1, use a cooling b.c. at the top even during accretion,
 				otherwise keep the temperature at the top fixed (to the value Tt) 
 				during accretion.
+	extra_heating	if set, turn on extra heating in the NS ocean during accretion.
+					The depth and strength are set in crust_heating_rate()
 
 	Edep	energy deposited
 	Einner	(optional) a different value of energy deposited for the inner crust

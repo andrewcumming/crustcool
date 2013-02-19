@@ -88,7 +88,7 @@ struct globals {
 	double surfF, surfy;
 	double angle_mu;
 	int gpe;
-	int force_cooling_bc;
+	int force_cooling_bc, extra_heating;
 } G;
 
 Ode_Int ODE;
@@ -147,6 +147,7 @@ int main(int argc, char *argv[])
 	G.angle_mu=-1.0;
 	G.gpe=0;
 	G.force_cooling_bc=0;
+	G.extra_heating=0;
 	G.yt=1e12;
 	
 	// now read from the file 'init.dat'
@@ -199,6 +200,7 @@ int main(int argc, char *argv[])
 			if (!strncmp(s,"angle_mu",8)) G.angle_mu=x;
 			if (!strncmp(s,"latent_heat",11)) G.include_latent_heat=(int) x;
 			if (!strncmp(s,"cooling_bc",10)) G.force_cooling_bc=(int) x;
+			if (!strncmp(s,"extra_heating",13)) G.extra_heating=(int) x;
 		}
 	}
 
@@ -1231,7 +1233,7 @@ double crust_heating_rate(double P)
 //if (y >= 6e15 && y <= 3e18) eps=G.mdot*8.8e4*1.2*9.64e17/(y*log(3e18/6e15));
 
 	// Extra heat source in the ocean
-	if (P >=8e12*G.g && P<=1.2e13*G.g) eps+=8.8e4*1.2*9.64e17/(P*log(1.2e13/8e12));
+	if (G.extra_heating && P >=8e12*G.g && P<=1.2e13*G.g) eps+=8.8e4*1.2*9.64e17/(P*log(1.2e13/8e12));
 
 	return eps;	
 }
