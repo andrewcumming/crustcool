@@ -88,6 +88,7 @@ struct globals {
 	double surfF, surfy;
 	double angle_mu;
 	int gpe;
+	int force_cooling_bc;
 } G;
 
 Ode_Int ODE;
@@ -145,6 +146,7 @@ int main(int argc, char *argv[])
 	G.include_sph=1;
 	G.angle_mu=-1.0;
 	G.gpe=0;
+	G.force_cooling_bc=0;
 	G.yt=1e12;
 	
 	// now read from the file 'init.dat'
@@ -196,6 +198,7 @@ int main(int argc, char *argv[])
 			if (!strncmp(s,"accreted",8)) EOS.accr=(int) x;
 			if (!strncmp(s,"angle_mu",8)) G.angle_mu=x;
 			if (!strncmp(s,"latent_heat",11)) G.include_latent_heat=(int) x;
+			if (!strncmp(s,"cooling_bc",10)) G.force_cooling_bc=(int) x;
 		}
 	}
 
@@ -647,7 +650,7 @@ void derivs(double t, double T[], double dTdt[])
 double calculate_heat_flux(int i, double *T)
 {
 	double flux;
-	if (i>1 || (G.accreting && G.outburst_duration > 0.0))   
+	if (i>1 || (G.accreting && G.outburst_duration > 0.0 && !G.force_cooling_bc))
 //		if (i>1 || (G.accreting && EOS.B == 0.0))   
 		// use this inside the grid, or at the surface when we are accreting (which 
 		// fixes the outer temperature)
@@ -1226,6 +1229,9 @@ double crust_heating_rate(double P)
 // 	if (y >= 1e12 && y < 1e15) eps=G.mdot*8.8e4*0.15*9.64e17/(y*log(1e15/1e12));
  	if (P >= 3e12*2.28e14 && P < 3e15*2.28e14) eps=8.8e4*0.2*9.64e17/(P*log(3e15/3e12));
 //if (y >= 6e15 && y <= 3e18) eps=G.mdot*8.8e4*1.2*9.64e17/(y*log(3e18/6e15));
+
+	// Extra heat source in the ocean
+	if (P >=8e12*G.g && P<=1.2e13*G.g) eps+=8.8e4*1.2*9.64e17/(P*log(1.2e13/8e12));
 
 	return eps;	
 }

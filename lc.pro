@@ -455,7 +455,7 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 		endif
 
 		if (source eq '1731') then xyouts, 700,132,textoidl('KS 1731-260')
-		if (source eq '1659') then xyouts, 700,132,textoidl('MXB 1659-29')
+		if (source eq '1659') then xyouts, 200,152,textoidl('MXB 1659-29')
 		if (source eq 'XTEJ') then xyouts, 500,170,textoidl('XTE J1701-462')
 		if (source eq 'XTEJ2') then xyouts, 10,170,textoidl('XTE J1709-267')
 		if (source eq '0748') then xyouts, 400,130,textoidl('EXO 0748-676')

@@ -10,10 +10,16 @@ The file `init.dat` sets up the run. The parameters are
 	Qinner 	(optional) a different impurity parameter for the inner crust
 	Qrho	the density at which the Q changes from Qimp to Qinner (default 1e12)
 
+	latent_heat	include (=1) or don't include (=0) the latent heat
+	cooling_bc	if set to 1, use a cooling b.c. at the top even during accretion,
+				otherwise keep the temperature at the top fixed (to the value Tt) 
+				during accretion.
+
 	Edep	energy deposited
 	Einner	(optional) a different value of energy deposited for the inner crust
 	rhot	lowest density to be heated
 	rhob	highest density to be heated
+
 	mass	neutron star mass in solar masses
 	radius	neutron star radius in km
 
@@ -29,6 +35,7 @@ The file `init.dat` sets up the run. The parameters are
 
 	precalc	force a precalc (1) or instead load in previously saved precalc (0)
 	ngrid	number of grid points
+	ytop	column depth at the top of the grid (default 1e12)
 	
 	SFgap	neutron superfluid gap. Choices are
 			0=normal neutrons (not SF)
