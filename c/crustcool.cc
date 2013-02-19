@@ -620,17 +620,28 @@ void derivs(double t, double T[], double dTdt[])
 				&T[G.N+1],&G.K[G.N+1],&G.CP[G.N+1],&G.NU[G.N+1],&G.EPS[G.N+1]);
   for (int i=1; i<=G.N+1; i++)   G.F[i] = calculate_heat_flux(i,T);	
 
+	int imelt=0;
+	double AA=2.4e11;
+	if (G.accreting) AA=0.0;
+
 	if (G.include_latent_heat) {
+		int flag =1;
   		for (int i=2; i<=G.N; i++) {
 			double Gm = G.GammaT[i-1]/(0.5*(T[i-1]+T[i]));
 			double Gp = G.GammaT[i]/(0.5*(T[i]+T[i+1]));
-			if (Gm < 175.0 && Gp > 175.0) {
+			if (flag && Gp > 175.0) {
+				imelt = i;
+				flag=0;
 				double dxdT = (4.0/T[i]) * pow(175.0/Gm,4.0)/ (pow(Gp/Gm,4.0)-1.0);
 				//printf("derivs: %d %lg %lg %lg %lg\n", i, G.CP[i], G.LoverT[i]*T[i], dxdT, G.LoverT[i]*T[i]*dxdT);
-				G.CP[i]+= G.LoverT[i]*T[i] * dxdT;
+				//G.CP[i]+= G.LoverT[i]*T[i] * dxdT - AA;
 			}
 		}
 	}
+	
+	if (G.P[imelt] < G.g*1e10) AA=0.0;
+	//if (imelt == 0) AA=0.0;
+	//if (imelt == 0 && !G.accreting) printf("Failed to find imelt!!   %d\n",G.include_latent_heat);
 /*
 	if (T[i] > G.Tmelt[i] && T[i+1] < G.Tmelt[i+1]) {
 		double latentHeat = 0.805 * 1.38e-16*T[i]/(EOS.A[1]*1.67e-24);
@@ -639,11 +650,23 @@ void derivs(double t, double T[], double dTdt[])
 	//	printf("here2 %d %lg %lg %lg %lg %lg %lg %lg\n", i, G.y[i], T[i], G.Tmelt[i], T[i-1], G.Tmelt[i-1],latentHeat,0.0);
 }
 */
-		
+	if (G.include_latent_heat && imelt>0) {
+		int i=imelt;
+		dTdt[i] = G.g*(G.F[i+1]-G.F[i])/(G.dx*G.CP[i]*G.P[i]);
+		double corr=(1.0 - AA/(G.dx*G.CP[i]));
+		//if (dTdt[i] < 0.0) AA=0.0;
+		if (corr<0.0) dTdt[i]/=corr;
+	}
+	
 	for (int i=1; i<=G.N; i++) {
-  		dTdt[i]=G.g*(G.F[i+1]-G.F[i])/(G.dx*G.CP[i]*G.P[i]);
-		if (G.nuflag) dTdt[i]+=-(G.NU[i]/G.CP[i]);
-		if (G.accreting) dTdt[i]+=G.EPS[i]/G.CP[i];
+		if (i != imelt || !G.include_latent_heat) {
+  			dTdt[i]=G.g*(G.F[i+1]-G.F[i])/(G.dx*G.CP[i]*G.P[i]);
+			if (G.nuflag) dTdt[i]+=-(G.NU[i]/G.CP[i]);
+			if (G.accreting) dTdt[i]+=G.EPS[i]/G.CP[i];
+			if (G.GammaT[i]/(0.5*(T[i]+T[i+1])) < 175.0 && G.include_latent_heat) {
+				dTdt[i]+=-(AA/G.CP[i])*dTdt[imelt];
+			}
+		}
 	}
   	dTdt[G.N+1]=0.0;
 
@@ -760,7 +783,32 @@ void inner_boundary(double TN, double KN, double CPN, double NUN, double EPSN,
 	
 }
 
+void jacobn(double t, double *T, double *dfdt, double **dfdT, int n)
+// calculates the Jacobian numerically
+// This version calculates the full set of derivatives each time
+// [The commented-out version following only calculates the tri-diagonal parts,
+// which is faster, but for the ocean convection, we need the whole thing]
+{
+  double e=0.001;
+	double *f;
+	f=vector(1,n);
+  // this assumes the arrays dfdt and dfdT are preinitialized to zero (I changed odeint to do this)
+  for (int i=1; i<n; i++) {
+    if (i>1) {
+		T[i-1]*=1.0+e; derivs(t,T,f);   //f=dTdt(i,T);
+      T[i-1]/=1.0+e; dfdT[i][i-1]=(f[i]-dfdt[i])/(T[i-1]*e);
+    }
+	T[i]*=1.0+e; derivs(t,T,f);    //f=dTdt(i,T);
+    T[i]/=1.0+e; dfdT[i][i]=(f[i]-dfdt[i])/(T[i]*e);
+    if (i<=n) {
+		T[i+1]*=1.0+e; derivs(t,T,f); //f=dTdt(i,T);
+      T[i+1]/=1.0+e; dfdT[i][i+1]=(f[i]-dfdt[i])/(T[i+1]*e);
+    }
+  }
+free_vector(f,1,n);
+}  
 
+/*
 void jacobn(double t, double *T, double *dfdt, double **dfdT, int n)
 // calculates the Jacobian numerically
 {
@@ -779,8 +827,7 @@ void jacobn(double t, double *T, double *dfdt, double **dfdT, int n)
     }
   }
 }  
-
-
+*/
 
 
 void calculate_vars(int i, double T, double P, double *CP, double *K, double *NU,double *EPS)
@@ -989,9 +1036,9 @@ void set_up_initial_temperature_profile(void)
 	G.accreting = !G.instant_heat;
 	for (int i=G.N+1; i>=1; i--) {
 		// a linear profile between top and bottom
-		//double Ti = pow(10.0,log10(G.Tc) + log10(G.Tt/G.Tc)*log10(G.P[i]/G.Pb)/log10(G.Pt/G.Pb));
+		double Ti = pow(10.0,log10(G.Tc) + log10(G.Tt/G.Tc)*log10(G.P[i]/G.Pb)/log10(G.Pt/G.Pb));
 		// or constant profile
-		double Ti = G.Tc;
+		//double Ti = G.Tc;
 		// a linear profile adjusts to steady state *much* more quickly,
 		// but for XTEJ for example I want to heat up from isothermal and the crust 
 		// does not get to steady state

@@ -2047,7 +2047,7 @@ pro prof2, delay=delay, png=png, source=source
 		ff2=ff[where(tt*24*3600.0 le time)]
 		ploterror, tobs, Fobs, Fobse,/xlog, xtitle=textoidl('Time (d)'), $
 			ytitle=textoidl('T_{eff} (eV)'), charsize=1.5, $
-			xrange=[1.0,5d3],xstyle=1,psym=2,yrange=[min(Fobs)-20.0,max(Fobs)+40.0], ystyle=1
+			xrange=[1.0,5d3],xstyle=1,psym=2,yrange=[min(Fobs)-20.0,max(Fobs)+80.0], ystyle=1
 		if (ntt gt 1) then begin
 			oplot,tt2,FF2,linestyle=0
 		endif
