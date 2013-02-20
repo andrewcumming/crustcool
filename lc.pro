@@ -2033,12 +2033,14 @@ pro prof2, delay=delay, png=png, source=source
 		T=data(1,*)
 		F=data(2,*)
 		beta=data(12,*)
+		gamma=data(13,*)
 
 		; plot upper panel
 		erase
-		plot, y, T, /xlog, /ylog,charsize=1.2, ytitle=textoidl('T (K)'),$
+		plot, y[where(gamma gt 175.0)], T[where(gamma gt 175.0)], /xlog, /ylog,charsize=1.2, ytitle=textoidl('T (K)'),$
 				xtitle=textoidl('P (g cm^{-2})'), yrange=[1e7,1e10],ystyle=1, $
 				xrange=[1d23,8d32], xstyle=1
+		oplot, y[where(gamma le 175.0)], T[where(gamma le 175.0)], thick=3, linestyle=0
 		oplot, y0, T0, linestyle=1
 		oplot, ym, Tm, linestyle=2
 

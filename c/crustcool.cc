@@ -590,16 +590,17 @@ void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar)
 	if (j % 1 == 0 || j==ODE.kount) {   // output every nth cycle
 		// temperature profile
 		fprintf(fp,"%lg\n",G.ZZ*(timesofar+ODE.get_x(j)));
-		double del;
+		double del,gamma;
 		for (int i=1; i<=G.N+1; i++) {      
 			EOS.P=G.P[i]; EOS.T8=1e-8*ODE.get_y(i,j); EOS.rho=G.rho[i];//EOS.find_rho();
 			if (i>1) del = (ODE.get_y(i+1,j)-ODE.get_y(i-1,j))/(2.0*G.dx*ODE.get_y(i,j));
 			else del=1.0;
-			fprintf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", 
+			gamma = pow(EOS.Z[1]*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*EOS.A[1]*1.67e-24),1.0/3.0)/(1.38e-16*1e8*EOS.T8);
+			fprintf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", 
 				G.P[i], ODE.get_y(i,j), G.F[i], G.NU[i],
 				G.g*(G.F[i+1]-G.F[i])/(G.dx*G.P[i]), EOS.rho, EOS.CP()*EOS.rho, 
 				ODE.get_d(i,j),1e8*pow(EOS.P/2.521967e17,0.25), EOS.opac(), del, EOS.del_ad(),
-				2.521967e-15*pow(ODE.get_y(i,j),4)/G.P[i]);	
+				2.521967e-15*pow(ODE.get_y(i,j),4)/G.P[i], gamma);	
  		}
 	}
 }
