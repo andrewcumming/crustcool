@@ -613,59 +613,54 @@ void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar)
 void derivs(double t, double T[], double dTdt[])
 // calculates the time derivatives for the whole grid
 {
-	//	printf("&& %lg\n", ODE.timestep);
-  for (int j=1; j<=G.N; j++) calculate_vars(j,T[j], G.P[j], &G.CP[j], &G.K[j], &G.NU[j],&G.EPS[j]);
-  outer_boundary(T[1],G.K[1],G.CP[1],G.NU[1],G.EPS[1],&T[0],&G.K[0],&G.CP[0],&G.NU[0],&G.EPS[0]);
-  inner_boundary(T[G.N],G.K[G.N],G.CP[G.N],G.NU[G.N],G.EPS[G.N],
+	// First calculate quantities at each grid point
+	for (int j=1; j<=G.N; j++) calculate_vars(j,T[j], G.P[j], &G.CP[j], &G.K[j], &G.NU[j],&G.EPS[j]);
+  	outer_boundary(T[1],G.K[1],G.CP[1],G.NU[1],G.EPS[1],&T[0],&G.K[0],&G.CP[0],&G.NU[0],&G.EPS[0]);
+  	inner_boundary(T[G.N],G.K[G.N],G.CP[G.N],G.NU[G.N],G.EPS[G.N],
 				&T[G.N+1],&G.K[G.N+1],&G.CP[G.N+1],&G.NU[G.N+1],&G.EPS[G.N+1]);
-  for (int i=1; i<=G.N+1; i++)   G.F[i] = calculate_heat_flux(i,T);	
 
+	// determine the fluxes at the half-grid points
+  	for (int i=1; i<=G.N+1; i++)   G.F[i] = calculate_heat_flux(i,T);	
+
+	// find the ocean-crust boundary
 	int imelt=0;
-	double AA=2.4e11;
-	if (G.accreting) AA=0.0;
-
 	if (G.include_latent_heat) {
 		int flag =1;
   		for (int i=2; i<=G.N; i++) {
-			double Gm = G.GammaT[i-1]/(0.5*(T[i-1]+T[i]));
 			double Gp = G.GammaT[i]/(0.5*(T[i]+T[i+1]));
 			if (flag && Gp > 175.0) {
 				imelt = i;
 				flag=0;
-				double dxdT = (4.0/T[i]) * pow(175.0/Gm,4.0)/ (pow(Gp/Gm,4.0)-1.0);
-				//printf("derivs: %d %lg %lg %lg %lg\n", i, G.CP[i], G.LoverT[i]*T[i], dxdT, G.LoverT[i]*T[i]*dxdT);
-				//G.CP[i]+= G.LoverT[i]*T[i] * dxdT - AA;
 			}
 		}
 	}
 	
+	// Turn off convection during the accretion phase, or when
+	// the ocean boundary moves to y<1e10
+	double AA=2.4e11;
+	if (G.accreting) AA=0.0;
 	if (G.P[imelt] < G.g*1e10) AA=0.0;
-	//if (imelt == 0) AA=0.0;
-	//if (imelt == 0 && !G.accreting) printf("Failed to find imelt!!   %d\n",G.include_latent_heat);
-/*
-	if (T[i] > G.Tmelt[i] && T[i+1] < G.Tmelt[i+1]) {
-		double latentHeat = 0.805 * 1.38e-16*T[i]/(EOS.A[1]*1.67e-24);
-	//	dTdt[i] += latentHeat/(ODE.timestep*G.CP[i]);
-	dTdt[i] += -(latentHeat * 4.0 * G.y[i] *dTdt[i]/T[i])/(G.dx*G.CP[i]*G.y[i]);
-	//	printf("here2 %d %lg %lg %lg %lg %lg %lg %lg\n", i, G.y[i], T[i], G.Tmelt[i], T[i-1], G.Tmelt[i-1],latentHeat,0.0);
-}
-*/
+
+	// Calculate dT/dt_melt
 	if (G.include_latent_heat && imelt>0) {
 		int i=imelt;
 		dTdt[i] = G.g*(G.F[i+1]-G.F[i])/(G.dx*G.CP[i]*G.P[i]);
 		double corr=(1.0 - AA/(G.dx*G.CP[i]));
-		//if (dTdt[i] < 0.0) AA=0.0;
-		if (corr<0.0) dTdt[i]/=corr;
+		dTdt[i]/=corr;
 	}
-	
+
+	// Add in the convective flux where liquid
+	for (int i=1; i<=G.N+1; i++) {
+		if (G.GammaT[i]/(0.5*(T[i]+T[i+1]))<175.0) 
+			G.F[i+1]-=AA*0.5*(G.P[i]+G.P[i+1])*dTdt[imelt]/G.g;
+	}
+  		
+	// Calculate the derivatives dT/dt
 	for (int i=1; i<=G.N; i++) {
 		if (i != imelt || !G.include_latent_heat) {
   			dTdt[i]=G.g*(G.F[i+1]-G.F[i])/(G.dx*G.CP[i]*G.P[i]);
 			if (G.nuflag) dTdt[i]+=-(G.NU[i]/G.CP[i]);
 			if (G.accreting) dTdt[i]+=G.EPS[i]/G.CP[i];
-			if (G.GammaT[i]/(0.5*(T[i]+T[i+1])) < 175.0 && G.include_latent_heat) {
-				dTdt[i]+=-(AA/G.CP[i])*dTdt[imelt];
-			}
 		}
 	}
   	dTdt[G.N+1]=0.0;
