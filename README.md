@@ -55,7 +55,9 @@ The file `init.dat` sets up the run. The parameters are
 	instant		heat "instantly" if =1, otherwise model the outburst
 
 	toutburst	accretion outburst duration in years
-	accreted	crust composition  1=accreted crust   2=equilibrium crust
+	accreted	crust composition  1=accreted crust (HZ1990)
+					0=equilibrium crust (HP1994;DH2001)
+					2=accreted crust (HZ2003)
 	
 You can include comments (`#`) in the `init.dat` file, blank lines are ignored, and lines beginning with `>` are (optionally) to specify the piecewise initial temperature profile.
 
