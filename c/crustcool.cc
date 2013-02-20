@@ -595,7 +595,7 @@ void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar)
 			EOS.P=G.P[i]; EOS.T8=1e-8*ODE.get_y(i,j); EOS.rho=G.rho[i];//EOS.find_rho();
 			if (i>1) del = (ODE.get_y(i+1,j)-ODE.get_y(i-1,j))/(2.0*G.dx*ODE.get_y(i,j));
 			else del=1.0;
-			gamma = pow(EOS.Z[1]*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*EOS.A[1]*1.67e-24),1.0/3.0)/(1.38e-16*1e8*EOS.T8);
+			gamma = G.GammaT[i]/(1e8*EOS.T8);
 			fprintf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", 
 				G.P[i], ODE.get_y(i,j), G.F[i], G.NU[i],
 				G.g*(G.F[i+1]-G.F[i])/(G.dx*G.P[i]), EOS.rho, EOS.CP()*EOS.rho, 
@@ -1335,7 +1335,7 @@ void set_up_grid(int ngrid, const char *fname)
   	G.N=ngrid;   // number of grid points
 	G.Pb=6.5e32; // column depth at the crust/core boundary
 						  // we used to set this to y=3e18 but now fix pressure
-  	G.Pt=G.yt*2.28e14;   // pressure at the top
+  	G.Pt=G.yt*G.g;   // pressure at the top
 
 	Spline QiSpline;
 	Spline QhSpline;
@@ -1399,7 +1399,7 @@ void set_up_grid(int ngrid, const char *fname)
   	double *dens = vector(1,1001);
   	double *pres = vector(1,1001);
   	for (int i=1; i<=1001; i++) {
-		dens[i] = 7.0 + (i-1)*(14.3-7.0)*0.001;
+		dens[i] = 5.0 + (i-1)*(14.3-5.0)*0.001;
 		EOS.rho = pow(10.0,dens[i]);
 		set_composition();
 		pres[i] = log10(EOS.ptot());

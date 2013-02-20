@@ -2027,7 +2027,7 @@ pro prof2, delay=delay, png=png, source=source
 		endif
 
 		; read in next batch of data
-		data=dblarr(13,ngrid)
+		data=dblarr(14,ngrid)
 		readf, lun, data
 		y=data(0,*)
 		T=data(1,*)
@@ -2037,19 +2037,24 @@ pro prof2, delay=delay, png=png, source=source
 
 		; plot upper panel
 		erase
-		plot, y[where(gamma gt 175.0)], T[where(gamma gt 175.0)], /xlog, /ylog,charsize=1.2, ytitle=textoidl('T (K)'),$
+		plot, y, T, /xlog, /ylog,charsize=1.2, ytitle=textoidl('T (K)'),$
 				xtitle=textoidl('P (g cm^{-2})'), yrange=[1e7,1e10],ystyle=1, $
-				xrange=[1d23,8d32], xstyle=1
-		oplot, y[where(gamma le 175.0)], T[where(gamma le 175.0)], thick=3, linestyle=0
+				xrange=[1d23,8d32], xstyle=1,/nodata
+		ind = where(gamma le 175.0,cnt)
+		if (cnt gt 0) then begin
+			oplot, y[ind], T[ind], thick=3, linestyle=0, col=80
+		endif
+		oplot, y[where(gamma ge 175.0)], T[where(gamma ge 175.0)], thick=3, linestyle=0, col=120
 		oplot, y0, T0, linestyle=1
 		oplot, ym, Tm, linestyle=2
+;		oplot, y,T*gamma/175.0, linestyle=2, col=250
 
 		; plot lower panel
 		tt2=tt[where(tt*24*3600.0 le time,ntt)]
 		ff2=ff[where(tt*24*3600.0 le time)]
 		ploterror, tobs, Fobs, Fobse,/xlog, xtitle=textoidl('Time (d)'), $
 			ytitle=textoidl('T_{eff} (eV)'), charsize=1.5, $
-			xrange=[0.1,5d3],xstyle=1,psym=2,yrange=[min(Fobs)-20.0,max(Fobs)+20.0], ystyle=1
+			xrange=[0.1,5d3],xstyle=1,psym=2,yrange=[min(Fobs)-20.0,max(Fobs)+60.0], ystyle=1
 		if (ntt gt 1) then begin
 			oplot,tt2,FF2,linestyle=0
 		endif
@@ -2063,7 +2068,7 @@ pro prof2, delay=delay, png=png, source=source
 		if keyword_set(png) then begin
 			if ((alog10(time)-alog10(oldtime)) gt 0.01) then begin
 				count++	
-				image = TVRD(0,0,!D.X_Size,!D.Y_Size,True=truecolor, Order=order)
+				image = TVRD(0,0,!D.X_Size,!D.Y_Size,True=1, Order=order)
 				filename=string(format='("png/",I03,".png")',count)
 				Write_PNG,filename,image
 				print, 'Writing png for t=',time, alog10(time), alog10(oldtime), count
