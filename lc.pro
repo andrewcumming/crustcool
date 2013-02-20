@@ -2059,7 +2059,7 @@ pro prof2, delay=delay, png=png, source=source
 		endif
 
 		if keyword_set(png) then begin
-			if ((alog10(time)-alog10(oldtime)) gt 0.05) then begin
+			if ((alog10(time)-alog10(oldtime)) gt 0.01) then begin
 				count++	
 				image = TVRD(0,0,!D.X_Size,!D.Y_Size,True=truecolor, Order=order)
 				filename=string(format='("png/",I03,".png")',count)
