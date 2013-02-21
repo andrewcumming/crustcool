@@ -646,7 +646,7 @@ void derivs(double t, double T[], double dTdt[])
 		G.CP[imelt]+= 4.0*G.LoverT[imelt] * pow(175.0/Gm,4.0)/ (pow(Gp/Gm,4.0)-1.0);
 	}
 	
-	// now include convective fluxes (only if we are cooling)
+	// include convective fluxes (only if we are cooling)
 	if (G.include_convection && !G.accreting && imelt>2) {
 		double AA=2.4e11;
 
@@ -655,7 +655,10 @@ void derivs(double t, double T[], double dTdt[])
 		dTdt[imelt] = G.g*(G.F[imelt+1]-G.F[imelt])/(G.dx*G.CP[imelt]*G.P[imelt]);
 
 		// Add in the convective flux where liquid
-		for (int i=2; i<imelt; i++) G.F[i+1]-=AA*0.5*(G.P[i]+G.P[i+1])*dTdt[imelt]/G.g;
+		for (int i=2; i<imelt; i++) {
+			double P2 = exp(log(G.P[i])+0.5*G.dx);
+			G.F[i+1]-=AA*P2*dTdt[imelt]/G.g;
+		}
 	}
 	
 	// Calculate the derivatives dT/dt
