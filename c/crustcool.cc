@@ -651,13 +651,20 @@ void derivs(double t, double T[], double dTdt[])
 		double AA=2.4e11;
 
 		// First calculate dT/dt for the zone containing the liquid/solid boundary
-		G.CP[imelt] -= AA/G.dx;
+		G.CP[imelt] += AA/G.dx;
 		dTdt[imelt] = G.g*(G.F[imelt+1]-G.F[imelt])/(G.dx*G.CP[imelt]*G.P[imelt]);
+
+		// If the boundary is moving in, then there shouldn't be any convection, 
+		// so turn it off. Although this doesn't seem to affect the lightcurves..
+		if (dTdt[imelt] > 0.0) {
+			G.CP[imelt] -= AA/G.dx;
+			AA=0.0;
+		}
 
 		// Add in the convective flux where liquid
 		for (int i=2; i<imelt; i++) {
 			double P2 = exp(log(G.P[i])+0.5*G.dx);
-			G.F[i+1]-=AA*P2*dTdt[imelt]/G.g;
+			G.F[i+1]+=AA*P2*dTdt[imelt]/G.g;
 		}
 	}
 	
@@ -722,7 +729,9 @@ double calculate_heat_flux(int i, double *T)
 }
 
 double dTdt(int i, double *T)
-// calculates the time derivative for grid cell i (used when calculating the jacobian)
+// calculates the time derivative for grid cell i 
+// This is used when calculating the jacobian in tri-diagonal form
+// --- i.e. as long as include_convection is not set
 {
 	int k=i-1; if (k<1) k=1;
 	int k2=i+1; if (k2>G.N+1) k2=G.N+1;
@@ -1433,8 +1442,10 @@ void set_up_grid(int ngrid, const char *fname)
 		EOS.rho = rho2;
 		set_composition();
 		// GammaT[i] refers to i+1/2
-//		G.GammaT[i] = pow(26.0*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*56.0*1.67e-24),1.0/3.0)/1.38e-16;
-		G.GammaT[i] = pow(EOS.Z[1]*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*EOS.A[1]*1.67e-24),1.0/3.0)/1.38e-16;
+		// The following line uses a composition of 56Fe to calculate gamma,
+		// it avoids jumps in the melting point associated with e-capture boundaries
+		G.GammaT[i] = pow(26.0*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*56.0*1.67e-24),1.0/3.0)/1.38e-16;
+//		G.GammaT[i] = pow(EOS.Z[1]*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*EOS.A[1]*1.67e-24),1.0/3.0)/1.38e-16;
 			
     	G.rho[i] = pow(10.0,RHO.get(log10(G.P[i])));
 		EOS.rho = G.rho[i];

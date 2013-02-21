@@ -1,5 +1,3 @@
-
-
 pro pl
 
 	readcol, 'data/fit_joint_wchandra_BB_2012july28_pu.out', time, T, T1,T2, uflux, uflux1, uflux2, A,Aerr, $
