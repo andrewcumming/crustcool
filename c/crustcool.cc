@@ -72,7 +72,7 @@ struct globals {
 	double *obs_time, *obs_temp, *obs_err;
 	int obs_n;
 	int output;
-	int include_latent_heat;
+	int include_latent_heat, include_convection;
 	int running_from_command_line;
 	int hardwireQ;
 	double Qrho;
@@ -125,6 +125,7 @@ int main(int argc, char *argv[])
 	G.radius=11.2;
 	int ngrid=100;
 	G.include_latent_heat=0;
+	G.include_convection=0;
 	G.nuflag = 1;
 	G.force_precalc=0;
 	G.Qinner=-1.0;
@@ -199,6 +200,7 @@ int main(int argc, char *argv[])
 			if (!strncmp(s,"accreted",8)) EOS.accr=(int) x;
 			if (!strncmp(s,"angle_mu",8)) G.angle_mu=x;
 			if (!strncmp(s,"latent_heat",11)) G.include_latent_heat=(int) x;
+			if (!strncmp(s,"convection",10)) G.include_convection=(int) x;			
 			if (!strncmp(s,"cooling_bc",10)) G.force_cooling_bc=(int) x;
 			if (!strncmp(s,"extra_heating",13)) G.extra_heating=(int) x;
 		}
@@ -208,6 +210,14 @@ int main(int argc, char *argv[])
 
 	if (G.Qinner == -1.0) G.Qinner=EOS.Q;
 	if (G.energy_deposited_inner == -1.0) G.energy_deposited_inner = G.energy_deposited_outer;
+	
+	if (EOS.Q>=0.0) {   	// the Q values are assigned directly in 'calculate_vars'
+		G.hardwireQ=1;
+		printf("Using supplied Qimp values and HZ composition and heating.\n");
+	} else {
+		G.hardwireQ=0;
+		printf("Using Qimp, composition, and heating from the crust model.\n");
+	}
 		
 	//	read_in_data("data/1731");  // READ IN observed lightcurve
 		read_in_data("data/1659");  // READ IN observed lightcurve
@@ -625,12 +635,17 @@ void derivs(double t, double T[], double dTdt[])
 
 	// find the ocean-crust boundary
 	int imelt=0;
-	if (G.include_latent_heat) {
+	if (G.include_latent_heat || G.include_convection) {
 		int flag =1;
   		for (int i=2; i<=G.N; i++) {
 			double Gp = G.GammaT[i]/(0.5*(T[i]+T[i+1]));
+			double Gm = G.GammaT[i-1]/(0.5*(T[i]+T[i-1]));
 			if (flag && Gp > 175.0) {
 				imelt = i;
+				if (G.include_latent_heat) {
+					double dxdT = (4.0/T[i]) * pow(175.0/Gm,4.0)/ (pow(Gp/Gm,4.0)-1.0);
+					G.CP[i]+= G.LoverT[i]*T[i] * dxdT;
+				}
 				flag=0;
 			}
 		}
@@ -643,22 +658,22 @@ void derivs(double t, double T[], double dTdt[])
 	if (G.P[imelt] < G.g*2e9) AA=0.0;
 
 	// Calculate dT/dt_melt
-	if (G.include_latent_heat && imelt>0) {
+	if (G.include_convection && imelt>0) {
 		int i=imelt;
 		dTdt[i] = G.g*(G.F[i+1]-G.F[i])/(G.dx*G.CP[i]*G.P[i]);
 		double corr=(1.0 - AA/(G.dx*G.CP[i]));
 		dTdt[i]/=corr;
-	}
 
-	// Add in the convective flux where liquid
-	for (int i=1; i<=G.N+1; i++) {
-		if (G.GammaT[i]/(0.5*(T[i]+T[i+1]))<175.0) 
-			G.F[i+1]-=AA*0.5*(G.P[i]+G.P[i+1])*dTdt[imelt]/G.g;
+		// Add in the convective flux where liquid
+		for (int i=1; i<=G.N+1; i++) {
+			if (G.GammaT[i]/(0.5*(T[i]+T[i+1]))<175.0) 
+				G.F[i+1]-=AA*0.5*(G.P[i]+G.P[i+1])*dTdt[imelt]/G.g;
+		}
 	}
-  		
+	
 	// Calculate the derivatives dT/dt
 	for (int i=1; i<=G.N; i++) {
-		if (i != imelt || !G.include_latent_heat) {
+		if (i != imelt || !G.include_convection) {
   			dTdt[i]=G.g*(G.F[i+1]-G.F[i])/(G.dx*G.CP[i]*G.P[i]);
 			if (G.nuflag) dTdt[i]+=-(G.NU[i]/G.CP[i]);
 			if (G.accreting) dTdt[i]+=G.EPS[i]/G.CP[i];
@@ -741,19 +756,7 @@ double dTdt(int i, double *T)
 	double f=G.g*(calculate_heat_flux(i+1,T)-calculate_heat_flux(i,T))/(G.dx*G.CP[i]*G.P[i]);
 	if (G.nuflag) f+=-(G.NU[i]/G.CP[i]);
 	if (G.accreting) f+=G.EPS[i]/G.CP[i];
-	
-	/*
-	if (G.include_latent_heat) {
-		if (T[i] > G.Tmelt[i] && T[i+1] < G.Tmelt[i+1]) {
-			double latentHeat = 0.805 * 1.38e-16*T[i]/(EOS.A[1]*1.67e-24);
-			double df=-(latentHeat * 4.0 * G.y[i] *f/T[i]);
-		//	printf("here %d %lg %lg %lg %lg %lg %lg %lg\n", i, G.y[i], T[i], G.Tmelt[i], T[i-1], G.Tmelt[i-1], latentHeat,df);
-			f += df/(G.dx*G.CP[i]*G.y[i]);
-			//f += latentHeat/(ODE.timestep*G.CP[i]);
-			
-		}
-		}
-		*/
+
 	return f;
 }
 
@@ -781,49 +784,45 @@ void inner_boundary(double TN, double KN, double CPN, double NUN, double EPSN,
 
 void jacobn(double t, double *T, double *dfdt, double **dfdT, int n)
 // calculates the Jacobian numerically
-// This version calculates the full set of derivatives each time
-// [The commented-out version following only calculates the tri-diagonal parts,
-// which is faster, but for the ocean convection, we need the whole thing]
 {
-  double e=0.001;
-	double *f;
-	f=vector(1,n);
-  // this assumes the arrays dfdt and dfdT are preinitialized to zero (I changed odeint to do this)
-  for (int i=1; i<n; i++) {
-    if (i>1) {
-		T[i-1]*=1.0+e; derivs(t,T,f);   //f=dTdt(i,T);
-      T[i-1]/=1.0+e; dfdT[i][i-1]=(f[i]-dfdt[i])/(T[i-1]*e);
-    }
-	T[i]*=1.0+e; derivs(t,T,f);    //f=dTdt(i,T);
-    T[i]/=1.0+e; dfdT[i][i]=(f[i]-dfdt[i])/(T[i]*e);
-    if (i<=n) {
-		T[i+1]*=1.0+e; derivs(t,T,f); //f=dTdt(i,T);
-      T[i+1]/=1.0+e; dfdT[i][i+1]=(f[i]-dfdt[i])/(T[i+1]*e);
-    }
-  }
-free_vector(f,1,n);
-}  
+  	double e=0.001;
 
-/*
-void jacobn(double t, double *T, double *dfdt, double **dfdT, int n)
-// calculates the Jacobian numerically
-{
-  double f, e=0.001;
-  // this assumes the arrays dfdt and dfdT are preinitialized to zero (I changed odeint to do this)
-  for (int i=1; i<n; i++) {
-    if (i>1) {
-      T[i-1]*=1.0+e; f=dTdt(i,T);
-      T[i-1]/=1.0+e; dfdT[i][i-1]=(f-dfdt[i])/(T[i-1]*e);
-    }
-    T[i]*=1.0+e; f=dTdt(i,T);
-    T[i]/=1.0+e; dfdT[i][i]=(f-dfdt[i])/(T[i]*e);
-    if (i<=n) {
-      T[i+1]*=1.0+e; f=dTdt(i,T);
-      T[i+1]/=1.0+e; dfdT[i][i+1]=(f-dfdt[i])/(T[i+1]*e);
-    }
-  }
+	if (G.include_convection) {
+	// This version calculates the full set of derivatives each time
+		double *f;
+		f=vector(1,n);
+  		for (int i=1; i<n; i++) {
+    		if (i>1) {
+				T[i-1]*=1.0+e; derivs(t,T,f);
+      			T[i-1]/=1.0+e; dfdT[i][i-1]=(f[i]-dfdt[i])/(T[i-1]*e);
+    		}
+			T[i]*=1.0+e; derivs(t,T,f);
+    		T[i]/=1.0+e; dfdT[i][i]=(f[i]-dfdt[i])/(T[i]*e);
+    		if (i<=n) {
+				T[i+1]*=1.0+e; derivs(t,T,f);
+      			T[i+1]/=1.0+e; dfdT[i][i+1]=(f[i]-dfdt[i])/(T[i+1]*e);
+    		}
+  		}
+		free_vector(f,1,n);
+		
+	} else {
+		// takes advantage of the tri-diagonal nature to calculate as few dTdt's as needed
+		double f;
+	  // this assumes the arrays dfdt and dfdT are preinitialized to zero (I changed odeint to do this)
+	  for (int i=1; i<n; i++) {
+	    if (i>1) {
+	      T[i-1]*=1.0+e; f=dTdt(i,T);
+	      T[i-1]/=1.0+e; dfdT[i][i-1]=(f-dfdt[i])/(T[i-1]*e);
+	    }
+	    T[i]*=1.0+e; f=dTdt(i,T);
+	    T[i]/=1.0+e; dfdT[i][i]=(f-dfdt[i])/(T[i]*e);
+	    if (i<=n) {
+	      T[i+1]*=1.0+e; f=dTdt(i,T);
+	      T[i+1]/=1.0+e; dfdT[i][i+1]=(f-dfdt[i])/(T[i+1]*e);
+	    }
+	  }
+	}
 }  
-*/
 
 
 void calculate_vars(int i, double T, double P, double *CP, double *K, double *NU,double *EPS)
@@ -1388,8 +1387,6 @@ void set_up_grid(int ngrid, const char *fname)
 
 	}
 
-
-
   	// We will compute density at each grid point
   	// the only complication is that composition depends on the local
   	// density, so the approach we take is to 
@@ -1451,23 +1448,23 @@ void set_up_grid(int ngrid, const char *fname)
 		G.Qheat[i]=QhSpline.get(log10(rho2))-QhSpline.get(log10(rho1));
 		if (G.Qheat[i]<0.0) G.Qheat[i]=0.0;
 		Qtot+=G.Qheat[i];
+
+		if (!G.hardwireQ) {
+			G.Qimp[i]=QiSpline.get(log10(G.rho[i]));
+			if (G.Qimp[i] < 0.0) G.Qimp[i]=0.0;
+		}
 	
+		EOS.rho = rho2;
+		set_composition();
+		// GammaT[i] refers to i+1/2
+		G.GammaT[i] = pow(EOS.Z[1]*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*EOS.A[1]*1.67e-24),1.0/3.0)/1.38e-16;
+			
     	G.rho[i] = pow(10.0,RHO.get(log10(G.P[i])));
 		EOS.rho = G.rho[i];
 		set_composition();
 		
 		G.Tmelt[i] = 5e8*pow(G.P[i]/(2.28e14*1.9e13),0.25)*pow(EOS.Z[1]/30.0,5.0/3.0);
 		G.LoverT[i] = 0.8 * 1.38e-16 /(EOS.A[1]*1.67e-24);
-		if (EOS.Q>=0.0) {
-			G.hardwireQ=1;
-			// the Q values are assigned directly in 'calculate_vars'
-			if (i==0) printf("Using supplied Qimp values and HZ composition and heating.\n");
-		} else {
-			G.hardwireQ=0;
-			G.Qimp[i]=QiSpline.get(log10(G.rho[i]));
-			if (G.Qimp[i] < 0.0) G.Qimp[i]=0.0;
-			if (i==0) printf("Using Qimp, composition, and heating from the crust model.\n");
-		}
 		fprintf(fp, "%d %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", i, G.P[i], G.rho[i], EOS.A[1]*(1.0-EOS.Yn), 
 						EOS.Z[1], EOS.Yn,EOS.A[1],EOS.ptot(), G.Tmelt[i], G.GammaT[i]/1e8, G.LoverT[i]*1e8,
 						AASpline.get(log10(G.rho[i])),  ZZSpline.get(log10(G.rho[i])), G.Qimp[i], G.Qheat[i]);
