@@ -1992,7 +1992,7 @@ pro prof2, delay=delay, png=png, source=source
 	;FF = 1.38d-16*(FF/5.67d-5)^0.25/(1.6d-12*1.31)
 	;tt*=1.31
 	; read lightcurve for 1659
-	readcol, 'gon_out/prof_1659_1_y9', ttx,FFx, format=('D,X,X,X,D')
+	readcol, 'gon_out/prof_XTEJ_1', ttx,FFx, format=('D,X,X,X,D')
 	ttx/=(24*3600.0)
 	FFx = 1.38d-16*FFx/1.6d-12  ;(FFx/5.67d-5)^0.25/(1.6d-12)
 	;ttx/=1.31
