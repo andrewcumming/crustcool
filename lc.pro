@@ -2048,7 +2048,7 @@ pro prof2, delay=delay, png=png, source=source
 		oplot, y0, T0, linestyle=1
 		oplot, ym, Tm, linestyle=2
 		;		oplot, y,T*gamma/175.0, linestyle=2, col=250
-				oplot, ym,Tmelt, linestyle=2, col=250
+		;oplot, ym,Tmelt, linestyle=2   ; plot Tmelt which is at the grid centers
 
 		; plot lower panel
 		tt2=tt[where(tt*24*3600.0 le time,ntt)]
