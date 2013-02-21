@@ -640,7 +640,7 @@ void derivs(double t, double T[], double dTdt[])
 	// the ocean boundary moves to y<1e10
 	double AA=2.4e11;
 	if (G.accreting) AA=0.0;
-	//if (G.P[imelt] < G.g*1e10) AA=0.0;
+	if (G.P[imelt] < G.g*2e9) AA=0.0;
 
 	// Calculate dT/dt_melt
 	if (G.include_latent_heat && imelt>0) {
