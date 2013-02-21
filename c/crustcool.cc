@@ -631,56 +631,40 @@ void derivs(double t, double T[], double dTdt[])
 				&T[G.N+1],&G.K[G.N+1],&G.CP[G.N+1],&G.NU[G.N+1],&G.EPS[G.N+1]);
 
 	// determine the fluxes at the half-grid points
+	//  G.F[i] is the flux at i-1/2
   	for (int i=1; i<=G.N+1; i++)   G.F[i] = calculate_heat_flux(i,T);	
 
 	// find the ocean-crust boundary
+	// imelt is set to be the first zone going inwards where Gamma at i+1/2 is > 175
 	int imelt=0;
-	if (G.include_latent_heat || G.include_convection) {
-		int flag =1;
-  		for (int i=2; i<=G.N; i++) {
-			double Gp = G.GammaT[i]/(0.5*(T[i]+T[i+1]));
-			double Gm = G.GammaT[i-1]/(0.5*(T[i]+T[i-1]));
-			if (flag && Gp > 175.0) {
-				imelt = i;
-				if (G.include_latent_heat) {
-					double dxdT = (4.0/T[i]) * pow(175.0/Gm,4.0)/ (pow(Gp/Gm,4.0)-1.0);
-					G.CP[i]+= G.LoverT[i]*T[i] * dxdT;
-				}
-				flag=0;
-			}
-		}
+	while (imelt++, G.GammaT[imelt]/(0.5*(T[imelt]+T[imelt+1])) < 175.0);
+	
+	// include the latent heat as an additional term in the heat capacity at the boundary
+	if (G.include_latent_heat) {
+		double Gp = G.GammaT[imelt]/(0.5*(T[imelt]+T[imelt+1]));
+		double Gm = G.GammaT[imelt-1]/(0.5*(T[imelt]+T[imelt-1]));
+		G.CP[imelt]+= 4.0*G.LoverT[imelt] * pow(175.0/Gm,4.0)/ (pow(Gp/Gm,4.0)-1.0);
 	}
 	
-	// Turn off convection during the accretion phase, or when
-	// the ocean boundary moves to y<1e10
-	double AA=2.4e11;
-	if (G.accreting) AA=0.0;
-	if (G.P[imelt] < G.g*2e9) AA=0.0;
+	// now include convective fluxes (only if we are cooling)
+	if (G.include_convection && !G.accreting && imelt>2) {
+		double AA=2.4e11;
 
-	// Calculate dT/dt_melt
-	if (G.include_convection && imelt>0) {
-		int i=imelt;
-		dTdt[i] = G.g*(G.F[i+1]-G.F[i])/(G.dx*G.CP[i]*G.P[i]);
-		double corr=(1.0 - AA/(G.dx*G.CP[i]));
-		dTdt[i]/=corr;
+		// First calculate dT/dt for the zone containing the liquid/solid boundary
+		G.CP[imelt] -= AA/G.dx;
+		dTdt[imelt] = G.g*(G.F[imelt+1]-G.F[imelt])/(G.dx*G.CP[imelt]*G.P[imelt]);
 
 		// Add in the convective flux where liquid
-		for (int i=1; i<=G.N+1; i++) {
-			if (G.GammaT[i]/(0.5*(T[i]+T[i+1]))<175.0) 
-				G.F[i+1]-=AA*0.5*(G.P[i]+G.P[i+1])*dTdt[imelt]/G.g;
-		}
+		for (int i=2; i<imelt; i++) G.F[i+1]-=AA*0.5*(G.P[i]+G.P[i+1])*dTdt[imelt]/G.g;
 	}
 	
 	// Calculate the derivatives dT/dt
 	for (int i=1; i<=G.N; i++) {
-		if (i != imelt || !G.include_convection) {
-  			dTdt[i]=G.g*(G.F[i+1]-G.F[i])/(G.dx*G.CP[i]*G.P[i]);
-			if (G.nuflag) dTdt[i]+=-(G.NU[i]/G.CP[i]);
-			if (G.accreting) dTdt[i]+=G.EPS[i]/G.CP[i];
-		}
+  		dTdt[i]=G.g*(G.F[i+1]-G.F[i])/(G.dx*G.CP[i]*G.P[i]);
+		if (G.nuflag) dTdt[i]+=-(G.NU[i]/G.CP[i]);
+		if (G.accreting) dTdt[i]+=G.EPS[i]/G.CP[i];
 	}
   	dTdt[G.N+1]=0.0;
-
 }
 
 double calculate_heat_flux(int i, double *T)
@@ -764,7 +748,7 @@ void outer_boundary(double T1, double K1, double CP1, double NU1, double EPS1,
 		double *T0, double *K0, double *CP0, double *NU0, double *EPS0)  
 {
 	if (G.accreting && G.Tt>0.0) *T0=G.Tt;   // constant temperature during accretion
-	else *T0=T1*(8.0-G.dx)/(8.0+G.dx);   // flux propto T^4
+	else *T0=T1*(8.0-G.dx)/(8.0+G.dx);   // assumes radiative zero solution, F\propto T^4
 	*K0=K1; *CP0=CP1;
 	if (G.nuflag) *NU0=NU1; else *NU0=0.0;
 	if (G.accreting) *EPS0=EPS1; else *EPS0=0.0;
