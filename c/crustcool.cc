@@ -1412,17 +1412,6 @@ void set_up_grid(int ngrid, const char *fname)
 
 	FILE *fp = fopen("gon_out/grid_profile","w");
 
-	// calculate Gamma x T at the half grid points
-	for (int i=0; i<=G.N+1; i++) {
-		double x=log(G.Pt)+G.dx*(i-1);
-		double Ph = exp(x+0.5*G.dx);
-		double rhoh = pow(10.0,RHO.get(log10(Ph)));
-		EOS.rho = rhoh;
-		set_composition();
-		// GammaT[i] refers to i+1/2
-		G.GammaT[i] = pow(EOS.Z[1]*4.8023e-10,2.0)*pow(4.0*PI*rhoh/(3.0*EOS.A[1]*1.67e-24),1.0/3.0)/1.38e-16;
-	}
-
 	double Qtot=0.0;
   	for (int i=0; i<=G.N+2; i++) {
     	double x=log(G.Pt)+G.dx*(i-1);
@@ -1444,6 +1433,7 @@ void set_up_grid(int ngrid, const char *fname)
 		EOS.rho = rho2;
 		set_composition();
 		// GammaT[i] refers to i+1/2
+//		G.GammaT[i] = pow(26.0*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*56.0*1.67e-24),1.0/3.0)/1.38e-16;
 		G.GammaT[i] = pow(EOS.Z[1]*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*EOS.A[1]*1.67e-24),1.0/3.0)/1.38e-16;
 			
     	G.rho[i] = pow(10.0,RHO.get(log10(G.P[i])));
