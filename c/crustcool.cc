@@ -166,11 +166,13 @@ int main(int argc, char *argv[])
 	char s1[100];
 	char s[100];
 	double x;				
+	int commented=0;
 	while (!feof(fp)) {   // we read the file line by line
 		char *e=fgets(s1,200,fp);		
 		// ignoring lines that begin with \n (blank) or with # (comments)
 		// or with $ (temperature profile)
-		if (strncmp(s1,"#",1) && strncmp(s1,"\n",1) && strncmp(s1,">",1)) {
+		if (!strncmp(s1,"##",2)) commented = !commented;
+		if (strncmp(s1,"#",1) && strncmp(s1,"\n",1) && strncmp(s1,">",1) && !commented) {
 			sscanf(s1,"%s\t%lg\n",s,&x);
 			if (!strncmp(s,"Bfield",6)) EOS.B=x;
 			if (!strncmp(s,"Tc",2)) G.Tc=x;

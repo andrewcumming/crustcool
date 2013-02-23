@@ -61,7 +61,7 @@ The file `init.dat` sets up the run. The parameters are
 					0=equilibrium crust (HP1994;DH2001)
 					2=accreted crust (HZ2003)
 	
-You can include comments (`#`) in the `init.dat` file, blank lines are ignored, and lines beginning with `>` are (optionally) to specify the piecewise initial temperature profile.
+You can include comments (`#`) in the `init.dat` file, blank lines are ignored, and lines beginning with `>` are (optionally) to specify the piecewise initial temperature profile. A pair of double comment symbols `##` can be used to comment out a block of lines.
 
 If you give an argument, e.g.
 
