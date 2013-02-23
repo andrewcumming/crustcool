@@ -647,7 +647,7 @@ void derivs(double t, double T[], double dTdt[])
 	}
 	
 	// include convective fluxes (only if we are cooling)
-	if (G.include_convection && !G.accreting && imelt>2) {
+	if (G.include_convection && !G.accreting && G.P[imelt]/G.g>1e11) {
 		double AA=2.4e11;
 
 		// First calculate dT/dt for the zone containing the liquid/solid boundary
@@ -1027,9 +1027,9 @@ void set_up_initial_temperature_profile(void)
 	G.accreting = !G.instant_heat;
 	for (int i=G.N+1; i>=1; i--) {
 		// a linear profile between top and bottom
-		double Ti = pow(10.0,log10(G.Tc) + log10(G.Tt/G.Tc)*log10(G.P[i]/G.Pb)/log10(G.Pt/G.Pb));
+		//double Ti = pow(10.0,log10(G.Tc) + log10(G.Tt/G.Tc)*log10(G.P[i]/G.Pb)/log10(G.Pt/G.Pb));
 		// or constant profile
-		//double Ti = G.Tc;
+		double Ti = G.Tc;
 		// a linear profile adjusts to steady state *much* more quickly,
 		// but for XTEJ for example I want to heat up from isothermal and the crust 
 		// does not get to steady state
@@ -1444,9 +1444,13 @@ void set_up_grid(int ngrid, const char *fname)
 		// GammaT[i] refers to i+1/2
 		// The following line uses a composition of 56Fe to calculate gamma,
 		// it avoids jumps in the melting point associated with e-capture boundaries
-		G.GammaT[i] = pow(26.0*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*56.0*1.67e-24),1.0/3.0)/1.38e-16;
-//		G.GammaT[i] = pow(EOS.Z[1]*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*EOS.A[1]*1.67e-24),1.0/3.0)/1.38e-16;
-			
+		if (1) {
+			double Z=14.0,A=28.0;   // 28Si
+			G.GammaT[i] = pow(Z*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*A*1.67e-24),1.0/3.0)/1.38e-16;
+		} else {
+		G.GammaT[i] = pow(EOS.Z[1]*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*EOS.A[1]*1.67e-24),1.0/3.0)/1.38e-16;
+		}
+		
     	G.rho[i] = pow(10.0,RHO.get(log10(G.P[i])));
 		EOS.rho = G.rho[i];
 		set_composition();
