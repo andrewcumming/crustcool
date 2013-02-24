@@ -171,8 +171,11 @@ int main(int argc, char *argv[])
 		char *e=fgets(s1,200,fp);		
 		// ignoring lines that begin with \n (blank) or with # (comments)
 		// or with $ (temperature profile)
-		if (!strncmp(s1,"##",2)) commented = !commented;
-		if (strncmp(s1,"#",1) && strncmp(s1,"\n",1) && strncmp(s1,">",1) && !commented) {
+		if (!strncmp(s1,"##",2)) {
+			commented = 1-commented;
+			printf("double hash at line: %s commented=%d",s1, commented);
+		}
+		if (strncmp(s1,"#",1) && strncmp(s1,"\n",1) && strncmp(s1,">",1) && commented==0) {
 			sscanf(s1,"%s\t%lg\n",s,&x);
 			if (!strncmp(s,"Bfield",6)) EOS.B=x;
 			if (!strncmp(s,"Tc",2)) G.Tc=x;
@@ -923,11 +926,13 @@ void set_up_initial_temperature_profile_piecewise(char *fname)
 	rhovec=vector(1,100);
 	Tvec=vector(1,100);
 	int i=1;
+	int commented=0;
 	while (!feof(fp)) {		
 		double rho, T;
 		// new lines: read from lines marked ">" in init.dat
 		char *e=fgets(s1,200,fp);		
-		if (!strncmp(s1,">",1)) {
+		if (!strncmp(s1,"##",2)) commented = 1-commented;
+		if (!strncmp(s1,">",1) && commented==0) {
 			sscanf(s1,">%lg\t%lg\n",&rho,&T);
 			// old: direct read from Tinit.dat
 			//		fscanf(fp,"%lg %lg\n",&rho,&T);
@@ -1332,7 +1337,7 @@ void set_up_grid(int ngrid, const char *fname)
   	G.N=ngrid;   // number of grid points
 	G.Pb=6.5e32; // column depth at the crust/core boundary
 						  // we used to set this to y=3e18 but now fix pressure
-  	G.Pt=G.yt*G.g;   // pressure at the top
+  	G.Pt=G.yt*2.28e14;   // pressure at the top
 
 	Spline QiSpline;
 	Spline QhSpline;
@@ -1446,7 +1451,7 @@ void set_up_grid(int ngrid, const char *fname)
 		// GammaT[i] refers to i+1/2
 		// The following line uses a composition of 56Fe to calculate gamma,
 		// it avoids jumps in the melting point associated with e-capture boundaries
-		if (1) {
+		if (0) {
 			double Z=14.0,A=28.0;   // 28Si
 			G.GammaT[i] = pow(Z*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*A*1.67e-24),1.0/3.0)/1.38e-16;
 		} else {

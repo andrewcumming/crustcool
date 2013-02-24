@@ -2216,7 +2216,7 @@ endif
 			endif
 
 			; read in next batch of data
-			data=dblarr(13,ngrid)
+			data=dblarr(14,ngrid)
 			readf, lun, data
 			y=data(0,*)
 			T=data(1,*)

@@ -779,7 +779,7 @@ qpair=pow(10.7480*la2+0.3967*sqrt(la)+1.0050,-1.0)
 	// First regime B given by their eq. 7
 	Q5 = 9.04e14*pow(this->B/1e13,2.0)*pow(this->T8/10.0,5.0);
 	// Next need to include suppression factors from transition to A and C
-
+//	Q5 = 0.0;
 
   // return the summed emissivity (divide by rho to get per gram)
 	//return 0.0;
@@ -1300,100 +1300,7 @@ vc=x/sqrt(1+x*x);
 }  
 
 
-double Eos::tmdrift(double dTdy)
-  // Calculates the thermomagnetic drift velocity
-  // dTdy is the local temperature gradient
-{
-  double u;
-  
-  // if species 1 is hydrogen, then assume we're in the H/He layer
-  if (this->A[1]==1.0) {
 
-    double tau, eta;
-    eta=this->eta();
-    tau=3.43e-13*pow(this->T8,1.5)/(this->lamei(0)*this->rho*this->YZ2());
-    u=1.5165e11*tau*this->rho*dTdy;
-    u*=11.0*this->Fermi(2.0,eta)*this->Fermi(4.5,eta)-
-      12.0*this->Fermi(3.0,eta)*this->Fermi(3.5,eta);
-    u/=6*pow(this->Fermi(2.0,eta),2.0);
-
-  } else { // ashes
-    
-    double x, lam, beta;
-
-    x=this->x(); beta=x/sqrt(1+x*x);  
-    lam=log(pow(2*PI*this->Ye()/(3*this->Yi()),1.0/3.0)*
-	    sqrt(1.5+3.0/this->gamma()));
-    lam-=0.5*beta*beta;
-    
-    u=0.5*1.101e-22*this->T8*dTdy*this->econd()/this->Ye();
-    u*=3.0-2.0*beta*beta-
-      (1.0-beta*beta+beta*beta*beta*beta)/lam;
-    u*=sqrt(1+x*x)/(x*x);
-    
-  }
-
-  return u;
-}
-
-
-
-double Eos::econd(void)
-  // calculates the electrical conductivity
-{
-  double x1, x2, sig, x, lambda, nu, theta, beta;
-
-  if (this->gamma() < this->gamma_melt || this->Q == 900.0) { // if Q=900 treat as liquid
-    
-    // This is the method from the WD paper, where I interpolate using x
-    // choose appropriate value for x
-    x1=this->x();
-    x2=0.26*sqrt(this->T8);
-    x=sqrt(x1*x1+x2*x2);
-    //if (x1>x2) x=x1; else x=x2;
-
-  //  x=x1;
-    sig=8.48e21*this->Ye()*pow(x,3.0)/(this->YZ2()*(1+x*x));
-    //printf("got here\n");
-
-    sig/=this->lamei(0);
-    
-    //    printf("back\n");
-
-    // here, write sig directly in terms of Fermi integrals
-    //    sig=9.47e23*pow(this->T8,3.0)*this->Fermi(2.0,this->eta())/this->rho;
-    //sig/=this->YZ2()*this->lamei();
-    
-  } else { // solid --- NB assumes A=2Z and single species
-    double TU,ka,sm1;
-
-    TU=2.2e8*sqrt(1e-12*this->rho)*this->Ye()*pow(this->Z[1]/60.0,1.0/3.0);
-
-    x=this->x(); beta=x/sqrt(1+x*x);
-    nu=9.55e16*this->T8*this->Fep(0)/beta; // phonons
-
-    // add exponential suppression when the Umklapp scatterings freeze out
-    //if (this->T8  < 1e-8*TU) 
-    nu*=exp(-1e-8*TU/this->T8);
-
-    //nu=9.55e16*this->T8*13.0/beta;
-    /* old phonons from Urpin & Yakovlev
-    theta=0.56*sqrt(1e-9*this->rho)/this->T8;
-    nu=1.24e18*this->T8*(2-beta*beta)/(beta*sqrt(1+pow(theta/3.5,2.0)));
-    */
-
-    // Coulomb log from Itoh & Kohyama 1996
-    ka=1.92*pow(this->Ye()/this->Yi(),1.0/3.0);
-    sm1=0.5*log(1.0+0.4*ka*ka);
-    lambda=sm1*(1.0+2.5*beta*beta/(ka*ka))-0.5*beta*beta;
-
-    nu+=1.75e16*this->Q*lambda*sqrt(1+x*x)/this->Z[1]; // impurities
-
-    //sig=1.49e22*x*x*beta*1e16/nu;
-    sig=1.52e25*1e17*pow(this->rho*1e-12*Ye(),2.0/3.0)/nu;
-  }  
-  return sig;
-}
 
 
 double Eos::Fermi(double n, double eta)
