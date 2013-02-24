@@ -103,8 +103,6 @@ int main(int argc, char *argv[])
 	double F, y, K, CP, Kh, Th, Ttop, Fb, mass;
 	clock_t timer;
 	
-	int do_mcmc=0;
-	
 	long idum=-32094034;
 
 	// initialize EOS routines
@@ -132,7 +130,6 @@ int main(int argc, char *argv[])
 	G.mdot=0.1;
 	G.energy_deposited_outer=1.0;
 	G.energy_deposited_inner=-1.0;
-	do_mcmc=0;	
 	G.rhob=1e15; 
 	G.rhot=1e3;
 	G.use_piecewise=0;
@@ -249,7 +246,7 @@ int main(int argc, char *argv[])
   	ODE.stiff=1; ODE.tri=1;  // stiff integrator with tridiagonal solver
   
 	// do we want output or not?
-	G.output=!do_mcmc;
+	G.output=1;
 
  	// set up the initial temperature profile
   	if (G.use_piecewise) set_up_initial_temperature_profile_piecewise(fname);
@@ -266,175 +263,6 @@ int main(int argc, char *argv[])
 
 	// get chisq
 	double chisq = calculate_chisq();
-
-
-	if (do_mcmc) {
-		
-		//G.output=0;  // switch off output to other files (for speed)
-  		FILE *fp_out=fopen("out/settle2.mcmc","w");	// output MCMC chain
-		double Q, prob;
-		int accept=0;
-		int count=0, accept_count=0;
-		
-		if (EOS.Q<1e-3 || G.Qinner<1e-3) {
-			printf("One or both Q values are too small: setting to 1e-3\n");
-			if (EOS.Q<1e-3) EOS.Q=1e-3;
-			if (G.Qinner < 1e-3) G.Qinner=1e-3;
-		}
-		
-		double Tc_old=G.Tc;
-		double Tt_old=G.Tt;
-		double Q_old=log10(EOS.Q);
-		double Qinner_old=log10(G.Qinner);
-		double M_old = mass;
-		double R_old=G.radius;
-		double chisq_old = chisq;	
-		double mdot_old = G.mdot;
-		
-		while (1) {
-
-			double f=1.0;
-		 	// take a step 
-		while (Q=Q_old + f*0.1*gasdev(&idum), Q<-3.0) {};
-//		while (Q=Q_old + f*0.02*gasdev(&idum), Q<-3.0) {};
-//			while (G.Qinner=Qinner_old + 0.2*gasdev(&idum), G.Qinner<-3.0) {};
-
-//   		while (G.Tc=Tc_old + f*3e6*gasdev(&idum), G.Tc < 2e7);
-
-   		while (G.Tt=Tt_old + f*3e7*gasdev(&idum), G.Tt < 0.0);
-
-//   		while (G.mdot=mdot_old + f*0.03*gasdev(&idum), G.mdot < 0.0 || G.mdot > 0.5);
-
-   		//while (mass=M_old + f*0.1*gasdev(&idum), mass < 1.0 || mass >3.0);
-   		//while (radius=R_old + f*0.3*gasdev(&idum), radius < 9.0 || radius > 16.0);
-			EOS.Q=pow(10.0,Q);
-			//G.Qinner=pow(10.0,G.Qinner);
-			G.Qinner=EOS.Q;
-
-			// recalculate the model
-			set_ns_parameters(mass,G.radius);
-			//set_up_grid(ngrid,"data/crust_model");
-			//precalculate_vars();
-			set_up_initial_temperature_profile();
-			calculate_cooling_curve();
-			chisq=calculate_chisq();
-			prob=exp((chisq_old-chisq)/2.0);
-
-   		// adjust probabilities to account for the prior
-			//   prob*=Q/Qnew;
-   		prob*=Tt_old/G.Tt;
-   		prob*=Tc_old/G.Tc;
-
-			count++;
-			accept=0;
-			if (prob>=1.0) accept=1; else if(ran2(&idum) < prob) accept=1;
-			if (accept) {
-				accept_count++;
-   			fprintf(fp_out, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", 
-						G.Tc, G.Tt, EOS.Q, mass, G.radius, G.ZZ, G.g*1e-14, chisq, G.mdot, G.Qinner);
-				fflush(fp_out);
-				Tc_old=G.Tc; Tt_old=G.Tt; Q_old=log10(EOS.Q); chisq_old = chisq; 
-				M_old = mass; R_old = G.radius; mdot_old = G.mdot; Qinner_old = log10(G.Qinner);
-				printf("accepted:");
-			} else {
-				printf("not accepted:");
-			}
-			printf("%lg %lg %lg %lg %lg %lg %lg %lg %lg\n---------------------------\n",
-			 		G.Tc, G.Tt, EOS.Q, G.Qinner, mass, G.radius, G.mdot, chisq, 1.0*accept_count/count );
-		}
-	}
-
-/*
-	if (do_mcmc==2) {
-		
-		double chisq_old, Tc_old, Tt_old, Q_old, Q, prob;
-		int accept=0;
-		int count=0, accept_count=0;
-
-  		FILE *fp_out=fopen("out/settle2.mcmc","w");
-
-		double *oldT;
-		if (1) {
-			fprintf(fp_out,"%d\n",G.N);
-			oldT=vector(1,G.N);
-			for (int i=1; i<=G.N; i++) {
-				fprintf(fp_out, "%lg ", G.y[i]);
-			}
-			fprintf(fp_out,"\n");
-			for (int i=1; i<=G.N; i++) {
-				oldT[i]=ODE.get_y(i,1);
-				fprintf(fp_out, "%lg ", oldT[i]);
-			}
-			fprintf(fp_out,"\n");
-		}
-
-		double grad_term=0.0;
-		for (int i=2; i<=G.N; i++) {
-			grad_term += pow((oldT[i]-oldT[i-1])/(oldT[i]+oldT[i-1]),2.0);
-		}
-		chisq*=(1.0+grad_term);
-		Tc_old=G.Tc; Tt_old=G.Tt; Q_old=log10(EOS.Q); chisq_old = chisq;
-
-		
-		
-		while (1) {
-
-		 	// take a step and adjust the initial profile
-			if (0) {
-		
-				while (Q=Q_old + 0.07*gasdev(&idum), Q<-3.0) {};
-   			while (G.Tc=Tc_old + 0.7e6*gasdev(&idum), G.Tc < 0.0);
-   			while (G.Tt=Tt_old + 0.7e7*gasdev(&idum), G.Tt < 0.0);
-				EOS.Q=pow(10.0,Q);
-				set_up_initial_temperature_profile();
-			
-			} else {
-	
-				for (int i=1; i<=G.N; i++) {
-					double newT;
-					while (newT=oldT[i]*(1.0+0.12*gasdev(&idum)), newT<0.2*oldT[i]) {};
-					ODE.set_bc(i,newT);
-				}
-			}		
-		
-			calculate_cooling_curve();
-			chisq=calculate_chisq();
-			grad_term=0.0;
-			for (int i=2; i<=G.N; i++) {
-				grad_term += pow((oldT[i]-oldT[i-1])/(oldT[i]+oldT[i-1]),2.0);
-			}
-			chisq*=(1.0+grad_term);
-			prob=exp((chisq_old-chisq)/2.0);
-   		// adjust probabilities to account for the prior
-			//   prob*=Q/Qnew;
-   		prob*=Tt_old/G.Tt;
-   		prob*=Tc_old/G.Tc;
-
-			count++;
-			accept=0;
-			if (prob>=1.0) accept=1; 
-			else 
-				if(ran2(&idum) < prob) accept=1;
-			if (accept) {
-				accept_count++;
-   			//fprintf(fp_out, "%lg %lg %lg %lg %lg %lg %lg %lg %lg\n", G.Tc, G.Tt, EOS.Q, 10.0, 1.4, 1.31, G.g*1e-14, chisq, G.mdot);
-				//fflush(fp_out);
-				//Tc_old=G.Tc; Tt_old=G.Tt; Q_old=log10(EOS.Q); chisq_old = chisq;
-				for (int i=1; i<=G.N; i++) {
-					oldT[i]=ODE.get_y(i,1);
-					fprintf(fp_out, "%lg ", oldT[i]);
-				}
-				fprintf(fp_out,"\n");
-				fflush(fp_out);
-				printf("accept: %lg %lg %lg %lg %lg\n", G.Tc, G.Tt, EOS.Q, chisq, 1.0*accept_count/count );
-			} else {
-				printf("not accepted: %lg %lg %lg %lg %lg\n", G.Tc, G.Tt, EOS.Q, chisq, 1.0*accept_count/count );
-			}
-			printf("---------------------------\n");
-		}
-	}
-
-*/
 
 	// tidy up
 	if (G.output) {
