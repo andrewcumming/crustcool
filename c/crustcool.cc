@@ -996,13 +996,13 @@ void precalculate_vars(void)
 				double Kcond,Kcondperp;
 				//Kcond = EOS.K_cond(EOS.Chabrier_EF());
 				Kcond = potek_cond(&Kcondperp);   
-				//Kcondperp=0.0;
+				Kcondperp=0.0;
 				G.K0_grid[i][j]=EOS.rho*Kcond/G.P[i];
 				G.K0perp_grid[i][j]=EOS.rho*Kcondperp/G.P[i];
 				EOS.Q=1.0;
 				//Kcond = EOS.K_cond(EOS.Chabrier_EF());
 				Kcond = potek_cond(&Kcondperp);
-				//Kcondperp=0.0;
+				Kcondperp=0.0;
 				G.K1_grid[i][j]=EOS.rho*Kcond/G.P[i];
 				G.K1perp_grid[i][j]=EOS.rho*Kcondperp/G.P[i];
 				EOS.Q=Q_store;  // restore to previous value
