@@ -1111,9 +1111,9 @@ endif
 if (strcmp(source,'1647',4)) then begin
 ;	lcplot, '1647_step', 0
 ;	lcplot, '1647_1', 0
-lcplot, '1647_new_1', 0
-lcplot, '1647_new_2', 2
-lcplot, '1647_new_3', 1
+lcplot, '1647_new_1', 2
+lcplot, '1647_new_2', 1
+lcplot, '1647_new_3', 0
 ;	lcplot, '1647_2', 1
 ;	lcplot, '1647_3', 2
 ;	lcplot, '1647_4', 2

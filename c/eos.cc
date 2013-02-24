@@ -779,7 +779,7 @@ qpair=pow(10.7480*la2+0.3967*sqrt(la)+1.0050,-1.0)
 	// First regime B given by their eq. 7
 	Q5 = 9.04e14*pow(this->B/1e13,2.0)*pow(this->T8/10.0,5.0);
 	// Next need to include suppression factors from transition to A and C
-//	Q5 = 0.0;
+	//Q5 = 0.0;
 
   // return the summed emissivity (divide by rho to get per gram)
 	//return 0.0;

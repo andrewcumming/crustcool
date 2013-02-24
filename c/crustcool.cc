@@ -45,12 +45,8 @@ extern "C"{
   void condegin_(double *temp,double *densi,double *B,double *Zion,double *CMI,double *CMI1,double *Zimp, double *RSIGMA,double *RTSIGMA,double *RHSIGMA,double *RKAPPA,double *RTKAPPA,double *RHKAPPA);
    }
 double potek_cond(double *Kperp);
-void output_some_EOS_info();
 void heatderivs(double t, double T[], double dTdt[]);
 void heatderivs2(double t, double T[], double dTdt[]);
-void make_TbTeff_relation(void);
-void surfderivs(double y, double T[], double dTdy[]);
-double find_surf_eqn(double y);
 
 // global variables
 struct globals {
@@ -115,8 +111,6 @@ int main(int argc, char *argv[])
   	EOS.init(1); 
   	EOS.X[1] = 1.0;   // we only have one species at each depth;
 
-	//output_some_EOS_info();  
-
 	// ----------------------------------------------------------------------
  	//   Set parameters
 
@@ -171,10 +165,7 @@ int main(int argc, char *argv[])
 		char *e=fgets(s1,200,fp);		
 		// ignoring lines that begin with \n (blank) or with # (comments)
 		// or with $ (temperature profile)
-		if (!strncmp(s1,"##",2)) {
-			commented = 1-commented;
-			printf("double hash at line: %s commented=%d",s1, commented);
-		}
+		if (!strncmp(s1,"##",2)) commented = 1-commented;
 		if (strncmp(s1,"#",1) && strncmp(s1,"\n",1) && strncmp(s1,">",1) && commented==0) {
 			sscanf(s1,"%s\t%lg\n",s,&x);
 			if (!strncmp(s,"Bfield",6)) EOS.B=x;
@@ -685,7 +676,7 @@ void derivs(double t, double T[], double dTdt[])
 double calculate_heat_flux(int i, double *T)
 {
 	double flux;
-	if (i>1 || (G.accreting && G.outburst_duration > 0.0 && !G.force_cooling_bc))
+	if (i>1 || (G.accreting && G.outburst_duration > 1.0/365.0 && !G.force_cooling_bc))
 //		if (i>1 || (G.accreting && EOS.B == 0.0))   
 		// use this inside the grid, or at the surface when we are accreting (which 
 		// fixes the outer temperature)
@@ -1563,187 +1554,6 @@ double potek_cond(double *Kperp)
 
 
 
-void output_some_EOS_info()
-{
-
-	if (0)
-	{
-		FILE *fp=fopen("neut2.dat","w");
-
-		EOS.A[1]=56.0;
-		EOS.Z[1]=26.0;
-
-		EOS.B=1e13;
-		EOS.rho=1e11;
-
-		for (int i=0; i<=100; i++) {
-
-			EOS.T8=pow(10.0,8.0 + 2.0*0.01*i)*1e-8;
-
-			fprintf(fp, "%lg %lg", EOS.T8, EOS.rho*EOS.eps_nu());
-			fprintf(fp, " %lg", EOS.rho*EOS.Q1);
-			fprintf(fp, " %lg", EOS.rho*EOS.Q2);
-			fprintf(fp, " %lg", EOS.rho*EOS.Q3);
-			fprintf(fp, " %lg", EOS.rho*EOS.Q4);
-			fprintf(fp, " %lg", EOS.rho*EOS.Q5);
-			fprintf(fp, " %lg\n", 1e-10);
-
-		}
-
-		fclose(fp);
-
-		}
-
-
-		if (0)
-		{
-			FILE *fp=fopen("neut.dat","w");
-
-			EOS.A[1]=56.0;
-			EOS.Z[1]=26.0;
-
-			EOS.B=1e13;
-
-			for (int i=0; i<=100; i++) {
-
-				EOS.T8=pow(10.0,8.0 + 2.0*0.01*i)*1e-8;
-
-				EOS.rho=1e9;
-				fprintf(fp, "%lg %lg", EOS.T8, EOS.rho*EOS.eps_nu());
-
-				EOS.rho=3e9;
-				fprintf(fp, " %lg", EOS.rho*EOS.eps_nu());
-
-				EOS.rho=1e10;
-				fprintf(fp, " %lg", EOS.rho*EOS.eps_nu());
-
-				EOS.rho=3e10;
-				fprintf(fp, " %lg", EOS.rho*EOS.eps_nu());
-
-				EOS.rho=1e11;
-				fprintf(fp, " %lg", EOS.rho*EOS.eps_nu());
-
-				EOS.rho=3e11;
-				fprintf(fp, " %lg", EOS.rho*EOS.eps_nu());
-
-				EOS.rho=1e12;
-				fprintf(fp, " %lg\n", EOS.rho*EOS.eps_nu());
-
-			}
-
-			fclose(fp);
-
-			}
-
-
-if (0)
-{
-	FILE *fp=fopen("CV.dat","w");
-
-	EOS.A[1]=56.0;
-	EOS.Z[1]=26.0;
-
-	EOS.B=1e8;
-
-	EOS.accr=0;
-
-	for (int i=0; i<=100; i++) {
-
-		EOS.T8=pow(10.0,8.0 + 2.0*0.01*i)*1e-8;
-
-		EOS.rho=1e9; EOS.set_comp();
-		
-		fprintf(fp, "%lg %lg", EOS.T8, EOS.CP());
-
-		EOS.rho=3e9; EOS.set_comp();
-		fprintf(fp, " %lg", EOS.CP());
-
-		EOS.rho=1e10; EOS.set_comp(); 
-		fprintf(fp, " %lg", EOS.CP());
-
-		EOS.rho=3e10; EOS.set_comp();
-		fprintf(fp, " %lg", EOS.CP());
-
-		EOS.rho=1e11; EOS.set_comp();
-		fprintf(fp, " %lg", EOS.CP());
-
-		EOS.rho=3e11; EOS.set_comp();
-		fprintf(fp, " %lg", EOS.CP());
-
-		EOS.rho=1e12; EOS.set_comp();
-		fprintf(fp, " %lg\n",EOS.CP());
-
-	}
-
-	fclose(fp);
-
-	}
-
-	if (0)
-	{
-		FILE *fp=fopen("TC.dat","w");
-
-	 	EOS.accr = 0;   // set crust composition
-		EOS.T8=1.0;
-
-		for (int i=0; i<=100; i++) {
-			EOS.rho=pow(10.0,11.0 + 3.0*0.01*i);
-			EOS.set_comp();
-
-			EOS.gap=1;
-			fprintf(fp, "%lg %lg", EOS.rho, EOS.TC());
-
-			EOS.gap=5;
-			fprintf(fp, " %lg", EOS.TC());
-
-			EOS.gap=6;
-			fprintf(fp, " %lg\n", EOS.TC());
-		}
-
-		fclose(fp);
-
-	}
-	
-	
-	
-	if (0)
-	{
-		FILE *fp=fopen("heat.dat","w");
-
-		EOS.B=1e15;
-		EOS.accr=0;
-		EOS.rho = 1e9;
-		EOS.set_comp();
-
-		EOS.T8=0.7;
-		EOS.P = EOS.ptot();
-
-		ODE.init(1);
-		ODE.set_bc(1,7e7);
-		ODE.go(0.0, 3000.0, 1e-4, 1e-6, heatderivs);
-		
-		for (int i=1; i<=ODE.kount; i++) {
-
-			EOS.T8 = ODE.get_y(1,i)*1e-8;
-			EOS.P = G.Pb; 
-			EOS.rho = EOS.find_rho();
-			fprintf(fp,"%lg %lg %lg\n",ODE.get_x(i),ODE.get_y(1,i),EOS.rho);
-
-		}
-
-		fclose(fp);
-
-		printf("Finished heat integration.\n");
-
-	}
-
-	
-	
-}
-
-
-
-
 void heatderivs2(double T, double E[], double dEdT[])
 // calculates the time derivatives for the whole grid
 {
@@ -1763,93 +1573,4 @@ void heatderivs(double E, double T[], double dTdE[])
 	
 	dTdE[1] = 1e25/(EOS.rho*EOS.CP());
 }
-
-
-
-void make_TbTeff_relation(void)
-{
-	Ode_Int SURFODE;
-	FILE *fp;
-	
-	fp=fopen("out/mygrid","w");
-
-	EOS.X[1]=1.0; EOS.A[1]=56.0; EOS.Z[1]=26.0;   // iron composition
-	EOS.Yn=0.0; 
-	//EOS.Q=0.0; EOS.B=0.0;
-
-	G.surfy=-1.0;
-
-	for (int j=0; j<=16; j++) {
-
-		G.surfF = pow(10.0,17.0+0.5*j);
-			
-		SURFODE.init(1);
-		
-		//double yt;
-	  	//yt=zbrent(find_surf_eqn,1e-6,10.0,1e-5);
-	  	//if (yt==1e-6 || yt==10.0) printf("yt out of bounds (%lg)\n", yt);
-		//printf("%lg %lg\n", G.surfF, yt);
-	 		
-		double yt = 0.0;
-		double Touter = pow(G.surfF/5.67e-5,0.25);
-		SURFODE.set_bc(1,Touter);	
-		SURFODE.go_simple(yt,14.0,(int)((14.0-yt)/0.01),surfderivs);
-		//SURFODE.go(0.0,14.0,0.1,1e-6,surfderivs);
-		for (int i=1; i<=SURFODE.kount; i++) {
-
-			EOS.T8 = SURFODE.get_y(1,i)*1e-8;
-			EOS.P = G.g * pow(10.0,SURFODE.get_x(i)); 
-			if (SURFODE.get_x(i) < G.surfy){
-				EOS.A[1]=4.0; EOS.Z[1]=2.0;
-			} else {
-				EOS.A[1]=56.0; EOS.Z[1]=26.0;
-			}
-			EOS.rho = EOS.find_rho();
-			double kapp = EOS.opac();
-			double null = 0.0;
-			kapp = 1.0/(EOS.kff + EOS.kes) + 1.0/(3.03e20*pow(EOS.T8,3.0)/(potek_cond(&null)*EOS.rho));
-			kapp = 1.0/kapp;
-			fprintf(fp,"%lg %lg %lg %lg %lg %lg\n",
-				SURFODE.get_x(i),log10(SURFODE.get_y(1,i)),log10(G.surfF),log10(EOS.rho),
-				EOS.opac(), kapp);
-
-		}
-		SURFODE.tidy();
-	}
-
-	fclose(fp);
-	printf("Made Tb-Teff grid.\n");
-
-}
-
-
-
-double find_surf_eqn(double y)
-{
-	EOS.P=G.g*y; EOS.T8=1e-8*pow(G.surfF/5.67e-5,0.25);
-	EOS.rho=EOS.find_rho();
-	return EOS.opac()*y-2.0/3.0;
-}
-
-
-void surfderivs(double y, double T[], double dTdy[])
-// calculates the time derivatives for the whole grid
-{
-	EOS.T8 = T[1]/1e8;
-	EOS.P=G.g*pow(10.0,y);
-	if (y < G.surfy) {
-		EOS.A[1]=4.0; EOS.Z[1]=2.0;
-	} else {
-		EOS.A[1]=56.0; EOS.Z[1]=26.0;
-	}
-	EOS.rho = EOS.find_rho();
-
-	double kapp = EOS.opac();
-	//kapp = 1.0/(EOS.kff + EOS.kes) + 1.0/(3.03e20*pow(EOS.T8,3.0)/(potek_cond()*EOS.rho));
-	//kapp = 1.0/kapp;
-	
-	double norm = 16.0*5.67e-5*1e24*pow(EOS.T8,3.0)/(3.0*kapp);	
-	dTdy[1] = 2.303*pow(10.0,y)*G.surfF/norm;
-}
-
 
