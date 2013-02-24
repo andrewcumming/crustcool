@@ -996,13 +996,13 @@ void precalculate_vars(void)
 				double Kcond,Kcondperp;
 				//Kcond = EOS.K_cond(EOS.Chabrier_EF());
 				Kcond = potek_cond(&Kcondperp);   
-				Kcondperp=0.0;
+				//Kcondperp=0.0;
 				G.K0_grid[i][j]=EOS.rho*Kcond/G.P[i];
 				G.K0perp_grid[i][j]=EOS.rho*Kcondperp/G.P[i];
 				EOS.Q=1.0;
 				//Kcond = EOS.K_cond(EOS.Chabrier_EF());
 				Kcond = potek_cond(&Kcondperp);
-				Kcondperp=0.0;
+				//Kcondperp=0.0;
 				G.K1_grid[i][j]=EOS.rho*Kcond/G.P[i];
 				G.K1perp_grid[i][j]=EOS.rho*Kcondperp/G.P[i];
 				EOS.Q=Q_store;  // restore to previous value
@@ -1065,7 +1065,8 @@ double crust_heating(int i)
 		// eps in erg/g/s
 		eps = 1e25/(G.rho[i]*G.outburst_duration*3.15e7);
 		eps /= G.mdot * G.g;   // modify to the units used in the code
-		
+
+		// Put in a power-law heating:
 //		if (G.rho[i]>1e9) eps *= pow(G.rho[i]/1e9,0.4);
 //		eps *= G.rho[i]/1e11;
 		
@@ -1387,9 +1388,6 @@ void heatderivs2(double T, double E[], double dEdT[])
 {
 	EOS.T8 = T/1e8;
 	EOS.rho = EOS.find_rho();
-	
-//	printf("%lg %lg %lg %lg %lg %lg %lg\n", T, EOS.P, EOS.rho,E[1], EOS.A[1], EOS.Z[1], EOS.X[1]);
-	
 	dEdT[1] = EOS.CP();
 }
 
@@ -1398,7 +1396,6 @@ void heatderivs(double E, double T[], double dTdE[])
 {
 	EOS.T8 = T[1]/1e8;
 	EOS.rho = EOS.find_rho();
-	
 	dTdE[1] = 1e25/(EOS.rho*EOS.CP());
 }
 
