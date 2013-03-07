@@ -38,7 +38,7 @@ void Eos::init(int n)
   this->set_Ye=0.0;
   this->set_Yi=0.0;
   this->accr=1;  // default crust composition is HZ with Fe56
-  this->gamma_melt=173.0;
+  this->gamma_melt=175.0;
   this->Q=900.0; // treat the crust as a liquid for conductivities
   this->B=0.0; // default is unmagnetized 
 }

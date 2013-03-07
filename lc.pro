@@ -385,7 +385,7 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 
 	if (source eq '1659' or source eq '1731') then begin
 		xr=[1.0,5000.0]
-		yr=[50,175]
+		yr=[40,160]
 	endif
 	if (source eq '0748') then begin
 		xr=[10.0,3000.0]
@@ -400,13 +400,11 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 		yr=[40,140]
 	endif
 
-
 	if (source eq 'XTEJ2') then begin
 		xr=[0.1,100.0]
 		yr=[100,180]
 	endif
 	
-
 
 	; read in the observations and plot
 	readcol, 'data/'+source, t0, n, format=('D,I'), numline=1
@@ -437,7 +435,7 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 
 		if (source eq '1659' or source eq '1731' or source eq 'XTEJ' or source eq '0748') and not keyword_set(noextras) then  begin
 		; plot lightcurve from simulation
-		readcol, 'gon_out/prof_'+source+'_1_y10', tt,Teff, format=('F,X,X,X,F')
+		readcol, 'gon_out/prof_'+source+'_1', tt,Teff, format=('F,X,X,X,F')
 		tt/=(24*3600.0)
 		; the output is already redshifted
 		; but needs to be converted to eV
@@ -458,6 +456,13 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 		if (source eq 'XTEJ2') then xyouts, 10,170,textoidl('XTE J1709-267')
 		if (source eq '0748') then xyouts, 400,130,textoidl('EXO 0748-676')
 		if (source eq 'terz' || source eq 'terz2') then xyouts, 200,125,textoidl('IGR J17480-2446')
+
+;		t=[2.0,3.5]
+;		F=[alog10(140.0)-(t-2.0)/12.0]
+;		oplot, 10^t, 10^F, linestyle=2, col=250, thick=2
+		t=[1.0,2.5]
+		F=[alog10(124.0)-(t-1.0)/10.0]
+		oplot, 10^t, 10^F, linestyle=2, col=250, thick=2
 
 	if keyword_set(ps) then close_ps
 end
@@ -1649,6 +1654,24 @@ pro surf2
 	
 ;	readcol, 'TeTb-8-9-2.10.data', Teff, Tb, format=('D,D')
 ;	oplot, Teff, Tb, linestyle=3
+end
+
+
+pro tbteff
+
+	readcol, 'gon_out/TbTeff', T, F, format=('X,X,X,X,D,D')
+	radius=11.2
+	ZZ=1.32
+	F/=5.67d-5
+	F=F^0.25
+	F/=ZZ
+	F*=1.38d-16/1.6d-12
+	plot, T,F, /xlog,/ylog
+	
+	T=[7.0,8.0]
+	F=alog10(80.0)+0.5*(T-7.0)
+	oplot, 10^T, 10^F, linestyle=1
+	
 end
 
 

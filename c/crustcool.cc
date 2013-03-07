@@ -311,7 +311,7 @@ void calculate_cooling_curve(void)
 		start_timing(&timer);
 		ODE.dxsav=1e3;   // so that we get output starting at early enough times
 		//ODE.go_scale(0.0, G.time_to_run, 1e4, derivs);
-		ODE.go(0.0, G.time_to_run, dtstart, 1e-6, derivs);
+		ODE.go(0.0, G.time_to_run, dtstart, 1e-8, derivs);
 		stop_timing(&timer,"ODE.go");
 		
 		// output 
@@ -459,9 +459,12 @@ void derivs(double t, double T[], double dTdt[])
   	for (int i=1; i<=G.N+1; i++)   G.F[i] = calculate_heat_flux(i,T);	
 
 	// find the ocean-crust boundary
-	// imelt is set to be the first zone going inwards where Gamma at i+1/2 is > 175
-	int imelt=0;
-	while (imelt++, G.GammaT[imelt]/(0.5*(T[imelt]+T[imelt+1])) < 175.0);
+	// imelt is set to be the first zone going outwards where Gamma at i-1/2 is <175
+//	int imelt=G.N;
+//	while (imelt--, G.GammaT[imelt-1]/(0.5*(T[imelt]+T[imelt-1])) >= 175.0);
+	// imelt is set to be the first zone going inwards where Gamma at i+1/2 is >175
+	int imelt=1;
+	while (imelt++, G.GammaT[imelt]/(0.5*(T[imelt]+T[imelt+1])) <= 175.0);
 	
 	// include the latent heat as an additional term in the heat capacity at the boundary
 	if (G.include_latent_heat) {
@@ -472,23 +475,56 @@ void derivs(double t, double T[], double dTdt[])
 	
 	// include convective fluxes (only if we are cooling)
 	if (G.include_convection && !G.accreting && G.P[imelt]/G.g>1e11) {
-		double AA=2.4e11;
+
+		if (1) {
+			
+				double AA=1.4e-8;
+
+			// First calculate dT/dt for the zone containing the liquid/solid boundary
+				//G.CP[imelt] += AA/G.dx;
+				double P1 = exp(log(G.P[imelt])-0.5*G.dx);
+				G.CP[imelt] += pow(T[imelt],3.0)*AA*pow(P1/G.g,-0.75)/G.dx; 
+				dTdt[imelt] = G.g*(G.F[imelt+1]-G.F[imelt])/(G.dx*G.CP[imelt]*G.P[imelt]);
+
+			// If the boundary is moving in, then there shouldn't be any convection, 
+			// so turn it off. Although this doesn't seem to affect the lightcurves..
+			//	if (dTdt[imelt] > 0.0) {
+			//		G.CP[imelt] -= AA/G.dx;
+			//		AA=0.0;
+			//	}
+
+			// Add in the convective flux where liquid
+				for (int i=2; i<imelt; i++) {
+					double P2 = exp(log(G.P[i])+0.5*G.dx);
+					if (P2 > 1e25) {
+						double xfac=log(P2/1e24)/log(G.P[imelt]/1e24);
+						G.F[i+1]+=AA*dTdt[imelt]*pow(P2/G.g,0.25)*pow(T[imelt],3.0)*xfac;
+					}
+				}
+			
+			
+		} else {
+			double AA=2.4e11;
 
 		// First calculate dT/dt for the zone containing the liquid/solid boundary
-		G.CP[imelt] += AA/G.dx;
-		dTdt[imelt] = G.g*(G.F[imelt+1]-G.F[imelt])/(G.dx*G.CP[imelt]*G.P[imelt]);
+			G.CP[imelt] += AA/G.dx;
+			dTdt[imelt] = G.g*(G.F[imelt+1]-G.F[imelt])/(G.dx*G.CP[imelt]*G.P[imelt]);
 
 		// If the boundary is moving in, then there shouldn't be any convection, 
 		// so turn it off. Although this doesn't seem to affect the lightcurves..
-		if (dTdt[imelt] > 0.0) {
-			G.CP[imelt] -= AA/G.dx;
-			AA=0.0;
-		}
+			if (dTdt[imelt] > 0.0) {
+				G.CP[imelt] -= AA/G.dx;
+				AA=0.0;
+			}
 
 		// Add in the convective flux where liquid
-		for (int i=2; i<imelt; i++) {
-			double P2 = exp(log(G.P[i])+0.5*G.dx);
-			G.F[i+1]+=AA*P2*dTdt[imelt]/G.g;
+			for (int i=2; i<imelt; i++) {
+				double P2 = exp(log(G.P[i])+0.5*G.dx);
+				if (P2 > 1e25) {
+					double xfac=log(P2/1e24)/log(G.P[imelt]/1e24);
+					G.F[i+1]+=AA*P2*dTdt[imelt]*xfac/G.g;
+				}
+			}
 		}
 	}
 	
@@ -1271,8 +1307,8 @@ void set_up_grid(int ngrid, const char *fname)
 		// GammaT[i] refers to i+1/2
 		// The following line uses a composition of 56Fe to calculate gamma,
 		// it avoids jumps in the melting point associated with e-capture boundaries
-		if (0) {
-			double Z=14.0,A=28.0;   // 28Si
+		if (1) {
+			double Z=26.0,A=56.0;   // 28Si
 			G.GammaT[i] = pow(Z*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*A*1.67e-24),1.0/3.0)/1.38e-16;
 		} else {
 		G.GammaT[i] = pow(EOS.Z[1]*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*EOS.A[1]*1.67e-24),1.0/3.0)/1.38e-16;
