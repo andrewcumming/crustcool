@@ -79,16 +79,14 @@ end
 
 pro twist,ps=ps
 	
-	
-	
 	!p.multi=[0,1,1,0,0]
 	!p.charsize=1.4
-	
 	
 	if keyword_set(ps) then begin
 		;open_ps, 'twist.ps'
 		set_plot,'ps'
-		device,filename='twist.ps'
+		device,filename='twist.ps',/color
+		loadct,39
 		!p.thick=3
 		!p.charthick=3
 		!x.thick=3
@@ -102,7 +100,7 @@ pro twist,ps=ps
 	ind = where(time2 gt 0.0)
 	time2=time2[ind]
 	BBnorm2=BBnorm2[ind]*1d39*(5.0/10.0)^2
-	BBnormerr2=BBnormerr2[ind]*1d39
+	BBnormerr2=BBnormerr2[ind]*1d39*(5.0/10.0)^2
 	BBrad2=sqrt(BBrad2[ind])*(5.0/10.0)  ; adjust to 5kpc
 	K2=(0.1*BBrad2)^(-0.5)
 	Te2=TT2[ind]/K2
@@ -127,7 +125,7 @@ pro twist,ps=ps
 
 	plot, A, uflux, psym=1, /xlog, /ylog, xtitle=textoidl('Area (10^{12} cm^2)'),$
 			ytitle=textoidl('Unabsorbed 1-10 keV luminosity (erg s^{-1})'),$
-				yrange = [1d33,1d36], ystyle=1, xrange=[1d-3,10.0]
+				yrange = [1d33,1d35], ystyle=1, xrange=[1d-3,1.0]
 	oploterror, A, uflux, Aerr, uflux2-uflux, /hibar, psym=1
 	oploterror, A, uflux, Aerr, uflux-uflux1, /lobar, psym=1
 	
@@ -168,14 +166,20 @@ pro fc,ps=ps
 	TT3 /= 1.6e-9/1.38d-16
 	print, AA3
 	
+	; Data for 1647
+	; from Hongjun:
+	; Time   Nh    err   kT   err   BBnorm   err   BB_rad   err   Gamma   err   PLnorm   err, 
+	; where err means the fit uncertainty of the quantity in the previous column. I used XSPEC models 
+	; to fit the data and thus the BBnorm has a specific definition (Luminosity in units of 10^39 erg/s 
+	; at a distance of 10 kpc).	Note that the data start from 5 days before the 2006 outburst 
+	; (the first row corresponds to the state of the star 5 days before the outburst).
 	readcol, 'data/j1647_fit_data.dat', time2, TT2, TTerr2, BBnorm2, BBnormerr2, BBrad2, BBraderr2,$
 					format=('D,X,X,D,D,D,D,D,D')
-
 	time2 -= time2[0] + 5.0
 	ind = where(time2 gt 0.0)
 	time2=time2[ind]
-	BBnorm2=BBnorm2[ind]*1d39
-	BBnormerr2=BBnormerr2[ind]*1d39
+	BBnorm2=BBnorm2[ind]*1d39*(5.0/10.0)^2
+	BBnormerr2=BBnormerr2[ind]*1d39*(5.0/10.0)^2
 	BBrad2=sqrt(BBrad2[ind])*(5.0/10.0)  ; adjust to 5kpc
 	K2=(0.1*BBrad2)^(-0.5)
 	Te2=TT2[ind]/K2
@@ -197,14 +201,17 @@ pro fc,ps=ps
 	K = A^(-0.25)
 	Kerr = K*0.25 * Aerr/A	
 	Terr = 0.5*(T2-T1)
+	Te=T
+	Teerr = Te
 	Te=T/K
 	Teerr = Te * sqrt((Terr/T)^2 + (Kerr/K)^2)
 			
-	plot, Te, K, psym=1, ytitle=textoidl('K^{-1/4}'), xtitle=textoidl('T (keV)')
+	plot, Te, K, psym=1, ytitle=textoidl('K^{-1/4}'), xtitle=textoidl('T (keV)'), yrange=[0,7],$
+			xrange=[0,0.3], xstyle=1, ystyle=1
 	oploterror, Te, K, Terr,Kerr, psym=1
 
 	oplot, Te2, K2, psym=5, col=250
-	oplot, TT3*sqrt(AA3), 1.0/sqrt(AA3), psym=5, col=120
+	;oplot, TT3*sqrt(AA3), 1.0/sqrt(AA3), psym=5, col=120
 
 	;ploterror, 100.0-time, A, Aerr, psym=1, $
 	;		ytitle=textoidl('(R/d)^2 (10 km/1.6 kpc)^2'), $
@@ -213,24 +220,25 @@ pro fc,ps=ps
 	R = sqrt(A)*10.0
 	Rerr = R*0.5*(Aerr/A)
 	ploterror, time, R, Rerr, psym=1,/xlog, $
-			ytitle=textoidl('R/d (km/1.6 kpc)'), $
-			xtitle=textoidl('Time (d)'), yrange=[0,3], xrange=[1,3000]
+			ytitle=textoidl('R (km)'), $
+			xtitle=textoidl('Time (d)'), yrange=[0,3], xrange=[1,3000],xstyle=1
 		oplot, time2, BBrad2, psym=5, col=250
-		oplot, time3, sqrt(AA3), psym=5, col=120
+		;oplot, time3, sqrt(AA3), psym=5, col=120
 
 	ploterror, time, T, Terr, psym=1, /xlog, $
 				ytitle=textoidl('T (keV)'), $
-				xtitle=textoidl('Time (d)'), xrange=[1,3000], yrange=[0,1]
+				xtitle=textoidl('Time (d)'), xrange=[1,3000], yrange=[0.4,0.9],xstyle=1
 			oploterror, time2, TT2, TTerr2, psym=5, col=250, errcol=250
-			oplot, time3, TT3, psym=5, col=120
+			;oplot, time3, TT3, psym=5, col=120
 
-			plot, time, uflux, psym=1, /xlog,/ylog, xtitle=textoidl('Time (d)'),$
-				ytitle=textoidl('L (1-10 keV) (erg s^{-1})'),$
-						yrange = [1d33,1d35], ystyle=1, xrange=[1,3000]
-			oploterror, time, uflux, uflux2-uflux, /hibar, psym=1
-			oploterror, time, uflux, uflux-uflux1, /lobar, psym=1
-
-
+	plot, time, uflux, psym=1, /xlog,/ylog, xtitle=textoidl('Time (d)'),$
+			ytitle=textoidl('L (1-10 keV) (erg s^{-1})'),$
+			yrange = [1d33,1d35], ystyle=1, xrange=[1,3000],xstyle=1
+	oploterror, time, uflux, uflux2-uflux, /hibar, psym=1
+	oploterror, time, uflux, uflux-uflux1, /lobar, psym=1
+	oplot, time2, BBnorm2, col=250, psym=1
+			
+			
 ;	A*=4.0*!dpi
 ;	Aerr*=4.0*!dpi
 ;	plot, A, uflux, psym=1, /xlog, /ylog, xtitle=textoidl('Area (10^{12} cm^2)'),$
@@ -384,8 +392,8 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 	if (not keyword_set(source)) then source='1659'
 
 	if (source eq '1659' or source eq '1731') then begin
-		xr=[1.0,5000.0]
-		yr=[40,160]
+		xr=[10.0,7000.0]
+		yr=[40,140]
 	endif
 	if (source eq '0748') then begin
 		xr=[10.0,3000.0]
@@ -433,6 +441,15 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 			oplot, tt,FF,linestyle=0
 		endif
 
+
+
+	;	readcol, 'gon_out/prof_1659_new', tt,Teff, format=('F,X,X,X,F')
+	;	tt/=(24*3600.0)
+	;	FF = 1.38d-16*Teff/(1.6d-12)
+	;	oplot, tt,FF,linestyle=0
+
+
+
 		if (source eq '1659' or source eq '1731' or source eq 'XTEJ' or source eq '0748') and not keyword_set(noextras) then  begin
 		; plot lightcurve from simulation
 		readcol, 'gon_out/prof_'+source+'_1', tt,Teff, format=('F,X,X,X,F')
@@ -451,7 +468,8 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 		endif
 
 		if (source eq '1731') then xyouts, 700,132,textoidl('KS 1731-260')
-		if (source eq '1659') then xyouts, 200,152,textoidl('MXB 1659-29')
+		if (source eq '1659') then xyouts, 800,132,textoidl('MXB 1659-29')
+;		if (source eq '1659') then xyouts, 200,152,textoidl('MXB 1659-29')
 		if (source eq 'XTEJ') then xyouts, 500,170,textoidl('XTE J1701-462')
 		if (source eq 'XTEJ2') then xyouts, 10,170,textoidl('XTE J1709-267')
 		if (source eq '0748') then xyouts, 400,130,textoidl('EXO 0748-676')
@@ -462,7 +480,7 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 ;		oplot, 10^t, 10^F, linestyle=2, col=250, thick=2
 		t=[1.0,2.5]
 		F=[alog10(124.0)-(t-1.0)/10.0]
-		oplot, 10^t, 10^F, linestyle=2, col=250, thick=2
+;		oplot, 10^t, 10^F, linestyle=2, col=250, thick=2
 
 	if keyword_set(ps) then close_ps
 end
@@ -2060,7 +2078,7 @@ pro prof2, delay=delay, png=png, source=source
 		erase
 		plot, y, T, /xlog, /ylog,charsize=1.2, ytitle=textoidl('T (K)'),$
 				xtitle=textoidl('P (g cm^{-2})'), yrange=[1e7,1e10],ystyle=1, $
-				xrange=[1d23,8d32], xstyle=1,/nodata
+				xrange=[1d26,8d32], xstyle=1,/nodata
 		ind = where(gamma le 175.0,cnt)
 		if (cnt gt 0) then begin
 			oplot, y[ind], T[ind], thick=3, linestyle=0, col=80
@@ -2076,7 +2094,7 @@ pro prof2, delay=delay, png=png, source=source
 		ff2=ff[where(tt*24*3600.0 le time)]
 		ploterror, tobs, Fobs, Fobse,/xlog, xtitle=textoidl('Time (d)'), $
 			ytitle=textoidl('T_{eff} (eV)'), charsize=1.5, $
-			xrange=[1.0,5d3],xstyle=1,psym=2,yrange=[min(Fobs)-20.0,max(Fobs)+60.0], ystyle=1
+			xrange=[10.0,7d3],xstyle=1,psym=2,yrange=[min(Fobs)-10.0,max(Fobs)+10.0], ystyle=1
 		if (ntt gt 1) then begin
 			oplot,tt2,FF2,linestyle=0
 		endif
