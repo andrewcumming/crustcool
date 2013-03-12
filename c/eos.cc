@@ -642,150 +642,163 @@ double Eos::f(void)
 
 
 double Eos::eps_nu(void)
-  // Calculates neutrino emissivity (erg/g/s)
-  // by plasma process from Schinder et al. 1987
+// Calculates neutrino emissivity (erg/g/s)
+// by plasma process from Schinder et al. 1987
+// and includes neutrino synchtron from Bezchastnov et al. 1997 (relevant for high B)
 {
-  double a0, a1, a2, b1, b2, b3, c;
-  double xi, xi2, xi3, la, la2, la3, g, K;
-  // double Q1, Q2, Q3, Q4;
+	double a0, a1, a2, b1, b2, b3, c;
+	double xi, xi2, xi3, la, la2, la3, g, K;
 
-  // variables
-  la=this->T8/59.302; la2=la*la; la3=la2*la;
-  xi=pow(this->rho*this->Ye()*1e-9, 1.0/3.0)/la;
-  xi2=xi*xi; xi3=xi2*xi;
-  
-  // 1. plasma
+	// variables
+	la=this->T8/59.302; la2=la*la; la3=la2*la;
+	xi=pow(this->rho*this->Ye()*1e-9, 1.0/3.0)/la;
+	xi2=xi*xi; xi3=xi2*xi;
 
-  // these coefficients valid for 10^8<T<10^11 K
-  a0=2.146e-7; a1=7.814e-8; a2=1.653e-8;
-  b1=2.581e-2; b2=1.734e-2; b3=6.990e-4;
-  c=0.56457;
+	double xx = this->x();
 
-  K=pow(this->rho*this->Ye(),3.0);
+	// ------ 1. plasma ------
+	// these coefficients valid for 10^8<T<10^11 K
+	a0=2.146e-7; a1=7.814e-8; a2=1.653e-8;
+	b1=2.581e-2; b2=1.734e-2; b3=6.990e-4;
+	c=0.56457;
 
-  // formula from Schinder et al.
-  Q1=K*exp(-c*xi)*(a0+a1*xi+a2*xi2)/(xi3+(b1/la)+(b2/la2)+(b3/la3));
+	K=pow(this->rho*this->Ye(),3.0);
 
-  // 2. pair
+	// formula from Schinder et al.
+	Q1=K*exp(-c*xi)*(a0+a1*xi+a2*xi2)/(xi3+(b1/la)+(b2/la2)+(b3/la3));
 
-  // coefficients valid for 10^8 < T < 10^11 K
-  a0=5.026e19; a1=1.745e20; a2=1.568e21;
-  if (this->T8 < 100.0) {  // 10^8<T<10^10 K
-    b1=9.383e-1; b2=-4.141e-1; b3=5.829e-2;
-    c=5.5924;
-  } else { // 10^10 < T < 10^11 K
-    b1=1.2383; b2=-8.141e-1; b3=0.0;
-    c=4.9924;
-  }
-
-  g=1.0-13.04*la2+133.5*la2*la2+1534*la2*la2*la2+918.6*la2*la2*la2*la2;
-  K=g*exp(-2.0/la);
-
-double qpair;
-qpair=pow(10.7480*la2+0.3967*sqrt(la)+1.0050,-1.0)
-	* pow(1.0 + this->rho*this->Ye()/(7.692e7*la3+9.715e6*sqrt(la)),-0.3);
 	
-
-
-  // formula from Schinder et al.
-  Q2=(1.0+0.10437*qpair)*K*exp(-c*xi)*(a0+a1*xi+a2*xi2)/(xi3+(b1/la)+(b2/la2)+(b3/la3));
-  
-  if (1) {
-
-  // 3. Brems    formula from Haensel et al. 96
-
-  //Q3=0.3229*this->rho*this->YZ2()*pow(this->T8,6.0);
-  // should now multiply by a order unity factor, add this later
-
-    if (this->gamma() < this->gamma_melt && this->rho <1e10) {
-      //  if (1) {
-      double L;
-      double A, B, eta, t, Z;
-      Z=this->Ye()/this->Yi();
-      // t = kT/2p_Fc (see their eq. 24)
-      t=this->T8/(118.6*(sqrt(1.0+pow(this->x(),2.0))-1.0));
-      
-      // finite core radius : value depends on whether above or
-      // below neutron drip
-      if (this->Yn == 0.0) eta=0.16*pow(this->rho*1e-12,1.0/3.0);
-      else eta=0.25*pow(this->rho*1e-12*this->Ye(),1.0/3.0);
-      //    if (eta > 0.2) eta = 0.2;
-      
-      A=0.269+20.0*t+0.0168*Z+0.00121*eta-0.0356*Z*eta+0.0137*Z*Z*t+1.54*Z*t*eta;
-      B=1.0+180.0*t*t+0.483*t*Z+20.0*t*Z*eta*eta+4.31e-5*Z*Z;
-      
-      L=A/pow(B,0.75);
-      //L=1.0;
-      
-      Q3=L*0.3229*this->rho*this->YZ2()*pow(this->T8,6.0);
-      
-      //Q3=L*0.3229*this->rho*pow(this->T8,6.0);
-      //Q3*=1.0-this->Yn;  // mass fraction of nuclei
-      //Q3*=this->Z[1]*this->Z[1]/this->A[1];
-      //   Q3=0.0;
-      
-    } else {
-
-      // Fit from Kaminker et al. 99
-      double r=log10(this->rho*1e-12);
-      double t=log10(this->T8);
-      double r0=2.8e14;
-      
-      Q3=11.204 + 7.304*t + 0.2976*r - 0.370*t*t + 0.188*t*r - 0.103*r*r
-	+ 0.0547*t*t*r - 6.77*log10(1+0.228*this->rho/r0);
-     
-      if (this->accr) {
-	// Dany suggested the following adjustments to approximate accreted matter
-	if (r < 0.1) Q3-=0.2;
-	else {
-	  if (r < 1.0) Q3-=0.3;
-	  else Q3-=0.4;
+	// ------ 2. pair ------
+	// coefficients valid for 10^8 < T < 10^11 K
+	a0=5.026e19; a1=1.745e20; a2=1.568e21;
+	if (this->T8 < 100.0) {  // 10^8<T<10^10 K
+		b1=9.383e-1; b2=-4.141e-1; b3=5.829e-2;
+		c=5.5924;
+	} else { // 10^10 < T < 10^11 K
+		b1=1.2383; b2=-8.141e-1; b3=0.0;
+		c=4.9924;
 	}
-      }
-      
-      Q3=pow(10.0,Q3);
-    }
-    
-  }
-  // 4. Cooper pairing in the crust
-  
-  Q4=0.0;
-  if (0) {   // switch it off
-      if (this->Yn > 0.0 && this->T8*1e8<TC()) {
-    double kf=0.261*pow(1e-12*this->rho*this->Yn,1.0/3.0);
-    double pf=kf*197.0;
-    double tau=this->T8*1e8/this->TC();
-    double u=sqrt(1.0-tau)*(1.456-(0.157/sqrt(tau))+(1.764/tau));
-    double fac=0.602*u*u+0.5942*pow(u,4.0)+0.288*pow(u,6.0);
-    fac*=sqrt(0.5547+sqrt(pow(0.4453,2.0)+0.01130*u*u));
-    fac*=exp(-sqrt(4*u*u+pow(2.245,2.0))+2.245);
-    
-    Q4=3.0*1.17e21*(pf/940.0)*pow(this->T8*0.1,7.0);
-    Q4*=fac;
-    
-    Q4*=this->Yn/(this->Yn+(1.0-this->Yn)/this->A[1]);  
-    // ^^^need to multiply by fraction of space
-    // occupied by free neutrons. I think this is n_n/n_particles
-    // this factor is not in Dany's code! but it's close to 1 anyway
-    // ie. most of the particles are neutrons
-      }
-  }
-  
-//Q3=0.0;
-//Q3=0.0; Q4=0.0;
-//Q2*=0.5;
 
-	// Neutrino synchrotron   Bezchastnov et al. 1997
-	// First regime B given by their eq. 7
-	Q5 = 9.04e14*pow(this->B/1e13,2.0)*pow(this->T8/10.0,5.0);
-	// Next need to include suppression factors from transition to A and C
-	//Q5 = 0.0;
+	g=1.0-13.04*la2+133.5*la2*la2+1534*la2*la2*la2+918.6*la2*la2*la2*la2;
+	K=g*exp(-2.0/la);
 
-  // return the summed emissivity (divide by rho to get per gram)
-	//return 0.0;
-//	return Q1/this->rho;
-      return (Q1+Q2+Q3+Q4+Q5)/this->rho;
+	double qpair;
+	qpair=pow(10.7480*la2+0.3967*sqrt(la)+1.0050,-1.0)
+		* pow(1.0 + this->rho*this->Ye()/(7.692e7*la3+9.715e6*sqrt(la)),-0.3);
+
+	// formula from Schinder et al.
+	Q2=(1.0+0.10437*qpair)*K*exp(-c*xi)*(a0+a1*xi+a2*xi2)/(xi3+(b1/la)+(b2/la2)+(b3/la3));
+
+	
+	// ------ 3. Brems ------
+	// formula from Haensel et al. 96
+	//Q3=0.3229*this->rho*this->YZ2()*pow(this->T8,6.0);
+
+	if (this->gamma() < this->gamma_melt && this->rho <1e10) { // liquid
+		double L;
+		double A, B, eta, t, Z;
+		Z=this->Ye()/this->Yi();
+		t=this->T8/(118.6*(sqrt(1.0+pow(xx,2.0))-1.0));
+
+		// finite core radius : value depends on whether above or
+		// below neutron drip
+		if (this->Yn == 0.0) eta=0.16*pow(this->rho*1e-12,1.0/3.0);
+		else eta=0.25*pow(this->rho*1e-12*this->Ye(),1.0/3.0);
+		A=0.269+20.0*t+0.0168*Z+0.00121*eta-0.0356*Z*eta+0.0137*Z*Z*t+1.54*Z*t*eta;
+		B=1.0+180.0*t*t+0.483*t*Z+20.0*t*Z*eta*eta+4.31e-5*Z*Z;
+		L=A/pow(B,0.75);
+
+		Q3=L*0.3229*this->rho*this->YZ2()*pow(this->T8,6.0);
+
+	} else {  // solid
+
+		// Fit from Kaminker et al. 99
+		double r=log10(this->rho*1e-12);
+		double t=log10(this->T8);
+		double r0=2.8e14;
+
+		Q3=11.204 + 7.304*t + 0.2976*r - 0.370*t*t + 0.188*t*r - 0.103*r*r
+			+ 0.0547*t*t*r - 6.77*log10(1+0.228*this->rho/r0);
+
+		if (this->accr) {
+		// D. Page suggested the following adjustments to approximate accreted matter
+			if (r < 0.1) Q3-=0.2;
+			else {
+				if (r < 1.0) Q3-=0.3;
+				else Q3-=0.4;
+			}
+		}
+
+		Q3=pow(10.0,Q3);
+	}
+
+
+	// ------ 4. Cooper pair emission in the crust ------
+	Q4=0.0;
+	if (0) {   // switch it off
+		if (this->Yn > 0.0 && this->T8*1e8<TC()) {
+			double kf=0.261*pow(1e-12*this->rho*this->Yn,1.0/3.0);
+			double pf=kf*197.0;
+			double tau=this->T8*1e8/this->TC();
+			double u=sqrt(1.0-tau)*(1.456-(0.157/sqrt(tau))+(1.764/tau));
+			double fac=0.602*u*u+0.5942*pow(u,4.0)+0.288*pow(u,6.0);
+			fac*=sqrt(0.5547+sqrt(pow(0.4453,2.0)+0.01130*u*u));
+			fac*=exp(-sqrt(4*u*u+pow(2.245,2.0))+2.245);
+
+			Q4=3.0*1.17e21*(pf/940.0)*pow(this->T8*0.1,7.0);
+			Q4*=fac;
+
+			Q4*=this->Yn/(this->Yn+(1.0-this->Yn)/this->A[1]);  
+			// ^^^need to multiply by fraction of space
+			// occupied by free neutrons. I think this is n_n/n_particles
+			// this factor is not in Dany's code! but it's close to 1 anyway
+			// ie. most of the particles are neutrons
+		}
+	}
+
+	
+	// ------ 5. Neutrino synchrotron ------
+	//  Bezchastnov et al. 1997
+	Q5 = 0.0;
+	if (1) {  // use this to turn off neutrino synchrotron
+
+		// First regime B given by their eq. 7
+		// this is the simple density independent part
+		Q5 = 9.04e14*pow(this->B/1e13,2.0)*pow(this->T8/10.0,5.0);
+
+		// Next need to include suppression factors from transition to A and C
+		double TB,z,xi;
+		TB = 1.34e9*this->B*1e-13/sqrt(1.0+xx*xx);
+		z = 1e-8*TB/this->T8;
+		xi = 1.5*z*pow(xx,3.0);  // this is TP/T
+		
+		double SAB, SBC;
+		{
+			double D1,D2;
+			D1 = 1.0+0.4228*z+0.1014*z*z+0.006240*z*z*z;
+			D2 = 1.0+0.4535*pow(z,2.0/3.0)+0.03008*z-0.05043*z*z+0.004314*z*z*z;
+			SBC = exp(-0.5*z)*D1*D2;
+		}
+		{
+			double Fm,Fp, y1,y2;
+			double a1=2.036e-4, b1=7.405e-8, c1=3.675e-4;
+			double a2=3.356e-3, b2=1.536e-5, c2=1.436e-2, d2=1.024e-5, e2=7.647e-8;
+			double DD1 = 44.01, DD2 = 36.97, alpha1=3172.0, alpha2=172.2;
+			y1 = pow(pow(1.0+alpha1*pow(xi,2.0/3.0),2.0/3.0)-1.0,1.5);
+			y2 = pow(pow(1.0+alpha2*pow(xi,2.0/3.0),2.0/3.0)-1.0,1.5);
+			Fp = DD1 * pow(1.0+c1*y1,2.0)/pow(1.0+a1*y1+b1*y1*y1,4.0);
+			Fm = DD2 * (1.0+c2*y2+d2*y2*y2+e2*y2*y2*y2)/pow(1.0+a2*y2+b2*y2*y2,5.0);	
+			SAB = (27.0*pow(xi,4.0)/(PI*PI*512.0*1.037))*(Fp-0.175*Fm/1.675);
+		}
+		
+		//  SAB=1.0; SBC=1.0;  // turn off regimes A and C
+		Q5 *= SBC*SAB;
+	}
+
+	// return the summed emissivity (divide by rho to get per gram)
+	return (Q1+Q2+Q3+Q4+Q5)/this->rho;
 }
+
 
 
 double Eos::TC(void)
