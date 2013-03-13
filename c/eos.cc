@@ -694,7 +694,7 @@ double Eos::eps_nu(void)
 	// formula from Haensel et al. 96
 	//Q3=0.3229*this->rho*this->YZ2()*pow(this->T8,6.0);
 
-	if (this->gamma() < this->gamma_melt && this->rho <1e10) { // liquid
+	if (this->gamma() < this->gamma_melt) { //} && this->rho <1e10) { // liquid
 		double L;
 		double A, B, eta, t, Z;
 		Z=this->Ye()/this->Yi();
@@ -777,7 +777,7 @@ double Eos::eps_nu(void)
 			double D1,D2;
 			D1 = 1.0+0.4228*z+0.1014*z*z+0.006240*z*z*z;
 			D2 = 1.0+0.4535*pow(z,2.0/3.0)+0.03008*z-0.05043*z*z+0.004314*z*z*z;
-			SBC = exp(-0.5*z)*D1*D2;
+			SBC = exp(-0.5*z)*D1/D2;
 		}
 		{
 			double Fm,Fp, y1,y2;
