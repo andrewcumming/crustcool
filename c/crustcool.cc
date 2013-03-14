@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
 	G.force_precalc=0;
 	G.Qinner=-1.0;
 	G.running_from_command_line=1;	
-	G.outburst_duration = (1.0/24.0) * 1.0/(365.0);  // rapid heating for magnetar case	
+	G.outburst_duration = (1.0/24.0) * 1.0/(365.0);  // rapid heating for magnetar case	(1 hour)
 	EOS.accr = 0;   // set crust composition
 	EOS.B=0; //2.2e14;   // magnetic field in the crust   (set B>0 for magnetar case)
 	EOS.gap = 1;    // 0 = no gap, normal neutrons
