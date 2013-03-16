@@ -1925,9 +1925,17 @@ pro initialT, ps=ps, ener=ener
 			init_plotone, 'B1e14E3.0_1e9_E10.8constantpergram',ls=2
 		endelse
 		
-		;nit_plotone,'',ls=0,lcol=160
+		init_plotone,'',ls=0,lcol=160
 							
-		;rho = dindgen(10)*0.1 *1.5 + 9.5
+		; plot TB(rho)
+		B=1d15
+		rho = dindgen(10)*0.1 *3 + 8.5
+		rho = 10^rho
+		x = 10.0*(1d-9*rho*0.5)^0.333
+		T = 1.34e9*1d-13*B/x
+		oplot, rho, T, linestyle=4
+		
+		
 		;T = alog10(3.5d8) - 0.6*(rho-10.0)
 		;if keyword_set(ener) then T+=2.0*alog10(ener)/3.0
 		;T+=2.0*alog10(10.8*10^(rho-11.0))/3.0
