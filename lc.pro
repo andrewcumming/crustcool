@@ -867,6 +867,8 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 	!p.multi=[0,1,1,0,0]
 		!p.charsize=1.4
 		
+	if not keyword_set(source) then source = ''
+		
 	if keyword_set(ps) then begin
 		if keyword_set(source) then name = 'lc'+source+'.ps' else name='lc.ps'
    ;		open_ps, name
@@ -878,8 +880,8 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 		!p.charthick=3
   	endif
 	
-	yr=[2d33,3d36]
-	xr=[0.1,6000.0]
+	yr=[1d32,3d34]
+	xr=[10.0,6000.0]
 	if (strcmp(source,'2259',4)) then yr=[1d34,1d35]
 	if (strcmp(source,'fluxes1822',10)) then begin
 		yr=[1d32,2d35]
@@ -931,8 +933,8 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 ;				ytitle=textoidl('Luminosity (erg s^{-2})'), linestyle=0, charsize=1.5, $
 ;				xrange=[0.01,1000.0],xstyle=1, yrange=[1d35,1d38]
 	if not keyword_set(overplot) then begin
-		plot, tm, Fm, /xlog, /ylog, $;xtitle=textoidl('Days after outburst (d)'), $
-			xtitle=textoidl('Days since BAT trigger (d)'), $
+		plot, tm, Fm, /xlog, /ylog, xtitle=textoidl('Days after outburst (d)'), $
+			;xtitle=textoidl('Days since BAT trigger (d)'), $
 			ytitle=textoidl('Luminosity (erg s^{-1})'), linestyle=0, $
 			xrange=xr,xstyle=1, yrange=yr, ystyle=1, nodata=noplot
 	endif
@@ -1226,7 +1228,6 @@ endif
 	if not keyword_set(noplot) then	oplot, tm,Fm,col=250
 	
 	
-	if not keyword_set(source) then source=''
 	if not keyword_set(nodata) then begin
 
 		if (strcmp(source,'1647',4)) then begin
@@ -1368,7 +1369,7 @@ endif
 			
 		endif
 		
-		if (source eq '' or strcmp(source,'2259',4) ) then begin
+		if (strcmp(source,'2259',4) ) then begin
 			readcol, 'data/'+source, t0, format=('D'), numline=1
 			readcol, 'data/'+source, t, F, dF, format=('D,D,D'),skipline=1
 			F*=1d-11
@@ -1400,6 +1401,7 @@ endif
 			dF=dF1
 		endif
 	
+	if keyword_set(source) then begin
 	; now calculate chi-squared
 		Lmodel = interpol(Fm,tm,t)
 		chi = total(((Lmodel-F)/dF)^2)
@@ -1411,6 +1413,8 @@ endif
 		L10 = interpol(F[ind],t[ind],10.0)
 		print, 'L10=',L10
 ;		print,t[ind],F[ind]
+
+endif
 	
 	endif
 
