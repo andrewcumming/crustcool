@@ -416,20 +416,17 @@ void Eos::set_comp(void)
 	this->Yn=(Acell[i]-A)/Acell[i];
       }
     } else {  // cold matter composition
-      if (this->rho < rhomaxb[12]) {
-	i=0;
-	while (this->rho > rhomaxb[i] && i<12) i++;
-	A=Ab[i]; Z=Zb[i]; this->Yn=0.0;
-      } else {
-	i=0;
-	while (this->rho > nc[i]*1.66e15 && i<42) i++;
-	A=Ac[i-1]+(Ac[i]-Ac[i-1])*
-	  (this->rho-1.66e15*nc[i-1])/(1.66e15*(nc[i]-nc[i-1]));
-	Z=Zc[i-1]+(Zc[i]-Zc[i-1])*
-	  (this->rho-1.66e15*nc[i-1])/(1.66e15*(nc[i]-nc[i-1]));
-	this->Yn=xc[i-1]+(xc[i]-xc[i-1])*
-	  (this->rho-1.66e15*nc[i-1])/(1.66e15*(nc[i]-nc[i-1]));
-      }
+      	if (this->rho < rhomaxb[11]) {
+			i=0;
+			while (this->rho > rhomaxb[i] && i<12) i++;
+			A=Ab[i]; Z=Zb[i]; this->Yn=0.0;
+      	} else {
+			i=0;
+			while (this->rho > nc[i]*1.66e15 && i<42) i++;
+			A=Ac[i-1]+(Ac[i]-Ac[i-1])*(this->rho-1.66e15*nc[i-1])/(1.66e15*(nc[i]-nc[i-1]));
+			Z=Zc[i-1]+(Zc[i]-Zc[i-1])*(this->rho-1.66e15*nc[i-1])/(1.66e15*(nc[i]-nc[i-1]));
+			this->Yn=xc[i-1]+(xc[i]-xc[i-1])*(this->rho-1.66e15*nc[i-1])/(1.66e15*(nc[i]-nc[i-1]));
+      	}
     }
   }
 
@@ -649,12 +646,16 @@ double Eos::eps_nu(void)
 	double a0, a1, a2, b1, b2, b3, c;
 	double xi, xi2, xi3, la, la2, la3, g, K;
 
+	Q6=0.0;   // Q6 is not included in the total emissivity, 
+	// it can be used to return a comparison value
+
 	// variables
 	la=this->T8/59.302; la2=la*la; la3=la2*la;
 	xi=pow(this->rho*this->Ye()*1e-9, 1.0/3.0)/la;
 	xi2=xi*xi; xi3=xi2*xi;
 
 	double xx = this->x();
+//	xx = pow(this->rho*this->Ye()/9.7e5,1.0/3.0);
 
 	// ------ 1. plasma ------
 	// these coefficients valid for 10^8<T<10^11 K
@@ -667,6 +668,18 @@ double Eos::eps_nu(void)
 	// formula from Schinder et al.
 	Q1=K*exp(-c*xi)*(a0+a1*xi+a2*xi2)/(xi3+(b1/la)+(b2/la2)+(b3/la3));
 
+	// Also check the formula from Yakovlev et al. (2001) eqs (23,38,40)
+	// At high density, when the emissivity is suppressed the agreement is excellent
+	// At low density, Yakovlev et al. are tens of percent to factor of 2 larger
+	if (0) {
+		double Qc=1.023e23;
+		double xr = 100.9*pow(1e-12*this->rho*this->Ye(),1.0/3.0);
+		double tr = 1.38e-8*this->T8/(9.11e-28*9e20);
+		double fp = sqrt(4.0*(1.0/137.0)*pow(xr,3.0)/(3.0*PI*sqrt(1.0+xr*xr)))/tr;
+		double Ip = pow(tr,9.0)*(16.23*pow(fp,6.0)+4.604*pow(fp,15.0/2.0))*exp(-fp);
+		Q6 = Ip*Qc*0.9248*137.0/(96.0*pow(PI,4.0));
+	}
+	
 	
 	// ------ 2. pair ------
 	// coefficients valid for 10^8 < T < 10^11 K
@@ -691,10 +704,11 @@ double Eos::eps_nu(void)
 
 	
 	// ------ 3. Brems ------
-	// formula from Haensel et al. 96
+	
 	//Q3=0.3229*this->rho*this->YZ2()*pow(this->T8,6.0);
 
-	if (this->gamma() < this->gamma_melt) { //} && this->rho <1e10) { // liquid
+	if (this->gamma() < this->gamma_melt) { // liquid
+		// Here we implement equations (8) and (25) from Haensel et al. 96
 		double L;
 		double A, B, eta, t, Z;
 		Z=this->Ye()/this->Yi();
@@ -704,6 +718,7 @@ double Eos::eps_nu(void)
 		// below neutron drip
 		if (this->Yn == 0.0) eta=0.16*pow(this->rho*1e-12,1.0/3.0);
 		else eta=0.25*pow(this->rho*1e-12*this->Ye(),1.0/3.0);
+		// Eq.(25) of Haensel et al. 1996 for the Coulomb logarithm L
 		A=0.269+20.0*t+0.0168*Z+0.00121*eta-0.0356*Z*eta+0.0137*Z*Z*t+1.54*Z*t*eta;
 		B=1.0+180.0*t*t+0.483*t*Z+20.0*t*Z*eta*eta+4.31e-5*Z*Z;
 		L=A/pow(B,0.75);
@@ -712,7 +727,7 @@ double Eos::eps_nu(void)
 
 	} else {  // solid
 
-		// Fit from Kaminker et al. 99
+		// Fit from Kaminker et al. (1999), eq.(40)
 		double r=log10(this->rho*1e-12);
 		double t=log10(this->T8);
 		double r0=2.8e14;
@@ -721,7 +736,8 @@ double Eos::eps_nu(void)
 			+ 0.0547*t*t*r - 6.77*log10(1+0.228*this->rho/r0);
 
 		if (this->accr) {
-		// D. Page suggested the following adjustments to approximate accreted matter
+		// adjustment to approximate accreted matter
+		// as described in Cumming et al. (2006)
 			if (r < 0.1) Q3-=0.2;
 			else {
 				if (r < 1.0) Q3-=0.3;
@@ -791,7 +807,7 @@ double Eos::eps_nu(void)
 			SAB = (27.0*pow(xi,4.0)/(PI*PI*512.0*1.037))*(Fp-0.175*Fm/1.675);
 		}
 		
-		//  SAB=1.0; SBC=1.0;  // turn off regimes A and C
+		//SAB=1.0; SBC=1.0;  // turn off regimes A and C
 		Q5 *= SBC*SAB;
 	}
 
