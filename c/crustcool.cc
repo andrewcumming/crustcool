@@ -842,7 +842,7 @@ void set_up_initial_temperature_profile_piecewise(char *fname)
 		ODEheat.go(G.Tc,Ti,0.01*G.Tc, 1e-6, heatderivs2);
 		Ed = ODEheat.get_y(1,ODEheat.kount);
 		totalEd+=Ed*4.0*PI*1e10*G.radius*G.radius*G.dx*G.P[i]/G.g;
-		if (Ed > 0.0) printf("heating cell %d:  Ti=%lg Tf=%lg E25=%lg rho=%lg\n",
+		if (Ed > 0.0) printf("heating cell %d: Ti=%lg Tf=%lg E25=%lg rho=%lg\n",
 					i, G.Tc, Ti, Ed*G.rho[i]*1e-25, G.rho[i]);
 		ODEheat.tidy();			
 					
@@ -923,7 +923,7 @@ void set_up_initial_temperature_profile(void)
 			printf("heating cell %d:  Ti=%lg E25=%lg ", i,Ti,energy_deposited(i));
 			ODEheat.go(0.0, energy_deposited(i), 1e-4, 1e-6, heatderivs);
 			Ti = ODEheat.get_y(1,ODEheat.kount);
-			printf(" Tf=%lg\n", Ti);
+			printf(" Tf=%lg  rho=%lg\n", Ti, G.rho[i]);
 			ODEheat.tidy();			
 		}
 		

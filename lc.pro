@@ -1165,7 +1165,7 @@ endif
 	
 if (strcmp(source,'fluxes1822',10)) then begin		
 	;lcplot, '1822_A', 1  ; 2e9 to 3e10  E25=2.3  Q=1   B=6e13   Tc=2e7
-	lcplot, '1822_B', 0	   ; 2e9 to 3e10  E25=2.3  Q=10   B=6e13   Tc=2e7
+;	lcplot, '1822_B', 0	   ; 2e9 to 3e10  E25=2.3  Q=10   B=6e13   Tc=2e7
 	;lcplot, '1822_C', 3   ; 2e9 to 1e10  E25=1.7  Q=1   B=1e15   Tc=1.5e7
 	;lcplot, '1822_D', 1   ; 3.5e9 to 5.5e9  E25=11  Q=10   B=1e15   Tc=1.5e7
 ;lcplot, '1822_step', 0  
