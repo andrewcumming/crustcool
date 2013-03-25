@@ -567,8 +567,8 @@ double calculate_heat_flux(int i, double *T)
 				double chi1,chi2;
 				double B12=EOS.B*1e-12;
 				chi1 = 1.0 + 0.0492*pow(B12,0.292)/pow(T9,0.24);
-			//	chi2 = sqrt(1.0 + 0.1076*B12*pow(0.03+T9,-0.559))/
-			//		pow(1.0+0.819*B12/(0.03+T9),0.6463);
+				//chi2 = sqrt(1.0 + 0.1076*B12*pow(0.03+T9,-0.559))/
+				//			pow(1.0+0.819*B12/(0.03+T9),0.6463);
 				double fcond = 4.0*G.angle_mu*G.angle_mu/(1.0+3.0*G.angle_mu*G.angle_mu);		
 				flux *= fcond*pow(chi1,4.0);//+(1.0-fcond)*pow(chi2,4.0);
 
@@ -1032,13 +1032,15 @@ void precalculate_vars(void)
 				double Kcond,Kcondperp;
 				//Kcond = EOS.K_cond(EOS.Chabrier_EF());
 				Kcond = potek_cond(&Kcondperp);   
-				Kcondperp=0.0;
+				//Kcondperp=0.0;
+				Kcond = 0.5*(1.0544*Kcond+0.9456*Kcondperp);  // average over dipole geometry
 				G.K0_grid[i][j]=EOS.rho*Kcond/G.P[i];
 				G.K0perp_grid[i][j]=EOS.rho*Kcondperp/G.P[i];
 				EOS.Q=1.0;
 				//Kcond = EOS.K_cond(EOS.Chabrier_EF());
 				Kcond = potek_cond(&Kcondperp);
-				Kcondperp=0.0;
+				Kcond = 0.5*(1.0544*Kcond+0.9456*Kcondperp);  // average over dipole geometry
+				//Kcondperp=0.0;
 				G.K1_grid[i][j]=EOS.rho*Kcond/G.P[i];
 				G.K1perp_grid[i][j]=EOS.rho*Kcondperp/G.P[i];
 				EOS.Q=Q_store;  // restore to previous value

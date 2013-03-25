@@ -1,30 +1,29 @@
-Tt	3.9e8
-Qimp	2.9
-Tc	3.4e7
+#Tt	3.9e8
+Qimp	1
+Tc	7e7
 
-#Edep	10
+
+Edep	10
 #Einner	800
-#rhot	1e10
-#rhob	2e11
-mass	1.6
-radius	11.2
+rhot	1e9
+rhob	1e11
+mass	1.4
+radius	12.0
 
 #Qinner	3
-Bfield  0
-#Bfield 2e14
+Bfield  1e14
 
-mdot	0.1
+#mdot	0.1
 
-precalc 0
+precalc 1
 ngrid	100
-SFgap	4
+SFgap	1
 kncrit	0.0
 sph	0
 
 piecewise	0
-timetorun	10000.0
+timetorun	6000.0
 neutrinos	1
 instant	0
 
-toutburst 2.5
-accreted 1
+#accreted 0

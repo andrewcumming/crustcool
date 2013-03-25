@@ -880,8 +880,8 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 		!p.charthick=3
   	endif
 	
-	yr=[1d32,3d34]
-	xr=[10.0,6000.0]
+	yr=[2d32,3d36]
+	xr=[0.1,6000.0]
 	if (strcmp(source,'2259',4)) then yr=[1d34,1d35]
 	if (strcmp(source,'fluxes1822',10)) then begin
 		yr=[1d32,2d35]
@@ -2352,6 +2352,8 @@ pro initialT10,ps=ps
 	T10,source='B1e14E3.0_1e9',/overplot
 	T10,source='B1e14E1.0_1e9',/overplot
 	T10,source='B1e14E0.3_1e9',/overplot
+
+	T10,/overplot,nread=14, ls=1
 	
 	if (0) then begin
 		T10,source='B1e15E100.0',ls=2
@@ -2373,7 +2375,7 @@ pro initialT10,ps=ps
 end
 
 	
-pro T10, delay=delay, png=png, source=source,overplot=overplot, ls=ls
+pro T10, delay=delay, png=png, source=source,overplot=overplot, ls=ls, nread=nread
 
 	; read Gamma/T for the initial model, used to plot melting curve
 	readcol, 'gon_out/grid_profile', ym, GammaT, format=('X,X,D,X,X,X,X,X,X,D')
@@ -2402,7 +2404,8 @@ pro T10, delay=delay, png=png, source=source,overplot=overplot, ls=ls
 		readf, lun, time
 
 		; read in next batch of data
-		data=dblarr(13,ngrid)
+		if not keyword_set(nread) then nread=13
+		data=dblarr(nread,ngrid)
 		readf, lun, data
 		y=data(0,*)
 		T=data(1,*)
