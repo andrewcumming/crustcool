@@ -516,24 +516,26 @@ pro lcsum, namestring, ls, Rvec=Rvec
 		
 		name = 'gon_out/prof_'+namestring+'_mu'+strtrim(string(1.0*i/nzones,format='(f3.1)'))
 		print, 'Reading file ',name
-		readcol, name, tm,Fm,format=('D,X,D')	
+		readcol, name, tm,Fm,format=('D,X,D'),/silent	
 		tm/=(24.0*3600.0)  ; convert time to days		
 		Fvec1 = interpol(Fm,tm,tvec)  ; interpolate the flux onto the regular time grid
 
 		; limb darkening law
-		nn=1.0
+		nn=0.0
 		limb = (1.0+nn)*(1.0*i/nzones)^nn
-
+		limb=1.0
 		; effective temperature at each time for this zone
 		Teff[i-1,*] = 1.38d-16*(Fvec1/5.67d-5)^0.25/1.6d-9   ; Teff in keV	
 		
-		FF[i-1,*] = 0.5* Fvec1 * (1.0/nzones) * limb   ; (L/4piR^2) from patch i as a function of time
+		FF[i-1,*] = Fvec1 * (1.0/nzones) * limb   ; (L/4piR^2) from patch i as a function of time
 
 	endfor
 
 	AA = 4.0*!dpi*1.12d6^2
 	Fvec = total(FF,1)*AA  ; the luminosity is 4piR^2 * sum over all patches
 	oplot, tvec, Fvec, linestyle=ls
+
+	if (0) then begin
 
 	fc=1.8
 
@@ -572,6 +574,7 @@ pro lcsum, namestring, ls, Rvec=Rvec
 	plot, tvec, Rvec, /xlog, xrange=[1.0,1000.0],xstyle=1,$
 		xtitle=textoidl('Days after outburst (d)'), $
 		ytitle=textoidl('Normalized blackbody radius'), yrange=[min(Rvec)-0.1,1.1]
+endif
 end
 
 
@@ -869,16 +872,17 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 		
 	if not keyword_set(source) then source = ''
 		
-	if keyword_set(ps) then begin
-		if keyword_set(source) then name = 'lc'+source+'.ps' else name='lc.ps'
+	if keyword_set(ps) then open_ps, 'lc'+source+'.ps'
+;		if keyword_set(ps) then begin
+;		if keyword_set(source) then name = 'lc'+source+'.ps' else name='lc.ps'
    ;		open_ps, name
-		set_plot,'ps'
-		device, filename=name, /encapsul,/color
-		!p.thick=3
-		!x.thick=3
-		!y.thick=3
-		!p.charthick=3
-  	endif
+;		set_plot,'ps'
+;		device, filename=name, /encapsul,/color
+;		!p.thick=3
+;		!x.thick=3
+;		!y.thick=3
+;		!p.charthick=3
+ ; 	endif
 	
 	yr=[2d32,3d36]
 	xr=[0.1,6000.0]
@@ -1171,7 +1175,20 @@ if (strcmp(source,'fluxes1822',10)) then begin
 ;lcplot, '1822_step', 0  
 ;lcplot, '1822_edep', 2  
 
-;lcplot, '1822_mu1.0',1
+lcplot, '1822_new_mu1.0',1
+lcplot, '1822_new_mu0.9',1
+lcplot, '1822_new_mu0.8',1
+lcplot, '1822_new_mu0.7',1
+lcplot, '1822_new_mu0.6',1
+lcplot, '1822_new_mu0.5',1
+lcplot, '1822_new_mu0.4',1
+lcplot, '1822_new_mu0.3',1
+lcplot, '1822_new_mu0.2',1
+lcplot, '1822_new_mu0.1',1
+
+lcsum, '1822_new', 2
+lcplot, '1822_new_step'
+
 ;lcplot, '1822_mu0.9',1
 ;lcplot, '1822_mu0.8',1
 ;lcplot, '1822_mu0.7',1
