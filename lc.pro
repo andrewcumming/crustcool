@@ -486,18 +486,22 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 end
 
 
-pro lcplot, namestring, ls, tscal=tscal
+pro lcplot, namestring, ls, tscal=tscal, linecol=linecol
 	readcol, 'gon_out/prof_'+namestring, tm, F2,Fm, F3,format=('F,F,F,X,F')	
 	tm/=(24.0*3600.0)
 	Fm*=4.0*!dpi*1.12d6^2
 	;print, tm, Fm
 ;	if keyword_set(tscal) then tm/=tscal
-	oplot, tm, Fm,linestyle=ls
+	if keyword_set(linecol) then begin
+		oplot, tm, Fm,linestyle=ls, col=linecol
+	endif else begin
+		oplot, tm, Fm,linestyle=ls
+	endelse
 	print, 'Plotted ', namestring
 end
 
 	
-pro lcsum, namestring, ls, Rvec=Rvec
+pro lcsum, namestring, ls, Rvec=Rvec, muup=muup, Lscale=Lscale
 	
 	nt=200
 	
@@ -512,7 +516,10 @@ pro lcsum, namestring, ls, Rvec=Rvec
 	FF = dblarr(nzones,nt)
 	Teff = dblarr(nzones,nt)
 		
-	for i=nstart,nzones do begin
+	nend = nzones
+	if keyword_set(muup) then nend=muup*nzones
+			
+	for i=nstart,nend do begin
 		
 		name = 'gon_out/prof_'+namestring+'_mu'+strtrim(string(1.0*i/nzones,format='(f3.1)'))
 		print, 'Reading file ',name
@@ -533,6 +540,7 @@ pro lcsum, namestring, ls, Rvec=Rvec
 
 	AA = 4.0*!dpi*1.12d6^2
 	Fvec = total(FF,1)*AA  ; the luminosity is 4piR^2 * sum over all patches
+	if keyword_set(Lscale) then Fvec *= Lscale;
 	oplot, tvec, Fvec, linestyle=ls
 
 	if (0) then begin
@@ -758,7 +766,7 @@ end
 pro open_ps, name
 	!p.font=0
 	set_plot, 'ps'
-	device,filename=name,/color,/times,/encapsul,xsize=16.0,ysize=16.0
+	device,filename=name,/color,/times,/encapsul,xsize=18.0,ysize=18.0
 	!p.multi=[0,1,1,0,0]
 	!p.charsize=1.4
 	!p.position=square()
@@ -889,7 +897,7 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 	if (strcmp(source,'2259',4)) then yr=[1d34,1d35]
 	if (strcmp(source,'fluxes1822',10)) then begin
 		yr=[1d32,2d35]
-		xr=[1.0,1000]
+		xr=[1.0,3000]
 	endif
 	if (strcmp(source,'fluxes1547',10)) then yr=[1d33,1d36]
 	if (strcmp(source,'0501',4)) then begin
@@ -1175,19 +1183,35 @@ if (strcmp(source,'fluxes1822',10)) then begin
 ;lcplot, '1822_step', 0  
 ;lcplot, '1822_edep', 2  
 
-lcplot, '1822_new_mu1.0',1
-lcplot, '1822_new_mu0.9',1
-lcplot, '1822_new_mu0.8',1
-lcplot, '1822_new_mu0.7',1
-lcplot, '1822_new_mu0.6',1
-lcplot, '1822_new_mu0.5',1
-lcplot, '1822_new_mu0.4',1
-lcplot, '1822_new_mu0.3',1
-lcplot, '1822_new_mu0.2',1
-lcplot, '1822_new_mu0.1',1
-
-lcsum, '1822_new', 2
+if (0) then begin
+lcplot, '1822_new_withB_mu1.0',1, linecol=80
+lcplot, '1822_new_withB_mu0.9',1, linecol=80
+lcplot, '1822_new_withB_mu0.8',1, linecol=80
+lcplot, '1822_new_withB_mu0.7',1, linecol=80
+lcplot, '1822_new_withB_mu0.6',1, linecol=80
+lcplot, '1822_new_withB_mu0.5',1, linecol=80
+lcplot, '1822_new_withB_mu0.4',1, linecol=80
+lcplot, '1822_new_withB_mu0.3',1, linecol=80
+lcplot, '1822_new_withB_mu0.2',1, linecol=80
+lcplot, '1822_new_withB_mu0.1',1, linecol=80
+lcsum, '1822_new_withB', 2
 lcplot, '1822_new_step'
+endif else begin
+lcplot, '1822_new_withB_Tc2e7_mu1.0',1, linecol=80
+lcplot, '1822_new_withB_Tc2e7_mu0.9',1, linecol=80
+lcplot, '1822_new_withB_Tc2e7_mu0.8',1, linecol=80
+lcplot, '1822_new_withB_Tc2e7_mu0.7',1, linecol=80
+lcplot, '1822_new_withB_Tc2e7_mu0.6',1, linecol=80
+lcplot, '1822_new_withB_Tc2e7_mu0.5',1, linecol=80
+lcplot, '1822_new_withB_Tc2e7_mu0.4',1, linecol=80
+lcplot, '1822_new_withB_Tc2e7_mu0.3',1, linecol=80
+lcplot, '1822_new_withB_Tc2e7_mu0.2',1, linecol=80
+lcplot, '1822_new_withB_Tc2e7_mu0.1',1, linecol=80
+lcsum, '1822_new_withB_Tc2e7', 2, muup=1.0, Lscale=1.0
+lcplot, '1822_new_step_Tc2e7'
+endelse
+xyouts, 4.0, 1d35, textoidl('\mu=1 (magnetic pole)'), col=80, charsize=1.2
+xyouts, 4.0, 3d33, textoidl('\mu=0.1 (near equator)'), col=80, charsize=1.2
 
 ;lcplot, '1822_mu0.9',1
 ;lcplot, '1822_mu0.8',1
@@ -1298,7 +1322,7 @@ endif
 			if (strcmp(source,'fluxes1547',10)) then dd=3.9
 			F*=4.0*!dpi*(3.086d21*dd)^2
 			dF*=4.0*!dpi*(3.086d21*dd)^2
-			oploterror, t, F, dF, psym=1,/nohat
+			oploterror, t, F, dF, psym=1,/nohat, col=250
 				
 			if (strcmp(source,'fluxes1822',10)) then begin
 				readcol, 'data/'+source, t2, F2, dF2,flag, format=('D,X,D,D,X,I'),skipline=1		
@@ -1306,7 +1330,7 @@ endif
 				ind = where(flag eq 1)			
 				F2*=4.0*!dpi*(3.086d21*dd)^2
 				dF2*=4.0*!dpi*(3.086d21*dd)^2
-				oploterror, t2[ind], F2[ind], dF2[ind], psym=6,/nohat,symsize=1
+				oploterror, t2[ind], F2[ind], dF2[ind], psym=6,/nohat,symsize=1, col=250
 				t = [t,t2[ind]]
 				F = [F,F2[ind]]
 				ind = sort(t)
