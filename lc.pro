@@ -1197,6 +1197,8 @@ lcplot, '1822_new_withB_mu0.1',1, linecol=80
 lcsum, '1822_new_withB', 2
 lcplot, '1822_new_step'
 endif else begin
+	
+	if (0) then begin
 lcplot, '1822_new_withB_Tc2e7_mu1.0',1, linecol=80
 lcplot, '1822_new_withB_Tc2e7_mu0.9',1, linecol=80
 lcplot, '1822_new_withB_Tc2e7_mu0.8',1, linecol=80
@@ -1209,6 +1211,22 @@ lcplot, '1822_new_withB_Tc2e7_mu0.2',1, linecol=80
 lcplot, '1822_new_withB_Tc2e7_mu0.1',1, linecol=80
 lcsum, '1822_new_withB_Tc2e7', 2, muup=1.0, Lscale=1.0
 lcplot, '1822_new_step_Tc2e7'
+
+endif else begin
+	for i=1,10 do begin
+		name='rn2_mu'+strtrim(string(0.1*i,format='(F3.1)'),1)
+;  for the case of steps of 0.05 in mu, need to do odd and even separately
+;		if (i mod 2 eq 0) then begin
+;			name='rn_mu'+strtrim(string(0.1*i,format='(F3.1)'),1)
+;		endif else begin
+;			name='rn_mu'+strtrim(string(0.05*i,format='(F4.2)'),1)
+;		endelse
+		print, 'Opening file ',name
+		lcplot, name,1, linecol=80
+	endfor
+	lcsum, 'rn2',2
+	lcplot, 'rn2'
+endelse
 endelse
 xyouts, 4.0, 1d35, textoidl('\mu=1 (magnetic pole)'), col=80, charsize=1.2
 xyouts, 4.0, 3d33, textoidl('\mu=0.1 (near equator)'), col=80, charsize=1.2
@@ -1322,7 +1340,7 @@ endif
 			if (strcmp(source,'fluxes1547',10)) then dd=3.9
 			F*=4.0*!dpi*(3.086d21*dd)^2
 			dF*=4.0*!dpi*(3.086d21*dd)^2
-			oploterror, t, F, dF, psym=1,/nohat, col=250
+			oploterror, t, F, dF, psym=1,/nohat, col=250, errcol=250
 				
 			if (strcmp(source,'fluxes1822',10)) then begin
 				readcol, 'data/'+source, t2, F2, dF2,flag, format=('D,X,D,D,X,I'),skipline=1		
@@ -1330,7 +1348,7 @@ endif
 				ind = where(flag eq 1)			
 				F2*=4.0*!dpi*(3.086d21*dd)^2
 				dF2*=4.0*!dpi*(3.086d21*dd)^2
-				oploterror, t2[ind], F2[ind], dF2[ind], psym=6,/nohat,symsize=1, col=250
+				oploterror, t2[ind], F2[ind], dF2[ind], psym=6,/nohat,symsize=1, col=250, errcol=250
 				t = [t,t2[ind]]
 				F = [F,F2[ind]]
 				ind = sort(t)
