@@ -990,7 +990,7 @@ if (0) then begin
 endif
 
 
-if (0) then begin
+if (1) then begin
 	lcplot, 'B1e15E3.0_1e9',2
 	lcplot, 'B1e15E1.0_1e9',2
 	lcplot, 'B1e15E0.3_1e9',2

@@ -421,7 +421,7 @@ void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar)
 
 	// output time, fluxes and TEFF that are already redshifted
 	fprintf(fp2, "%lg %lg %lg %lg %lg %lg %lg\n", (timesofar+ODE.get_x(j))*G.ZZ, 
-			G.F[2]/(G.ZZ*G.ZZ), FF/(G.ZZ*G.ZZ),
+			pow((G.radius/11.2),2.0)*G.F[2]/(G.ZZ*G.ZZ), pow((G.radius/11.2),2.0)*FF/(G.ZZ*G.ZZ),
 			ODE.get_y(G.N-5,j), pow((G.g/2.28e14)*TEFF.get(ODE.get_y(1,j))/5.67e-5,0.25)/G.ZZ, 
 			ODE.get_y(1,j), pow((G.g/2.28e14)*TEFF.get(ODE.get_y(1,j))/5.67e-5,0.25));
 
