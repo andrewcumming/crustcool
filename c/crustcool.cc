@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
 		G.hardwireQ=0;
 		printf("Using Qimp, composition, and heating from the crust model.\n");
 	}
-	
+
 	// Include dipole angular dependence in B
 	// The B provided is the polar magnetic field strength
 	if (G.angle_mu >= 0.0) EOS.B*=sqrt(0.75*G.angle_mu*G.angle_mu+0.25);
@@ -1294,7 +1294,6 @@ void set_up_grid(int ngrid, const char *fname)
 
   	G.dx=log(G.Pb/G.Pt)/(G.N-1);   // the grid is equally spaced in log column
   
-
 	FILE *fp = fopen("gon_out/grid_profile","w");
 
 	double Qtot=0.0;
@@ -1320,7 +1319,7 @@ void set_up_grid(int ngrid, const char *fname)
 		// GammaT[i] refers to i+1/2
 		// The following line uses a composition of 56Fe to calculate gamma,
 		// it avoids jumps in the melting point associated with e-capture boundaries
-		if (1) {
+		if (0) {
 			double Z=26.0,A=56.0;   // 28Si
 			G.GammaT[i] = pow(Z*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*A*1.67e-24),1.0/3.0)/1.38e-16;
 		} else {

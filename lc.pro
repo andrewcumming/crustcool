@@ -486,10 +486,13 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 end
 
 
-pro lcplot, namestring, ls, tscal=tscal, linecol=linecol
-	readcol, 'gon_out/prof_'+namestring, tm, F2,Fm, F3,format=('F,F,F,X,F')	
+pro lcplot, namestring, ls, tscal=tscal, linecol=linecol,Lscale=Lscale
+	if (namestring ne '') then namestring='_'+namestring
+	readcol, 'gon_out/prof'+namestring, tm, F2,Fm, F3,format=('F,F,F,X,F')	
 	tm/=(24.0*3600.0)
 	Fm*=4.0*!dpi*1.12d6^2
+	Fmin=min(Fm)
+	if keyword_set(Lscale) then Fm=Fm*Lscale+Fmin
 	;print, tm, Fm
 ;	if keyword_set(tscal) then tm/=tscal
 	if keyword_set(linecol) then begin
@@ -892,7 +895,7 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 ;		!p.charthick=3
  ; 	endif
 	
-	yr=[2d32,3d36]
+	yr=[1d33,1d36]
 	xr=[0.1,6000.0]
 	if (strcmp(source,'2259',4)) then yr=[1d34,1d35]
 	if (strcmp(source,'fluxes1822',10)) then begin
@@ -991,18 +994,35 @@ endif
 
 
 if (1) then begin
-	lcplot, 'B1e15E3.0_1e9',2
-	lcplot, 'B1e15E1.0_1e9',2
-	lcplot, 'B1e15E0.3_1e9',2
-	lcplot, 'B1e15E10.0_1e9',2
-	lcplot, 'B1e15E100.0_1e9',2
-	lcplot, 'B1e15E30.0_1e9',2
-lcplot, 'B1e14E3.0_1e9',0
-lcplot, 'B1e14E1.0_1e9',0
-lcplot, 'B1e14E0.3_1e9',0
-lcplot, 'B1e14E10.0_1e9',0
-lcplot, 'B1e14E100.0_1e9',0
-lcplot, 'B1e14E30.0_1e9',0
+;	lcplot, 'B1e15E3.0_1e9',2
+;	lcplot, 'B1e15E1.0_1e9',2
+;	lcplot, 'B1e15E0.3_1e9',2
+;	lcplot, 'B1e15E10.0_1e9',2
+;	lcplot, 'B1e15E100.0_1e9',2
+;	lcplot, 'B1e15E30.0_1e9',2
+;lcplot, 'B1e14E3.0_1e9',0
+;lcplot, 'B1e14E1.0_1e9',0
+;lcplot, 'B1e14E0.3_1e9',0
+;lcplot, 'B1e14E10.0_1e9',0
+;lcplot, 'B1e14E100.0_1e9',0
+;lcplot, 'B1e14E30.0_1e9',0
+
+lcplot, 'B1e14E3_1e9_new',1,Lscale=0.03
+lcplot, 'B1e14E1_1e9_new',1,Lscale=0.03
+lcplot, 'B1e14E0.3_1e9_new',1,Lscale=0.03
+lcplot, 'B1e14E10_1e9_new',1,Lscale=0.03
+lcplot, 'B1e14E100_1e9_new',1,Lscale=0.03
+lcplot, 'B1e14E30_1e9_new',1,Lscale=0.03
+
+lcplot, '',2,Lscale=0.1
+
+;lcplot, 'B1e14E3_1e9_new2',2
+;lcplot, 'B1e14E1_1e9_new2',2
+;lcplot, 'B1e14E0.3_1e9_new2',2
+;lcplot, 'B1e14E10_1e9_new2',2
+;lcplot, 'B1e14E100_1e9_new2',2
+;lcplot, 'B1e14E30_1e9_new2',2
+
 xyouts, 80.0,8d35, textoidl('E_{25}=0.3,1,3,10,30,100'),charsize=1.2
 xyouts, 80.0,4d35, textoidl('B=10^{14},10^{15} G'),charsize=1.2
 endif

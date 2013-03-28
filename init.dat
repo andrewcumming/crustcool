@@ -1,29 +1,27 @@
-#Tt	3.9e8
-Qimp	1
-Tc	7e7
-
-
-Edep	10
-#Einner	800
+Tc	2e8
+Edep	1.0
 rhot	1e9
 rhob	1e11
 mass	1.4
 radius	12.0
+Qimp	1
+angle_mu	-1
 
-#Qinner	3
-Bfield  1e14
+timetorun	5000.0
+instant 1
 
-#mdot	0.1
-
-precalc 1
+# need to precalc if anything below changes
+precalc	1
+Bfield	1e14
 ngrid	100
 SFgap	1
-kncrit	0.0
-sph	0
+kcnrit	0.0
+sph 0
+Bfield	1e14
 
-piecewise	0
-timetorun	6000.0
-neutrinos	1
-instant	0
+angle_mu	1
 
-#accreted 0
+Edep	100
+
+precalc	0
+
