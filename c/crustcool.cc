@@ -215,6 +215,7 @@ int main(int argc, char *argv[])
 	// Include dipole angular dependence in B
 	// The B provided is the polar magnetic field strength
 	if (G.angle_mu >= 0.0) EOS.B*=sqrt(0.75*G.angle_mu*G.angle_mu+0.25);
+	printf("Magnetic field set to B=%lg\n", EOS.B);
 		
 	//	read_in_data("data/1731");  // READ IN observed lightcurve
 		read_in_data("data/1659");  // READ IN observed lightcurve
@@ -478,7 +479,7 @@ void derivs(double t, double T[], double dTdt[])
 	}
 	
 	// include convective fluxes (only if we are cooling)
-	if (G.include_convection && !G.accreting && G.P[imelt]/G.g>1e11) {
+	if (G.include_convection && !G.accreting && G.P[imelt]/G.g>1e12) {
 
 		if (1) {
 			

@@ -392,8 +392,8 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 	if (not keyword_set(source)) then source='1659'
 
 	if (source eq '1659' or source eq '1731') then begin
-		xr=[10.0,7000.0]
-		yr=[40,140]
+		xr=[1.0,7000.0]
+		yr=[40,160]
 	endif
 	if (source eq '0748') then begin
 		xr=[10.0,3000.0]
@@ -420,7 +420,7 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 	t=t-t0[0]
 	ploterror, t, temp, tempe, psym=1, /xlog, xtitle=textoidl('Time (d)'),$
 			ytitle=textoidl('T_{eff} (keV)'), charsize=1.4, xrange=xr,xstyle=1,$
-			yrange=yr, ystyle=1
+			yrange=yr, ystyle=1,/ylog
 
 		if not keyword_set(noplot) then begin
 		; plot lightcurve from simulation
@@ -479,8 +479,12 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 ;		F=[alog10(140.0)-(t-2.0)/12.0]
 ;		oplot, 10^t, 10^F, linestyle=2, col=250, thick=2
 		t=[1.0,2.5]
-		F=[alog10(124.0)-(t-1.0)/10.0]
-;		oplot, 10^t, 10^F, linestyle=2, col=250, thick=2
+		F=alog10(140.0)-0.1*(t-1.0)
+		oplot, 10.0^t, 10.0^F, linestyle=2, col=250, thick=2
+		t=[1.0,2.5]
+		F=alog10(129.0)-0.09*(t-1.0)
+		oplot, 10.0^t, 10.0^F, linestyle=2, col=120, thick=2
+
 
 	if keyword_set(ps) then close_ps
 end
@@ -488,13 +492,23 @@ end
 
 pro lcplot, namestring, ls, tscal=tscal, linecol=linecol,Lscale=Lscale
 	if (namestring ne '') then namestring='_'+namestring
+	if keyword_set(Lscale) then begin
+		readcol, 'gon_out/prof'+namestring, tm, F2,Fm, F3,format=('F,F,F,X,F')	
+		tm/=(24.0*3600.0)
+		Fm*=4.0*!dpi*1.12d6^2
+		Fmin=min(Fm)
+		namestring = namestring + '_mu1'
+	endif
 	readcol, 'gon_out/prof'+namestring, tm, F2,Fm, F3,format=('F,F,F,X,F')	
 	tm/=(24.0*3600.0)
 	Fm*=4.0*!dpi*1.12d6^2
-	Fmin=min(Fm)
+;	Fmin=min(Fm)
 	if keyword_set(Lscale) then Fm=Fm*Lscale+Fmin
 	;print, tm, Fm
-;	if keyword_set(tscal) then tm/=tscal
+;	if keyword_set(tscal) then begin
+;		tm/=tscal
+;		Fm *= 1d35/max(Fm)
+;	endif
 	if keyword_set(linecol) then begin
 		oplot, tm, Fm,linestyle=ls, col=linecol
 	endif else begin
@@ -860,7 +874,7 @@ pro lc_all,ps=ps
 	lc,source='fluxes1547',/noplot,/nolabel,/overplot,lcol=25, /all
 	lc,source='1810',/noplot,/nolabel,/overplot,lcol=50, /all
 	lc,source='j1833',/noplot,/nolabel,/overplot,lcol=75, /all
-;	lc,source='1647',/noplot,/nolabel,/overplot,lcol=100
+	lc,source='1647',/noplot,/nolabel,/overplot,lcol=100,/all
 	lc,source='1627_2008',/noplot,/nolabel,/overplot,lcol=125, /all
 	lc,source='1627_1998',/noplot,/nolabel,/overplot,lcol=150, /all
 	lc,source='SGR1900',/noplot,/nolabel,/overplot,lcol=175, /all
@@ -871,10 +885,73 @@ pro lc_all,ps=ps
 	
 end
 
+pro lc_grid,ps=ps
+
+	if keyword_set(ps) then open_ps, 'lc_grid.ps'
+
+	; set up the plot
+	yr=[5d32,2d35]
+	xr=[0.1,5000]
+	plot, [0.1,1e4], [1d34,1d35], /xlog, /ylog, xtitle=textoidl('Days after outburst (d)'), $
+		ytitle=textoidl('Luminosity (erg s^{-1})'), linestyle=0, $
+		xrange=xr,xstyle=1, yrange=yr, ystyle=1, /nodata
+
+	; Plot models
+	lcplot, '', 0
+	if (0) then begin
+	lcplot, 'B1e14_T2e9_rho1e+10',1, tscal=10.0, Lscale=0.1
+	lcplot, 'B1e14_T2e9_rho3e+09',1, tscal=3.0, Lscale=0.1
+	lcplot, 'B1e14_T2e9_rho3e+10',1, tscal=30.0, Lscale=0.1
+	lcplot, 'B1e14_T2e9_rho1e+11',1, tscal=100.0, Lscale=0.1
+	lcplot, 'B1e14_T2e9_rho3e+11',1, tscal=100.0, Lscale=0.1
+	lcplot, 'B1e14_T2e9_Tc5e7_rho1e+10',0, tscal=3.0, Lscale=0.2
+	lcplot, 'B1e14_T2e9_Tc5e7_rho3e+10',0, tscal=30.0, Lscale=0.2
+	lcplot, 'B1e14_T2e9_Tc5e7_rho3e+09',0, tscal=30.0, Lscale=0.2
+	lcplot, 'B1e14_T2e9_Tc5e7_rho1e+11',0, tscal=100.0, Lscale=0.2
+	lcplot, 'B1e14_T2e9_Tc5e7_rho3e+11',0, tscal=100.0, Lscale=0.2
+	endif
+			
+	xyouts,30.0,1d35,textoidl('log \rho_c=9.5,10,10.5,11'),charsize=1.2
+
+	; Plot data
+	readcol, 'data/1647', t, F, dF, format=('D,X,X,D,D')
+	F*=1d35
+	dF*=1d35
+	dd=5.0
+	Lq=7e32
+	oploterror, t, F, dF, psym=1, /nohat, symsize=0.7, col=120, errcol=120
+	
+	readcol, 'data/fluxes1822', t0, format=('D')
+	readcol, 'data/fluxes1822', t, F, dF,flag, format=('D,X,D,D,X,I'),skipline=1
+	t-=t0[0]
+	dd=1.6
+	F*=4.0*!dpi*(3.086d21*dd)^2
+	dF*=4.0*!dpi*(3.086d21*dd)^2
+	oploterror, t, F, dF, psym=1,/nohat, col=250, errcol=250
+	ind = where(flag eq 1)			
+	oploterror, t[ind], F[ind], dF[ind], psym=6,/nohat,symsize=1, col=250, errcol=250
+	
+	; 1627
+	dd=11.0
+	readcol, 'data/1998cooling.dat', t, F, dF, format=('D,D,D')
+	F*=1d35
+	dF*=1d35
+	oploterror, t, F, dF, psym=4, /nohat, col=80,errcol=80
+	readcol, 'data/2008cooling.dat', t, F, dF, format=('D,D,D')
+	F*=1d35
+	dF*=1d35
+	oploterror, t, F, dF, psym=6, /nohat, col=100,errcol=100
+
+	
+	if keyword_set(ps) then close_ps
+
+end
+
+
 
 
 pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, overplot=overplot, lcol=lcol,$
-			cs=cs, all=all
+			cs=cs, all=all, Lscale=Lscale
 	
 ;	!p.multi=[0,1,3,0,0]
 ;	!p.charsize=2.5
@@ -895,12 +972,12 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 ;		!p.charthick=3
  ; 	endif
 	
-	yr=[1d33,1d36]
+	yr=[1d32,2d35]
 	xr=[0.1,6000.0]
 	if (strcmp(source,'2259',4)) then yr=[1d34,1d35]
 	if (strcmp(source,'fluxes1822',10)) then begin
 		yr=[1d32,2d35]
-		xr=[1.0,3000]
+		xr=[0.1,3000]
 	endif
 	if (strcmp(source,'fluxes1547',10)) then yr=[1d33,1d36]
 	if (strcmp(source,'0501',4)) then begin
@@ -943,6 +1020,9 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 
 
 	Fm*=4.0*!dpi*1.12d6^2
+	
+	if keyword_set(Lscale) then Fm*=Lscale
+	
 	F2*=4.0*!dpi*1.12d6^2
 ;		plot, t, F, /xlog, /ylog, xtitle=textoidl('Time (d)'), $
 ;				ytitle=textoidl('Luminosity (erg s^{-2})'), linestyle=0, charsize=1.5, $
@@ -1007,14 +1087,24 @@ if (1) then begin
 ;lcplot, 'B1e14E100.0_1e9',0
 ;lcplot, 'B1e14E30.0_1e9',0
 
-lcplot, 'B1e14E3_1e9_new',1,Lscale=0.03
-lcplot, 'B1e14E1_1e9_new',1,Lscale=0.03
-lcplot, 'B1e14E0.3_1e9_new',1,Lscale=0.03
-lcplot, 'B1e14E10_1e9_new',1,Lscale=0.03
-lcplot, 'B1e14E100_1e9_new',1,Lscale=0.03
-lcplot, 'B1e14E30_1e9_new',1,Lscale=0.03
+areaf=0.1
+lcplot, 'B1e14E3_1e9',0,Lscale=areaf
+lcplot, 'B1e14E1_1e9',0,Lscale=areaf
+lcplot, 'B1e14E0.3_1e9',0,Lscale=areaf
+lcplot, 'B1e14E10_1e9',0,Lscale=areaf
+lcplot, 'B1e14E100_1e9',0,Lscale=areaf
+lcplot, 'B1e14E30_1e9',0,Lscale=areaf
 
-lcplot, '',2,Lscale=0.1
+if (0) then begin
+lcplot, 'B1e15E3_1e9',2,Lscale=areaf
+lcplot, 'B1e15E1_1e9',2,Lscale=areaf
+lcplot, 'B1e15E0.3_1e9',2,Lscale=areaf
+lcplot, 'B1e15E10_1e9',2,Lscale=areaf
+lcplot, 'B1e15E100_1e9',2,Lscale=areaf
+lcplot, 'B1e15E30_1e9',2,Lscale=areaf
+endif
+
+;lcplot, '',2,Lscale=0.1
 
 ;lcplot, 'B1e14E3_1e9_new2',2
 ;lcplot, 'B1e14E1_1e9_new2',2
@@ -1023,8 +1113,11 @@ lcplot, '',2,Lscale=0.1
 ;lcplot, 'B1e14E100_1e9_new2',2
 ;lcplot, 'B1e14E30_1e9_new2',2
 
-xyouts, 80.0,8d35, textoidl('E_{25}=0.3,1,3,10,30,100'),charsize=1.2
-xyouts, 80.0,4d35, textoidl('B=10^{14},10^{15} G'),charsize=1.2
+xyouts, 80.0,10^(35.5), textoidl('E_{25}=0.3,1,3,10,30,100'),charsize=1.4
+xyouts, 80.0,10^(35.7), textoidl('B=10^{14} G'),charsize=1.4
+xyouts, 80.0,10^(35.3), textoidl('10% of the surface'),charsize=1.4
+xyouts, 80.0,10^(35.1), textoidl('E_{total}=5\times 10^{41} ergs E_{25}'),charsize=1.4
+;xyouts, 80.0,4d35, textoidl('B=10^{14},10^{15} G'),charsize=1.2
 endif
 if (0) then begin
 	lcplot, 'B1e15E3.0',2
@@ -1105,16 +1198,44 @@ endif
 
 
 if (0) then begin
-	lcplot, 'B14rho1',0,tscal=3.0
-	lcplot, 'B14rho2',0,tscal=10.0
-	lcplot, 'B14rho3',0,tscal=30.0
-	lcplot, 'B14rho4',0,tscal=100.0
-	lcplot, 'B14rho5',2,tscal=10.0
-	lcplot, 'B14rho6',2,tscal=3.0
-	lcplot, 'B14rho7',2,tscal=30.0
-	lcplot, 'B14rho8',2,tscal=100.0
+;	lcplot, 'B14rho1',0,tscal=3.0
+;	lcplot, 'B14rho2',0,tscal=10.0
+;	lcplot, 'B14rho3',0,tscal=30.0
+;	lcplot, 'B14rho4',0,tscal=100.0
+;;	lcplot, 'B14rho5',2,tscal=10.0
+;	lcplot, 'B14rho6',2,tscal=3.0
+;	lcplot, 'B14rho7',2,tscal=30.0
+;	lcplot, 'B14rho8',2,tscal=100.0
 	
-	xyouts,30.0,1.3d35,textoidl('log \rho_c=9.5,10,10.5,11'),charsize=1.0
+	
+if (0) then begin
+	lcplot, 'B1e14_T1e9_rho1e+10',0,linecol=250, tscal=10.0, Lscale=0.1
+	lcplot, 'B1e14_T1e9_rho3e+09',0,linecol=250, tscal=3.0, Lscale=0.1
+	lcplot, 'B1e14_T1e9_rho3e+10',0,linecol=250, tscal=30.0, Lscale=0.1
+	lcplot, 'B1e14_T1e9_rho1e+11',0,linecol=250, tscal=100.0, Lscale=0.1
+endif
+
+if (1) then begin
+		lcplot, 'B1e14_T2e9_rho1e+10',0, tscal=10.0, Lscale=0.1
+		lcplot, 'B1e14_T2e9_rho3e+09',0, tscal=3.0, Lscale=0.1
+		lcplot, 'B1e14_T2e9_rho3e+10',0, tscal=30.0, Lscale=0.1
+		lcplot, 'B1e14_T2e9_rho1e+11',0, tscal=100.0, Lscale=0.1
+		lcplot, 'B1e14_T2e9_rho3e+11',0, tscal=100.0, Lscale=0.1
+			lcplot, 'B1e14_T2e9_Tc5e7_rho1e+10',1, tscal=10.0, Lscale=0.1
+			lcplot, 'B1e14_T2e9_Tc5e7_rho3e+09',1, tscal=3.0, Lscale=0.1
+			lcplot, 'B1e14_T2e9_Tc5e7_rho3e+10',1, tscal=30.0, Lscale=0.1
+			lcplot, 'B1e14_T2e9_Tc5e7_rho1e+11',1, tscal=100.0, Lscale=0.1
+			lcplot, 'B1e14_T2e9_Tc5e7_rho3e+11',1, tscal=100.0, Lscale=0.1
+		
+	endif
+	
+;	lcplot, 'B1e14E3000000000',0,linecol=250,Lscale=0.1
+;	lcplot, 'B1e14E10000000000',0,linecol=250,Lscale=0.1
+;	lcplot, 'B1e14E30000000000',0,linecol=250,Lscale=0.1
+;	lcplot, 'B1e14E100000000000',0,linecol=250,Lscale=0.1
+	
+	
+	xyouts,30.0,1d35,textoidl('log \rho_c=9.5,10,10.5,11'),charsize=1.2
 	
 ;lcplot, 'B15E3.0Q1_rho1',0 ;3e9-1e10    1.7d42
 ;lcplot, 'B15E0.3Q1_rho1',0 ;3e9-1e10    1.7d41
@@ -1233,23 +1354,23 @@ lcsum, '1822_new_withB_Tc2e7', 2, muup=1.0, Lscale=1.0
 lcplot, '1822_new_step_Tc2e7'
 
 endif else begin
-	for i=1,10 do begin
-		name='rn2_mu'+strtrim(string(0.1*i,format='(F3.1)'),1)
+;	for i=1,10 do begin
+;		name='rn2_mu'+strtrim(string(0.1*i,format='(F3.1)'),1)
 ;  for the case of steps of 0.05 in mu, need to do odd and even separately
 ;		if (i mod 2 eq 0) then begin
 ;			name='rn_mu'+strtrim(string(0.1*i,format='(F3.1)'),1)
 ;		endif else begin
 ;			name='rn_mu'+strtrim(string(0.05*i,format='(F4.2)'),1)
 ;		endelse
-		print, 'Opening file ',name
-		lcplot, name,1, linecol=80
-	endfor
-	lcsum, 'rn2',2
-	lcplot, 'rn2'
+;		print, 'Opening file ',name
+;		lcplot, name,1, linecol=80
+;	endfor
+;	lcsum, 'rn2',2
+;	lcplot, 'rn2'
 endelse
 endelse
-xyouts, 4.0, 1d35, textoidl('\mu=1 (magnetic pole)'), col=80, charsize=1.2
-xyouts, 4.0, 3d33, textoidl('\mu=0.1 (near equator)'), col=80, charsize=1.2
+;xyouts, 4.0, 1d35, textoidl('\mu=1 (magnetic pole)'), col=80, charsize=1.2
+;xyouts, 4.0, 3d33, textoidl('\mu=0.1 (near equator)'), col=80, charsize=1.2
 
 ;lcplot, '1822_mu0.9',1
 ;lcplot, '1822_mu0.8',1
@@ -1526,7 +1647,7 @@ endif
 	if keyword_set(nolabel) then begin
 	; put a label
 	if (strcmp(source,'2259',4)) then xyouts, 0.2, 3d32, '1E 2259+586', charsize=1.0
-;	if (strcmp(source,'fluxes1822',10)) then xyouts, 0.2, 1.5*3d32, 'Swift J1822-1606', charsize=1.0
+	if (strcmp(source,'fluxes1822',10)) then xyouts, 0.2, 1.5*3d32, 'Swift J1822-1606', charsize=1.0
 	if (strcmp(source,'fluxes1547',10)) then xyouts, 0.2, 1.5^2*3d32, '1E 1547.0-5408', charsize=1.0
 	;if (strcmp(source,'1627',4)) then xyouts, 200.0, 435, 'SGR 1627-41', charsize=1.5
 	if (strcmp(source,'1627_1998',9)) then xyouts, 0.2, 1.5^3*3d32, 'SGR 1627-41 (1998)', charsize=1.0
@@ -1535,7 +1656,7 @@ endif
 	if (strcmp(source,'j1833',5)) then xyouts, 0.2, 1.5^6*3d32, 'SGR 1833-0832', charsize=1.0
 	if (strcmp(source,'1810',4)) then xyouts, 0.2, 1.5^7*3d32, 'XTE J1810-197', charsize=1.0
 	if (strcmp(source,'1048',4)) then xyouts, 0.2, 1.5^8*3d32, '1E 1048.1-5937', charsize=1.0
-;	if (strcmp(source,'1647',4)) then xyouts, 0.2, 1.5^9*3d32, 'CXOU J164710.2-455216', charsize=1.0
+	if (strcmp(source,'1647',4)) then xyouts, 0.2, 1.5^9*3d32, 'CXOU J164710.2-455216', charsize=1.0
 	if (strcmp(source,'SGR1900',7)) then xyouts, 0.2, 1.5^10*3d32, 'SGR1900+14', charsize=1.0
 	endif
 
@@ -2169,7 +2290,7 @@ pro prof2, delay=delay, png=png, source=source
 		erase
 		plot, y, T, /xlog, /ylog,charsize=1.2, ytitle=textoidl('T (K)'),$
 				xtitle=textoidl('P (g cm^{-2})'), yrange=[1e7,1e10],ystyle=1, $
-				xrange=[1d26,8d32], xstyle=1,/nodata
+				xrange=[1d24,8d32], xstyle=1,/nodata
 		ind = where(gamma le 175.0,cnt)
 		if (cnt gt 0) then begin
 			oplot, y[ind], T[ind], thick=3, linestyle=0, col=80
@@ -2185,7 +2306,7 @@ pro prof2, delay=delay, png=png, source=source
 		ff2=ff[where(tt*24*3600.0 le time)]
 		ploterror, tobs, Fobs, Fobse,/xlog, xtitle=textoidl('Time (d)'), $
 			ytitle=textoidl('T_{eff} (eV)'), charsize=1.5, $
-			xrange=[10.0,7d3],xstyle=1,psym=2,yrange=[min(Fobs)-10.0,max(Fobs)+10.0], ystyle=1
+			xrange=[1.0,7d3],xstyle=1,psym=2,yrange=[min(Fobs)-10.0,max(Fobs)+70.0], ystyle=1
 		if (ntt gt 1) then begin
 			oplot,tt2,FF2,linestyle=0
 		endif
