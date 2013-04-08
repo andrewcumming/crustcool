@@ -897,7 +897,7 @@ pro lc_grid,ps=ps
 		xrange=xr,xstyle=1, yrange=yr, ystyle=1, /nodata
 
 	; Plot models
-	lcplot, '', 0
+	lcplot, '1822', 0, Lscale=0.09
 	if (0) then begin
 	lcplot, 'B1e14_T2e9_rho1e+10',1, tscal=10.0, Lscale=0.1
 	lcplot, 'B1e14_T2e9_rho3e+09',1, tscal=3.0, Lscale=0.1

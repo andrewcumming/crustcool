@@ -705,6 +705,8 @@ void calculate_vars(int i, double T, double P, double *CP, double *K, double *NU
 		K1=G.K1_grid[i][j] + (G.K1_grid[i][j+1]-G.K1_grid[i][j])*interpfac;
 		K0perp=G.K0perp_grid[i][j] + (G.K0perp_grid[i][j+1]-G.K0perp_grid[i][j])*interpfac;
 		K1perp=G.K1perp_grid[i][j] + (G.K1perp_grid[i][j+1]-G.K1perp_grid[i][j])*interpfac;
+		//K0perp=0.0; K1perp=0.0;
+
 		// use something like this next line to hardwire Q values
 		double Qval;
 		if (G.hardwireQ) {
@@ -715,7 +717,7 @@ void calculate_vars(int i, double T, double P, double *CP, double *K, double *NU
 		}
 		double KK,KKperp;
 		KK=G.g*K0*K1/(K0*Qval+(1.0-Qval)*K1);
-		KKperp=G.g*K0perp*K1perp/(K0perp*Qval+(1.0-Qval)*K1perp);
+		KKperp=0.0; //G.g*K0perp*K1perp/(K0perp*Qval+(1.0-Qval)*K1perp);
 		if (G.angle_mu >= 0.0) {
 			KK *= 4.0*G.angle_mu*G.angle_mu/(1.0+3.0*G.angle_mu*G.angle_mu);
 		} else {
@@ -761,6 +763,7 @@ void calculate_vars(int i, double T, double P, double *CP, double *K, double *NU
 	//	} else {
 			double Kcond, Kcondperp;
 			Kcond = potek_cond(&Kcondperp);	
+			//Kcondperp=0.0;
 			if (G.angle_mu >= 0.0) {
 				Kcond *= 4.0*G.angle_mu*G.angle_mu/(1.0+3.0*G.angle_mu*G.angle_mu);
 			} else {
@@ -1046,13 +1049,13 @@ void precalculate_vars(void)
 				double Kcond,Kcondperp;
 				//Kcond = EOS.K_cond(EOS.Chabrier_EF());
 				Kcond = potek_cond(&Kcondperp);   
-				//Kcondperp=0.0;
+				//if (Kcondperp < 1e-2*Kcond) Kcondperp=1e-2*Kcond;
 				G.K0_grid[i][j]=EOS.rho*Kcond/G.P[i];
 				G.K0perp_grid[i][j]=EOS.rho*Kcondperp/G.P[i];
 				EOS.Q=1.0;
 				//Kcond = EOS.K_cond(EOS.Chabrier_EF());
 				Kcond = potek_cond(&Kcondperp);
-				//Kcondperp=0.0;
+				//if (Kcondperp < 1e-2*Kcond) Kcondperp=1e-2*Kcond;
 				G.K1_grid[i][j]=EOS.rho*Kcond/G.P[i];
 				G.K1perp_grid[i][j]=EOS.rho*Kcondperp/G.P[i];
 				EOS.Q=Q_store;  // restore to previous value
