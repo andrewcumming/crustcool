@@ -2582,21 +2582,28 @@ pro initialT10,ps=ps
 ;	T10,source='B1e15E0.3_1e9',/overplot,ls=2
 	
 	ttshow=0.0001
-T10, source='B1e14E10_1e9',ls=1, tt=ttshow, nread=14
-T10, source='B1e14E1_1e9',ls=1, tt=ttshow, nread=14,/overplot
-T10, source='B1e14E100_1e9',ls=1, tt=ttshow, nread=14,/overplot
-T10, source='B1e14E30_1e9',ls=1, tt=ttshow, nread=14,/overplot
-T10, source='B1e14E3_1e9',ls=1, tt=ttshow, nread=14,/overplot
-T10, source='B1e14E0.3_1e9',ls=1, tt=ttshow, nread=14,/overplot
+T10, source='B1e14E10_1e9_mu1',ls=1, tt=ttshow, nread=14
+T10, source='B1e14E1_1e9_mu1',ls=1, tt=ttshow, nread=14,/overplot
+T10, source='B1e14E100_1e9_mu1',ls=1, tt=ttshow, nread=14,/overplot
+T10, source='B1e14E30_1e9_mu1',ls=1, tt=ttshow, nread=14,/overplot
+T10, source='B1e14E3_1e9_mu1',ls=1, tt=ttshow, nread=14,/overplot
+T10, source='B1e14E0.3_1e9_mu1',ls=1, tt=ttshow, nread=14,/overplot
 
 	ttshow=1.0
-T10, source='B1e14E10_1e9',ls=0, tt=ttshow, nread=14,/overplot
-T10, source='B1e14E1_1e9',ls=0, tt=ttshow, nread=14,/overplot
-T10, source='B1e14E100_1e9',ls=0, tt=ttshow, nread=14,/overplot
-T10, source='B1e14E30_1e9',ls=0, tt=ttshow, nread=14,/overplot
-T10, source='B1e14E3_1e9',ls=0, tt=ttshow, nread=14,/overplot
-T10, source='B1e14E0.3_1e9',ls=0, tt=ttshow, nread=14,/overplot
+T10, source='B1e14E10_1e9_mu1',ls=0, tt=ttshow, nread=14,/overplot
+T10, source='B1e14E1_1e9_mu1',ls=0, tt=ttshow, nread=14,/overplot
+T10, source='B1e14E100_1e9_mu1',ls=0, tt=ttshow, nread=14,/overplot
+T10, source='B1e14E30_1e9_mu1',ls=0, tt=ttshow, nread=14,/overplot
+T10, source='B1e14E3_1e9_mu1',ls=0, tt=ttshow, nread=14,/overplot
+T10, source='B1e14E0.3_1e9_mu1',ls=0, tt=ttshow, nread=14,/overplot
 
+	E = [0.3,1.0,3.0,10.0,30.0,100.0]	
+	for i=0, n_elements(E)-1 do begin
+	rho = 9.0+2.0*0.01*dindgen(100)
+	rho = 10^rho
+	T = 4.5d8 * (rho * 1d-10)^(-0.5) * E[i]^0.6
+	oplot, rho, T, col=250
+	endfor
 		
 ;	T10,source='B1e14E100.0_1e9',/overplot
 ;	T10,source='B1e14E30.0_1e9',/overplot
@@ -2649,6 +2656,7 @@ pro T10, delay=delay, png=png, source=source,overplot=overplot, ls=ls, nread=nre
 	Tm = 1e8 * GammaT/175.0
 	TD = 1.4e8 * sqrt(ym*1d-9) * Zm / (0.4*Am)
 	readcol, 'out/cv.dat', rhoc, cv, format=('D,D')
+	readcol, 'out/nu.dat', rhonu, Tnu, format=('D,D')
 
 	; now look at the detailed profiles as a function of time
 	fname='gon_out/out'
@@ -2697,9 +2705,10 @@ pro T10, delay=delay, png=png, source=source,overplot=overplot, ls=ls, nread=nre
 				oplot, ym, Tm, linestyle=2
 				;oplot, ym, TD/3.5, linestyle=4
 				oplot, rhoc, cv*1e8, linestyle=3
+				oplot, rhonu, Tnu*1e8, linestyle=4
 				xyouts, 1.5e11,3e9,textoidl('\Gamma=175')	,charsize=1.01, orientation=20		
 				xyouts, 1.2e11,1.75e9,textoidl('C_{V,e}=C_{V,ion}')	,charsize=1.01, orientation=20		
-				;xyouts, 1.5e11,1.2e9,textoidl('T_{Debye}')	,charsize=1.01, orientation=20	
+				xyouts, 1.5e11,1.35e9,textoidl('t_{therm}=t_\nu')	,charsize=1.01, orientation=0	
 				xyouts, 1.5e10,1.5e8,textoidl('E_{25}=0.3,1,3,10,30,100'),charsize=1.2
 				;xyouts, 6d10,6d9, textoidl('t=1 day'),charsize=1.1
 			endelse
