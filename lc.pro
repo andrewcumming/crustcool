@@ -2645,8 +2645,10 @@ pro T10, delay=delay, png=png, source=source,overplot=overplot, ls=ls, nread=nre
 	if not keyword_set(tt) then tt=10.0
 
 	; read Gamma/T for the initial model, used to plot melting curve
-	readcol, 'gon_out/grid_profile', ym, GammaT, format=('X,X,D,X,X,X,X,X,X,D')
+	readcol, 'gon_out/grid_profile', ym, Zm, Am, GammaT, format=('X,X,D,X,D,X,D,X,X,D')
 	Tm = 1e8 * GammaT/175.0
+	TD = 1.4e8 * sqrt(ym*1d-9) * Zm / (0.4*Am)
+	readcol, 'out/cv.dat', rhoc, cv, format=('D,D')
 
 	; now look at the detailed profiles as a function of time
 	fname='gon_out/out'
@@ -2693,8 +2695,12 @@ pro T10, delay=delay, png=png, source=source,overplot=overplot, ls=ls, nread=nre
 					xtitle=textoidl('\rho (g cm^{-3})'), yrange=[1e8,1e10],ystyle=1, $
 					xrange=[1d9,3d11], xstyle=1,linestyle=ls, charsize=1.3
 				oplot, ym, Tm, linestyle=2
-				xyouts, 1.5e11,3e9,textoidl('\Gamma=175')	,charsize=1.01, orientation=0		
-				xyouts, 1.5e10,1.5e8,textoidl('E_{25}=0.3,1,3,10,30,100'),charsize=1.01
+				;oplot, ym, TD/3.5, linestyle=4
+				oplot, rhoc, cv*1e8, linestyle=3
+				xyouts, 1.5e11,3e9,textoidl('\Gamma=175')	,charsize=1.01, orientation=20		
+				xyouts, 1.2e11,1.75e9,textoidl('C_{V,e}=C_{V,ion}')	,charsize=1.01, orientation=20		
+				;xyouts, 1.5e11,1.2e9,textoidl('T_{Debye}')	,charsize=1.01, orientation=20	
+				xyouts, 1.5e10,1.5e8,textoidl('E_{25}=0.3,1,3,10,30,100'),charsize=1.2
 				;xyouts, 6d10,6d9, textoidl('t=1 day'),charsize=1.1
 			endelse
 			flag=0
