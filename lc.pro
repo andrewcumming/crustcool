@@ -1058,6 +1058,13 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 ;	oplot, tm, L, linestyle=2
 
 
+
+	readcol, 'out/nu.dat', rhonu, TTnu, format=('D,D')
+	tnu = (rhonu/3d9)
+	Lnu = 1.7d35 * 0.1 * (TTnu/10.0)^2.1
+	oplot, tnu, Lnu, linestyle=1
+
+
 if not keyword_set(all) then begin
 
 
@@ -2589,7 +2596,7 @@ T10, source='B1e14E30_1e9_mu1',ls=1, tt=ttshow, nread=14,/overplot
 T10, source='B1e14E3_1e9_mu1',ls=1, tt=ttshow, nread=14,/overplot
 T10, source='B1e14E0.3_1e9_mu1',ls=1, tt=ttshow, nread=14,/overplot
 
-	ttshow=1.0
+	ttshow=10.0
 T10, source='B1e14E10_1e9_mu1',ls=0, tt=ttshow, nread=14,/overplot
 T10, source='B1e14E1_1e9_mu1',ls=0, tt=ttshow, nread=14,/overplot
 T10, source='B1e14E100_1e9_mu1',ls=0, tt=ttshow, nread=14,/overplot
@@ -2602,7 +2609,7 @@ T10, source='B1e14E0.3_1e9_mu1',ls=0, tt=ttshow, nread=14,/overplot
 	rho = 9.0+2.0*0.01*dindgen(100)
 	rho = 10^rho
 	T = 4.5d8 * (rho * 1d-10)^(-0.5) * E[i]^0.6
-	oplot, rho, T, col=250
+	;oplot, rho, T, col=250
 	endfor
 		
 ;	T10,source='B1e14E100.0_1e9',/overplot
@@ -2708,7 +2715,7 @@ pro T10, delay=delay, png=png, source=source,overplot=overplot, ls=ls, nread=nre
 				oplot, rhonu, Tnu*1e8, linestyle=4
 				xyouts, 1.5e11,3e9,textoidl('\Gamma=175')	,charsize=1.01, orientation=20		
 				xyouts, 1.2e11,1.75e9,textoidl('C_{V,e}=C_{V,ion}')	,charsize=1.01, orientation=20		
-				xyouts, 1.5e11,1.35e9,textoidl('t_{therm}=t_\nu')	,charsize=1.01, orientation=0	
+				xyouts, 1.5e11,1.2e9,textoidl('t_{therm}=t_\nu')	,charsize=1.01, orientation=0	
 				xyouts, 1.5e10,1.5e8,textoidl('E_{25}=0.3,1,3,10,30,100'),charsize=1.2
 				;xyouts, 6d10,6d9, textoidl('t=1 day'),charsize=1.1
 			endelse
