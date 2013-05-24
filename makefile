@@ -75,7 +75,7 @@ cleanprecalc:
 
 movie:
 #	ffmpeg -qscale 1 -r 20 -b 9600 
-	ffmpeg -i png/%3d.png movie.mp4
+	ffmpeg -qscale 1 -r 20 -b 9600 -i png/%3d.png movie.mp4
 
 cleanpng:
 	rm -f png/*.png

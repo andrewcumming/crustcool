@@ -1,6 +1,35 @@
 #!/usr/bin/perl
 
 
+# Bfield
+if (1) {
+	@Bfield = (1.8e13,5.6e13,5.6e14);
+#	@Bfield = (1e13,3e13,1e14,1.8e14,3e14,1e15,1.8e15);
+	
+	foreach $BB (@Bfield) {
+
+		system "cp init/init.dat.default init.dat";
+
+		system "echo \"Bfield\t".$BB."\n\" >>init.dat";
+		system "echo \"angle_mu\t1\n\" >>init.dat";
+		system "echo \"Tc\t5e7\n\" >>init.dat";
+		system "echo \"precalc\t1\n\" >>init.dat";	
+		system "echo \"Edep\t30\n\" >>init.dat";	
+
+		sleep 3;
+		system "crustcool";
+		sleep 10;
+
+		$command = sprintf("mv gon_out/prof gon_out/prof_B%g_E30_Tc5e7_mu1",$BB);
+		system $command;
+		print "$command\n";
+		sleep 3;
+	}
+	
+}
+
+
+
 # Crust heating at different depths
 #
 if (0) {
@@ -98,7 +127,7 @@ if (0)
 
 # Different energies deposited in the outer crust
 # Used to make a comparison figure with Pons
-if (1) {
+if (0) {
 
 @Edep = (0.3,1.0,3.0,10.0,30.0,100.0);
 
@@ -172,4 +201,4 @@ foreach $ener (@Edep) {
 }
 
 # Make a dummy gon_out/prof so that the plotting routine works!
-#system "cp gon_out/prof_B1e14E1_1e9 gon_out/prof"
+system "cp gon_out/prof_B1e14E1_1e9 gon_out/prof"

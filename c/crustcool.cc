@@ -79,6 +79,7 @@ struct globals {
 	double Qinner;
 	double energy_deposited_outer;
 	double energy_deposited_inner;
+	double energy_slope;
 	double outburst_duration;
 	int instant_heat;
 	double surfF, surfy;
@@ -119,6 +120,7 @@ int main(int argc, char *argv[])
 	G.include_latent_heat=0;
 	G.include_convection=0;
 	G.nuflag = 1;
+	G.energy_slope=0.0;
 	G.force_precalc=0;
 	G.Qinner=-1.0;
 	G.running_from_command_line=1;	
@@ -196,6 +198,7 @@ int main(int argc, char *argv[])
 			if (!strncmp(s,"convection",10)) G.include_convection=(int) x;			
 			if (!strncmp(s,"cooling_bc",10)) G.force_cooling_bc=(int) x;
 			if (!strncmp(s,"extra_heating",13)) G.extra_heating=(int) x;
+			if (!strncmp(s,"energy_slope",12)) G.energy_slope=x;
 		}
 	}
 
@@ -253,18 +256,20 @@ int main(int argc, char *argv[])
 	// do we want output or not?
 	G.output=1;
 
- 	// set up the initial temperature profile
-  	if (G.use_piecewise) set_up_initial_temperature_profile_piecewise(fname);
-	else set_up_initial_temperature_profile();
-
 	if (G.output) {
   		G.fp=fopen("gon_out/out","w");
   		G.fp2=fopen("gon_out/prof","w");
   		fprintf(G.fp,"%d\n",G.N+1);
 	}
 
+	G.output = 1;
+ 	// set up the initial temperature profile
+  	if (G.use_piecewise) set_up_initial_temperature_profile_piecewise(fname);
+	else set_up_initial_temperature_profile();
+	G.output = 1;
+
 	// calculate the cooling curve
-	calculate_cooling_curve();
+	calculate_cooling_curve();   // not outputting the heating stage,so start at t=0
 
 	// get chisq
 	double chisq = calculate_chisq();
@@ -402,8 +407,9 @@ void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar)
 	for (int i=1; i<=G.N+1; i++) calculate_vars(i,ODE.get_y(i,j),G.P[i],&G.CP[i],&G.K[i],&G.NU[i],&G.EPS[i]);
 	double T0;
 	outer_boundary(ODE.get_y(1,j),G.K[1],G.CP[1],G.NU[1],G.EPS[1],&T0,&G.K[0],&G.CP[0],&G.NU[0],&G.EPS[0]);
-	for (int i=2; i<=G.N+1; i++) G.F[i]=0.5*G.g*(G.K[i]+G.K[i-1])*(ODE.get_y(i,j)-ODE.get_y(i-1,j))/G.dx;
-	G.F[1]=0.5*(G.K[0]+G.K[1])*(ODE.get_y(1,j)-T0)/G.dx;
+	//for (int i=1; i<=G.N+1; i++) G.F[i] = calculate_heat_flux(i,ODE.get_y(i,j));
+	//G.F[i]=0.5*G.g*(G.K[i]+G.K[i-1])*(ODE.get_y(i,j)-ODE.get_y(i-1,j))/G.dx;
+	//G.F[1]=0.5*(G.K[0]+G.K[1])*(ODE.get_y(1,j)-T0)/G.dx;
 	double dt;
 	if (j==1) dt=ODE.get_x(j); else dt=ODE.get_x(j)-ODE.get_x(j-1);
 
@@ -412,19 +418,21 @@ void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar)
 	TT=vector(1,G.N+1);
 	for (int i=1; i<=G.N+1; i++) TT[i]=ODE.get_y(i,j);
 	double FF = calculate_heat_flux(1,TT);
+	for (int i=1; i<=G.N+1; i++) G.F[i] = calculate_heat_flux(i,TT);
 
 	//FF=G.F[1];
 
-	G.F[2] = calculate_heat_flux(2,TT);
+	//G.F[2] = calculate_heat_flux(2,TT);
 
 	free_vector(TT,1,G.N+1);
 
 
 	// output time, fluxes and TEFF that are already redshifted
-	fprintf(fp2, "%lg %lg %lg %lg %lg %lg %lg\n", (timesofar+ODE.get_x(j))*G.ZZ, 
+	fprintf(fp2, "%lg %lg %lg %lg %lg %lg %lg %lg %lg\n", (timesofar+ODE.get_x(j))*G.ZZ, 
 			pow((G.radius/11.2),2.0)*G.F[2]/(G.ZZ*G.ZZ), pow((G.radius/11.2),2.0)*FF/(G.ZZ*G.ZZ),
 			ODE.get_y(G.N-5,j), pow((G.g/2.28e14)*TEFF.get(ODE.get_y(1,j))/5.67e-5,0.25)/G.ZZ, 
-			ODE.get_y(1,j), pow((G.g/2.28e14)*TEFF.get(ODE.get_y(1,j))/5.67e-5,0.25));
+			ODE.get_y(1,j), pow((G.g/2.28e14)*TEFF.get(ODE.get_y(1,j))/5.67e-5,0.25),
+			pow((G.radius/11.2),2.0)*G.F[G.N+1]/(G.ZZ*G.ZZ),pow((G.radius/11.2),2.0)*G.F[G.N]/(G.ZZ*G.ZZ));
 
 	if (j % 1 == 0 || j==ODE.kount) {   // output every nth cycle
 		// temperature profile
@@ -463,13 +471,19 @@ void derivs(double t, double T[], double dTdt[])
 	//  G.F[i] is the flux at i-1/2
   	for (int i=1; i<=G.N+1; i++)   G.F[i] = calculate_heat_flux(i,T);	
 
-	// find the ocean-crust boundary
-	// imelt is set to be the first zone going outwards where Gamma at i-1/2 is <175
-//	int imelt=G.N;
-//	while (imelt--, G.GammaT[imelt-1]/(0.5*(T[imelt]+T[imelt-1])) >= 175.0);
-	// imelt is set to be the first zone going inwards where Gamma at i+1/2 is >175
-	int imelt=1;
-	while (imelt++, G.GammaT[imelt]/(0.5*(T[imelt]+T[imelt+1])) <= 175.0);
+	// find the ocean-crust boundary: I've tried two different ways, either moving in
+	// or out -- it's an issue when there is a jump in Tmelt in the ocean, e.g.
+	// because of an electron capture
+	int imelt;
+	if (0) {
+		// (i) imelt is set to be the first zone going outwards where Gamma at i-1/2 is <175
+		imelt=G.N;
+		while (imelt--, G.GammaT[imelt-1]/(0.5*(T[imelt]+T[imelt-1])) >= 175.0);
+	} else {
+		// (ii) imelt is set to be the first zone going inwards where Gamma at i+1/2 is >175
+		imelt=1;
+		while (imelt++, G.GammaT[imelt]/(0.5*(T[imelt]+T[imelt+1])) <= 175.0);
+	}
 	
 	// include the latent heat as an additional term in the heat capacity at the boundary
 	if (G.include_latent_heat) {
@@ -479,58 +493,44 @@ void derivs(double t, double T[], double dTdt[])
 	}
 	
 	// include convective fluxes (only if we are cooling)
-	if (G.include_convection && !G.accreting && G.P[imelt]/G.g>1e12) {
+	if (G.include_convection && G.P[imelt]/G.g>1e9) {
 
-		if (1) {
+		if (!G.accreting) {
 			
-				double AA=1.4e-8;
+			// This is the simple F=Ay prescription for the convective flux from Zach
+			double AA=2.4e9;
+			// first try -> double AA=2.4e11;
 
-			// First calculate dT/dt for the zone containing the liquid/solid boundary
-				//G.CP[imelt] += AA/G.dx;
-				double P1 = exp(log(G.P[imelt])-0.5*G.dx);
-				G.CP[imelt] += pow(T[imelt],3.0)*AA*pow(P1/G.g,-0.75)/G.dx; 
-				dTdt[imelt] = G.g*(G.F[imelt+1]-G.F[imelt])/(G.dx*G.CP[imelt]*G.P[imelt]);
+			AA=0.0;
 
-			// If the boundary is moving in, then there shouldn't be any convection, 
-			// so turn it off. Although this doesn't seem to affect the lightcurves..
-			//	if (dTdt[imelt] > 0.0) {
-			//		G.CP[imelt] -= AA/G.dx;
-			//		AA=0.0;
-			//	}
-
-			// Add in the convective flux where liquid
-				for (int i=2; i<imelt; i++) {
-					double P2 = exp(log(G.P[i])+0.5*G.dx);
-					if (P2 > 1e25) {
-						double xfac=log(P2/1e24)/log(G.P[imelt]/1e24);
-						G.F[i+1]+=AA*dTdt[imelt]*pow(P2/G.g,0.25)*pow(T[imelt],3.0)*xfac;
-					}
-				}
-			
-			
-		} else {
-			double AA=2.4e11;
-
-		// First calculate dT/dt for the zone containing the liquid/solid boundary
+			// First calculate dT/dt for the zone containing the liquid/solid boundary,
+			// we need this to get d y_L/ dt which determines the convective flux
 			G.CP[imelt] += AA/G.dx;
 			dTdt[imelt] = G.g*(G.F[imelt+1]-G.F[imelt])/(G.dx*G.CP[imelt]*G.P[imelt]);
 
-		// If the boundary is moving in, then there shouldn't be any convection, 
-		// so turn it off. Although this doesn't seem to affect the lightcurves..
+			// If the boundary is moving in while cooling, then there shouldn't be any convection, 
+			// so turn it off. Although this doesn't seem to affect the lightcurves..
 			if (dTdt[imelt] > 0.0) {
 				G.CP[imelt] -= AA/G.dx;
+				dTdt[imelt] = G.g*(G.F[imelt+1]-G.F[imelt])/(G.dx*G.CP[imelt]*G.P[imelt]);
 				AA=0.0;
 			}
 
-		// Add in the convective flux where liquid
+			// Add in the convective flux where liquid
 			for (int i=2; i<imelt; i++) {
 				double P2 = exp(log(G.P[i])+0.5*G.dx);
-				if (P2 > 1e25) {
-					double xfac=log(P2/1e24)/log(G.P[imelt]/1e24);
-					G.F[i+1]+=AA*P2*dTdt[imelt]*xfac/G.g;
-				}
+				if (P2 > 1e25) G.F[i+1]+=AA*P2*dTdt[imelt]/G.g;	
+					//else G.F[i+1]+=-G.mdot*8.8e4*9.64e17*0.02*pow(G.rho[i]*1e-9,0.333);
+			}
+		} else {
+			
+			// Add in the convective flux where liquid
+			for (int i=2; i<imelt; i++) {
+				double P2 = exp(log(G.P[i])+0.5*G.dx);
+				if (P2 > 1e20) G.F[i+1]+=-G.mdot*8.8e4*9.64e17*0.02*pow(G.rho[i]*1e-9,0.333);
 			}
 		}
+
 	}
 	
 	// Calculate the derivatives dT/dt
@@ -717,11 +717,13 @@ void calculate_vars(int i, double T, double P, double *CP, double *K, double *NU
 		}
 		double KK,KKperp;
 		KK=G.g*K0*K1/(K0*Qval+(1.0-Qval)*K1);
-		KKperp=0.0; //G.g*K0perp*K1perp/(K0perp*Qval+(1.0-Qval)*K1perp);
-		if (G.angle_mu >= 0.0) {
-			KK *= 4.0*G.angle_mu*G.angle_mu/(1.0+3.0*G.angle_mu*G.angle_mu);
-		} else {
-			KK = 0.5*(1.0544*KK+0.9456*KKperp);  // average over dipole geometry	
+		if (EOS.B > 0) {
+			KKperp=0.0; //G.g*K0perp*K1perp/(K0perp*Qval+(1.0-Qval)*K1perp);
+			if (G.angle_mu >= 0.0) {
+				KK *= 4.0*G.angle_mu*G.angle_mu/(1.0+3.0*G.angle_mu*G.angle_mu);
+			} else {
+				KK = 0.5*(1.0544*KK+0.9456*KKperp);  // average over dipole geometry	
+			}
 		}
 //		if (EOS.B > 0) {
 //		//KKperp = G.g*K0perp*K1perp/(K0perp*Qval+(1.0-Qval)*K1perp);		
@@ -764,10 +766,12 @@ void calculate_vars(int i, double T, double P, double *CP, double *K, double *NU
 			double Kcond, Kcondperp;
 			Kcond = potek_cond(&Kcondperp);	
 			//Kcondperp=0.0;
+			if (EOS.B > 0.0) {
 			if (G.angle_mu >= 0.0) {
 				Kcond *= 4.0*G.angle_mu*G.angle_mu/(1.0+3.0*G.angle_mu*G.angle_mu);
 			} else {
 				Kcond = 0.5*(1.0544*Kcond+0.9456*Kcondperp);  // average over dipole geometry
+			}
 			}
 			*K=EOS.rho*Kcond*G.g/P;
 	//	}
@@ -884,7 +888,7 @@ void set_up_initial_temperature_profile_piecewise(char *fname)
 		}
 	}	
 	
-	printf("Total energy input to get this initial T profile = %lg\n",totalEd);
+	printf("Total energy input to get this initial T profile = %lg (redshifted=%lg)\n",totalEd,totalEd/G.ZZ);
 	
 	if (G.output) fclose(fp);
 	
@@ -921,6 +925,12 @@ void set_up_initial_temperature_profile(void)
 	ODE.go(0.0, G.outburst_duration*3.15e7,dt, 1e-8, derivs);
 	stop_timing(&timer,"ODE.go (initial heating)");
 	printf("number of steps = %d  (time=%lg)\n", ODE.kount, ODE.get_x(ODE.kount));
+
+	double timesofar = -G.outburst_duration*3.15e7;
+	if (G.output) {
+		for (int j=1; j<=ODE.kount; j++) output_result_for_step(j,G.fp,G.fp2,timesofar);
+		fflush(G.fp); fflush(G.fp2);
+	}
 
 	// set initial condition and write out some info
 	FILE *fp;
@@ -966,21 +976,22 @@ void set_up_initial_temperature_profile(void)
 								double Kcondperp=0.0;
 			double Kcond = potek_cond(&Kcondperp);
 								
-			I+=sqrt(EOS.CP()/(Kcond*EOS.rho))*(G.P[i]-G.P[i-1])/G.g;
+			I+=sqrt(EOS.CP()/(Kcond*EOS.rho))*G.P[i]*G.dx/G.g;
 			double tt = I*I*0.25/(24.0*3600.0);
-			
+	//		tt = 0.25 * EOS.rho * EOS.CP() * pow(G.P[i]/(G.g*EOS.rho),2.0)/(Kcond*24.0*3600.0);
+
 			E+=energy_deposited(i)*crust_heating(i)*G.mdot*G.g*G.outburst_duration*3.15e7*
-				4.0*PI*G.radius*G.radius*1e10*(G.P[i]-G.P[i-1])/G.g;
+				4.0*PI*G.radius*G.radius*1e10*G.dx*G.P[i]/G.g;
 				
-			fprintf(fp, "%d %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", i, G.P[i], Ti, EOS.rho,EOS.CV(), 
+			fprintf(fp, "%d %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", i, G.P[i], Ti, EOS.rho,EOS.CV(), 
 					Kcond, EOS.Yn, 1e-39*EOS.Yn * EOS.rho/1.67e-24, tt,E,EOS.A[1],EOS.Z[1],EOS.TC(),
-					EOS.Chabrier_EF(),Kcondperp);
+					EOS.Chabrier_EF(),Kcondperp,0.4*1e-9*EOS.rho*pow(EOS.Ye()/0.4,3.0)*EOS.Z[1]/34.0, EOS.cve, EOS.cvion);
 				EOS.Q=Q_store;	
 		}
 	}	
 	if (G.output) fclose(fp);
 
-	printf("Total energy deposited=%lg\n",E);
+	printf("Total energy deposited=%lg (redshifted=%lg)\n",E,E/G.ZZ);
 
 }
 
@@ -1099,9 +1110,13 @@ void precalculate_vars(void)
 
 double energy_deposited(int i)
 {
-	if (G.rho[i]>4e11) return G.energy_deposited_inner;
-	else return G.energy_deposited_outer;
+	double ener;
+	if (G.rho[i]>4e11) ener = G.energy_deposited_inner;
+	else ener = G.energy_deposited_outer;
+	ener *= pow(G.rho[i]/1e10,G.energy_slope);
+	return ener;
 }
+
 
 
 double crust_heating(int i) 
@@ -1120,7 +1135,8 @@ double crust_heating(int i)
 		eps /= G.mdot * G.g;   // modify to the units used in the code
 
 		// Put in a power-law heating:
-//		if (G.rho[i]>1e9) eps *= pow(G.rho[i]/1e9,0.4);
+//		if (G.rho[i]>1e9) 
+//		eps *= pow(G.rho[i]/1e9,1.0);
 //		eps *= G.rho[i]/1e11;
 		
 		// the next line limits the heating to a limited region of the crust
@@ -1323,7 +1339,7 @@ void set_up_grid(int ngrid, const char *fname)
 		// GammaT[i] refers to i+1/2
 		// The following line uses a composition of 56Fe to calculate gamma,
 		// it avoids jumps in the melting point associated with e-capture boundaries
-		if (0) {
+		if (1) {
 			double Z=26.0,A=56.0;   // 28Si
 			G.GammaT[i] = pow(Z*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*A*1.67e-24),1.0/3.0)/1.38e-16;
 		} else {

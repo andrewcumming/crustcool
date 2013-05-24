@@ -501,11 +501,12 @@ pro lcplot, namestring, ls, tscal=tscal, linecol=linecol,Lscale=Lscale
 		namestring = namestring + '_mu1'
 	endif
 	readcol, 'gon_out/prof'+namestring, tm, F2,Fm, F3,format=('F,F,F,X,F')	
+	print, 'Read '+'gon_out/prof'+namestring
 	tm/=(24.0*3600.0)
 	Fm*=4.0*!dpi*1.12d6^2
 ;	Fmin=min(Fm)
 	if keyword_set(Lscale) then Fm=Fm*Lscale+Fmin*(1.0-Lscale)
-	print, min(Fm), Fmin
+;	print, min(Fm), Fmin
 	;print, tm, Fm
 ;	if keyword_set(tscal) then begin
 ;		tm/=tscal
@@ -612,7 +613,7 @@ end
 
 function Loneday, namestring, tt=tt
 	
-	readcol, 'gon_out/prof_'+namestring+'_1e9', tm, F2,Fm, F3,format=('F,F,F,X,F')	
+	readcol, 'gon_out/prof_'+namestring, tm, F2,Fm, F3,format=('F,F,F,X,F')	
 		
 	tm/=(24.0*3600.0)
 	Fm*=4.0*!dpi*1.12d6^2
@@ -734,45 +735,58 @@ pro LB, ps=ps
 	
 	if keyword_set(ps) then open_ps,'LB.ps'
 
-	B=[1e13,3e13,1e14,1.8e14,3e14,1e15,1.8e15]
+	B=[1e13,1.8e13,3e13,5.6e13,1e14,1.8e14,3e14,5.6e14,1e15,1.8e15]
 	time=10.0
-	L=[Loneday('B1e13E30.0',tt=time),Loneday('B3e13E30.0',tt=time),Loneday('B1e14E30.0',tt=time),$
-		Loneday('B1.8e14E30.0',tt=time),Loneday('B3e14E30.0',tt=time),Loneday('B1e15E30.0',tt=time),$
-		Loneday('B1.8e15E30.0',tt=time)]
+	L=0.1*[Loneday('B1e+13_E30_Tc5e7_mu1',tt=time),Loneday('B1.8e+13_E30_Tc5e7_mu1',tt=time),$
+		Loneday('B3e+13_E30_Tc5e7_mu1',tt=time),Loneday('B5.6e+13_E30_Tc5e7_mu1',tt=time),$
+		Loneday('B1e+14_E30_Tc5e7_mu1',tt=time),Loneday('B1.8e+14_E30_Tc5e7_mu1',tt=time),$
+		Loneday('B3e+14_E30_Tc5e7_mu1',tt=time),Loneday('B5.6e+14_E30_Tc5e7_mu1',tt=time),$
+		Loneday('B1e+15_E30_Tc5e7_mu1',tt=time),$
+		Loneday('B1.8e+15_E30_Tc5e7_mu1',tt=time)]
 
 	plot, B, L, /xlog,/ylog, charsize=1.4, xtitle=textoidl('B (G)'),$
-			ytitle=textoidl('Luminosity after 10 days (erg s^{-1})'), yrange=[1d34,2d36],ystyle=1,$
-			xrange=[1d13,3d15],xstyle=1
-
+			ytitle=textoidl('Luminosity after 10 days (erg s^{-1})'), yrange=[1d34,1.5d36],ystyle=1,$
+			xrange=[1d13,5d15],xstyle=1
+		oplot, B,10*L
 	time=3.0
-	L=[Loneday('B1e13E30.0',tt=time),Loneday('B3e13E30.0',tt=time),Loneday('B1e14E30.0',tt=time),$
-		Loneday('B1.8e14E30.0',tt=time),Loneday('B3e14E30.0',tt=time),Loneday('B1e15E30.0',tt=time),$
-		Loneday('B1.8e15E30.0',tt=time)]
+;	L=[Loneday('B1e13E30.0',tt=time),Loneday('B3e13E30.0',tt=time),Loneday('B1e14E30.0',tt=time),$
+;		Loneday('B1.8e14E30.0',tt=time),Loneday('B3e14E30.0',tt=time),Loneday('B1e15E30.0',tt=time),$
+;		Loneday('B1.8e15E30.0',tt=time)]
+L=0.1*[Loneday('B1e+13_E30_Tc5e7_mu1',tt=time),Loneday('B1.8e+13_E30_Tc5e7_mu1',tt=time),$
+	Loneday('B3e+13_E30_Tc5e7_mu1',tt=time),Loneday('B5.6e+13_E30_Tc5e7_mu1',tt=time),$
+	Loneday('B1e+14_E30_Tc5e7_mu1',tt=time),Loneday('B1.8e+14_E30_Tc5e7_mu1',tt=time),$
+	Loneday('B3e+14_E30_Tc5e7_mu1',tt=time),Loneday('B5.6e+14_E30_Tc5e7_mu1',tt=time),$
+	Loneday('B1e+15_E30_Tc5e7_mu1',tt=time),$
+	Loneday('B1.8e+15_E30_Tc5e7_mu1',tt=time)]
 
-	oplot, B,L,linestyle=2
+;	oplot, B,L,linestyle=2
 
 
-	readcol, 'LB.dat', B, L, name, format=('D,D,X,X,X,X,A'),delimiter=','
+	readcol, 'out/LB.dat', B, L, name, format=('D,D,X,X,X,X,A'),delimiter=','
+	B=2*B
 	
+	cs=0.8
 	for i=0,n_elements(name)-1 do begin
 		
 		oplot, [B[i]*1d14], [L[i]*1d35], psym=1, symsize=1.5
 		if (strcmp(name[i],'SGR 1627',8)) then begin
-			xyouts, B[i]*1d14*0.16, L[i]*1d35*0.95, name[i], charsize=1.0
+			xyouts, B[i]*1d14*0.3, L[i]*1d35*0.95, name[i], charsize=cs
 		endif else begin
 			if (strcmp(name[i],'CXOU',4)) then begin
-				xyouts, B[i]*1d14*0.11, L[i]*1d35*1.0, name[i], charsize=1.0
+				xyouts, B[i]*1d14*0.22, L[i]*1d35*1.0, name[i], charsize=cs
 			endif else begin
 				if (strcmp(name[i],'SGR 0501',8)) then begin
-					xyouts, B[i]*1d14*0.23, L[i]*1d35*0.95, name[i], charsize=1.0
+					xyouts, B[i]*1d14*0.35, L[i]*1d35*0.95, name[i], charsize=cs
 				endif else begin
-					xyouts, B[i]*1d14*1.1, L[i]*1d35*0.95, name[i], charsize=1.0
+					xyouts, B[i]*1d14*1.1, L[i]*1d35*0.95, name[i], charsize=cs
 				endelse
 			endelse
 		endelse
 
 	endfor
 
+	xyouts, 1.5e13, 1e35, textoidl('f_{surface}=0.1'), charsize=1.2
+	xyouts, 1.5e13, 1e36, textoidl('f_{surface}=1'), charsize=1.2
 
 
 	;B=13.0+0.1*dindgen(10)*2.5
@@ -887,6 +901,67 @@ pro lc_all,ps=ps
 	
 end
 
+pro lc_slope, ps=ps
+	
+	if keyword_set(ps) then open_ps, 'lc_slope.ps'
+	
+	yr=[1d32,3d35]
+	xr=[0.3,3000]
+	plot, [1.0,1e5], [1d34,1d35], /xlog, /ylog, xtitle=textoidl('Days after outburst (d)'), $
+		ytitle=textoidl('Luminosity (erg s^{-1})'), linestyle=0, $
+		xrange=xr,xstyle=1, yrange=yr, ystyle=1, /nodata
+
+	lcplot, 'slope3', 0, Lscale=0.1
+	lcplot, 'slope4', 0, Lscale=0.1
+	lcplot, 'slope5', 0, Lscale=0.1
+	lcplot, 'slope6', 0, Lscale=0.1
+	lcplot, 'slope7', 0, Lscale=0.1
+	lcplot, 'slope8', 2, Lscale=0.1
+;	lcplot, '', 1, Lscale=0.1
+	
+	readcol, 'data/fluxes1822', t0, format=('D')
+	readcol, 'data/fluxes1822', t, F, dF,flag, format=('D,X,D,D,X,I'),skipline=1
+	t-=t0[0]
+	dd=1.6
+	F*=4.0*!dpi*(3.086d21*dd)^2
+	dF*=4.0*!dpi*(3.086d21*dd)^2
+;	oploterror, t, F, dF, psym=1,/nohat, col=250, errcol=250
+	ind = where(flag eq 1)			
+;	oploterror, t[ind], F[ind], dF[ind], psym=6,/nohat,symsize=1, col=250, errcol=250
+	
+	if (1) then begin
+		plot_anal, 4.0/3.0, 8d32
+		plot_anal, 1.0, 3d33
+		plot_anal, 0.833, 7d33
+		plot_anal, 0.5, 3d34
+		plot_anal, 0.0, 3d35
+
+
+	endif
+	
+	xyouts, 100,1d35, textoidl('E_{dep}\propto \rho^\alpha'), charsize=1.4
+	
+	xyouts,2.0,8d32, textoidl('4/3'), charsize=1.01
+	xyouts,2.0,2.3d33, textoidl('1'), charsize=1.01
+	xyouts,2.0,4.5d33, textoidl('5/6'), charsize=1.01
+	xyouts,2.0,1.2d34, textoidl('1/2'), charsize=1.01
+	xyouts,1.7,5.5d34, textoidl('\alpha=0'), charsize=1.01
+	
+	
+	if keyword_set(ps) then close_ps
+	
+end
+
+
+pro plot_anal, beta, L0
+
+	t=0.3+1.0*0.1*dindgen(10)
+	L=alog10(L0) + t*0.21*(6.0*beta-5.0)
+	oplot, 10^t, 10^L, linestyle=1
+
+end
+
+
 pro lc_grid,ps=ps
 
 	if keyword_set(ps) then open_ps, 'lc_grid.ps'
@@ -897,6 +972,8 @@ pro lc_grid,ps=ps
 	plot, [0.1,1e5], [1d34,1d35], /xlog, /ylog, xtitle=textoidl('Days after outburst (d)'), $
 		ytitle=textoidl('Luminosity (erg s^{-1})'), linestyle=0, $
 		xrange=xr,xstyle=1, yrange=yr, ystyle=1, /nodata
+
+	;lcplot, 'slope1', 0
 
 	; Plot models
 	;lcplot, '1822', 0, Lscale=0.09
@@ -944,9 +1021,9 @@ pro lc_grid,ps=ps
 	dd=1.6
 	F*=4.0*!dpi*(3.086d21*dd)^2
 	dF*=4.0*!dpi*(3.086d21*dd)^2
-;	oploterror, t, F, dF, psym=1,/nohat, col=250, errcol=250
+	oploterror, t, F, dF, psym=1,/nohat, col=250, errcol=250
 	ind = where(flag eq 1)			
-;	oploterror, t[ind], F[ind], dF[ind], psym=6,/nohat,symsize=1, col=250, errcol=250
+	oploterror, t[ind], F[ind], dF[ind], psym=6,/nohat,symsize=1, col=250, errcol=250
 	
 	; 1627
 	dd=11.0
@@ -990,13 +1067,14 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
  ; 	endif
 	
 	yr=[1d33,1d36]
-	xr=[0.1,6000.0]
+	xr=[0.01,10000.0]
 	if (strcmp(source,'2259',4)) then yr=[1d34,1d35]
 	if (strcmp(source,'fluxes1822',10)) then begin
 		yr=[1d32,2d35]
-		xr=[0.1,3000]
+		xr=[0.1,10000]
 	endif
 	if (strcmp(source,'fluxes1547',10)) then yr=[1d33,1d36]
+	if (strcmp(source,'1659',4)) then yr=[1d31,1d36]
 	if (strcmp(source,'0501',4)) then begin
 		yr=[1d34,7d35]
 		xr=[1.0,6000.0]
@@ -1032,38 +1110,61 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 	; F= flux at grid point 1
 	; F2= flux at grid point 2
 	; F3= flux computed using Teff-Tb relation
-	readcol, 'gon_out/prof', tm, F2, Fm,F3,format=('F,F,F,X,F')	
+	readcol, 'gon_out/prof', tm, F2, Fm,F3,Fin,format=('F,F,F,X,F,X,X,X,D')	
 	tm/=(24.0*3600.0)
 
-
 	Fm*=4.0*!dpi*1.12d6^2
-	
-	if keyword_set(Lscale) then Fm=Fm*Lscale+2.5d33
-	
 	F2*=4.0*!dpi*1.12d6^2
+	Fin*=4.0*!dpi*1.12d6^2
+	
+	if keyword_set(Lscale) then Fm=Fm*Lscale+2.3d33
+	
 ;		plot, t, F, /xlog, /ylog, xtitle=textoidl('Time (d)'), $
 ;				ytitle=textoidl('Luminosity (erg s^{-2})'), linestyle=0, charsize=1.5, $
 ;				xrange=[0.01,1000.0],xstyle=1, yrange=[1d35,1d38]
 	if not keyword_set(overplot) then begin
-		plot, tm, Fm, /xlog, /ylog, xtitle=textoidl('Days after outburst (d)'), $
+		plot, tm, Fm, /xlog,/ylog, xtitle=textoidl('Days after outburst (d)'), $
 			;xtitle=textoidl('Days since BAT trigger (d)'), $
 			ytitle=textoidl('Luminosity (erg s^{-1})'), linestyle=0, $
 			xrange=xr,xstyle=1, yrange=yr, ystyle=1, nodata=noplot
 	endif
 ;	oplot, t,F,linestyle=1
 
+	oplot, tm, abs(Fin), col=80
 
+	ind = where(Fin lt 0.0)
+	Lin=0.0
+	Lout=0.0
+	for i=1,n_elements(ind)-1 do begin
+		j = ind[i]
+		Lout += F2[j]*(tm[j]-tm[j-1])
+		Lin += Fin[j]*(tm[j]-tm[j-1])		
+	endfor
+	print, "Lin=", Lin * 3600.0*24.0
+	print, "Lout=", Lout * 3600.0*24.0
+	
+	Lout = 0.0
+	for i=1,n_elements(tm)-1 do begin
+		Lout += (F2[i]-Fin[i])*(tm[i]-tm[i-1])* 3600.0*24.0	
+	endfor
+	print, "Total energy leaving crust = ", Lout
+	
+	
 ; PL
 ;	L=2.5d35/(tm/10.0)^0.5
 ;	oplot, tm, L, linestyle=2
 
 
 
-	readcol, 'out/nu.dat', rhonu, TTnu, format=('D,D')
-	tnu = (rhonu/3d9)
-	Lnu = 1.7d35 * 0.1 * (TTnu/10.0)^2.1
-	oplot, tnu, Lnu, linestyle=1
+;	readcol, 'out/nu.dat', rhonu, TTnu, format=('D,D')
+;	tnu = (rhonu/3d9)
+;	Lnu = 1.7d35 * 0.1 * (TTnu/10.0)^2.1
+;	oplot, tnu, Lnu, linestyle=1
 
+
+;oplot, tm, 5d33 * (tm)^(7.0*21.0/100.0), col=120
+;oplot, tm, 8d35 * (tm)^(-3.0/4.0), col=120
+;oplot, tm, 2d34 * (tm)^(63.0/140.0), col=120
 
 if not keyword_set(all) then begin
 
@@ -1097,7 +1198,7 @@ if (0) then begin
 endif
 
 
-if (1) then begin
+if (0) then begin
 ;	lcplot, 'B1e15E3.0_1e9',2
 ;	lcplot, 'B1e15E1.0_1e9',2
 ;	lcplot, 'B1e15E0.3_1e9',2
@@ -1239,7 +1340,7 @@ if (0) then begin
 	lcplot, 'B1e14_T1e9_rho1e+11',0,linecol=250, tscal=100.0, Lscale=0.1
 endif
 
-if (1) then begin
+if (0) then begin
 		lcplot, 'B1e14_T2e9_rho1e+10',0, tscal=10.0, Lscale=0.1
 		lcplot, 'B1e14_T2e9_rho3e+09',0, tscal=3.0, Lscale=0.1
 		lcplot, 'B1e14_T2e9_rho3e+10',0, tscal=30.0, Lscale=0.1
@@ -2210,8 +2311,8 @@ pro initial,ps=ps
 	 
 	!p.charsize=2.0
 	
-	readcol, 'gon_out/initial_condition', zone, y, T, rho, CV, K, tt,E,TC,Kp,$
-						format=('I,D,D,D,D,D,X,X,D,D,X,X,D,X,D')
+	readcol, 'gon_out/initial_condition', zone, y, T, rho, CV, K, tt,E,TC,Kp,tanal,cve,cvion,$
+						format=('I,D,D,D,D,D,X,X,D,D,X,X,D,X,D,D,D,D')
 	readcol, 'gon_out/initial_condition', zone2, y2, T2, rho2, CV2, K2, tt2,$
 						format=('I,D,D,D,D,D,X,X,D')
 
@@ -2222,10 +2323,12 @@ pro initial,ps=ps
 	oplot,rho2,T2,linestyle=1
 	oplot, rho,TC+1e5, linestyle=2
 
-	plot, rho, CV,/xlog,/ylog, ytitle=textoidl('C_V'),xtitle=textoidl('Column depth (g cm^{-2})')
+	plot, rho, CV,/xlog,/ylog, ytitle=textoidl('C_V'),xtitle=textoidl('Column depth (g cm^{-2})'), yrange=[1d5,5d7]
 	oplot,rho2,CV2,linestyle=1
+	oplot,rho,cve*(rho/1e9)^0.3333*1e9/T,linestyle=2
+	oplot,rho,cvion,linestyle=3
 
-	plot, rho, K, /xlog,/ylog, ytitle=textoidl('K'),xtitle=textoidl('Column depth (g cm^{-2})'),$
+	plot, rho, K/(1e-9*T*(rho*1d-9)^0.333), /xlog,/ylog, ytitle=textoidl('K'),xtitle=textoidl('Column depth (g cm^{-2})'),$
 				yrange=[1d13,1d20]
 	oplot,rho2,K2,linestyle=1
 	oplot,rho,Kp,linestyle=2
@@ -2234,6 +2337,11 @@ pro initial,ps=ps
 				ytitle=textoidl('Thermal time (d)'), yrange=[1.0,1e4]
 	oplot,rho2,tt2,linestyle=1	
 	
+	oplot, rho, tanal*4.0, col=250
+	oplot, rho, 2.0*(rho/1e9)^1.0, col=80
+	oplot, rho, (y/(1.6d14*rho*1000.0))^2, linestyle=1
+	
+	oplot, rho,  0.05*(y/(1.6d14*rho*1000.0))^2 * rho*1e-9*1d-7*CV/(1d-18*K), col=120
 ;	plot, rho, E, /xlog,/ylog, yrange=[1d42,1d45]
 	
 	if keyword_set(ps) then begin
@@ -2306,11 +2414,12 @@ pro prof2, delay=delay, png=png, source=source
 	print, 'Number of grid points=',ngrid
 
 	multiplot,/reset
-	!p.multi=[0,1,2,0,0]
+	!p.multi=[0,1,3,0,0]
 
 	; animate
 	count=0
 	oldtime = 0 
+	starttime = -999.0
 	while (not eof(lun)) do begin
 
 		; get the time
@@ -2318,6 +2427,7 @@ pro prof2, delay=delay, png=png, source=source
 		if not keyword_set(png) then begin
 			print, 'time=', time
 		endif
+		if (starttime eq -999.0) then starttime=time
 
 		; read in next batch of data
 		data=dblarr(14,ngrid)
@@ -2330,29 +2440,64 @@ pro prof2, delay=delay, png=png, source=source
 
 		; plot upper panel
 		erase
-		plot, y, T, /xlog, /ylog,charsize=1.2, ytitle=textoidl('T (K)'),$
-				xtitle=textoidl('P (g cm^{-2})'), yrange=[1e7,1e10],ystyle=1, $
-				xrange=[1d24,8d32], xstyle=1,/nodata
+		if (1) then begin 
+		plot, y, T, /xlog, /ylog,charsize=1.5, ytitle=textoidl('T (K)'),$
+				xtitle=textoidl('P (g cm^{-2})'), yrange=[1e7,1e9],ystyle=1, $
+				xrange=[1d23,8d32], xstyle=1,/nodata
 		ind = where(gamma le 175.0,cnt)
 		if (cnt gt 0) then begin
 			oplot, y[ind], T[ind], thick=3, linestyle=0, col=80
 		endif
 		oplot, y[where(gamma ge 175.0)], T[where(gamma ge 175.0)], thick=3, linestyle=0, col=120
-		oplot, y0, T0, linestyle=1
+		oplot, y0, T0, linestyle=1, thick=2
 		oplot, ym, Tm, linestyle=2
 		;		oplot, y,T*gamma/175.0, linestyle=2, col=250
 		;oplot, ym,Tmelt, linestyle=2   ; plot Tmelt which is at the grid centers
+		xyouts, 1d30, 5d9, textoidl('t='+string(time/(3600.0*24.0))+' days')
+		endif 
+		if (1) then begin
+			plot, y, abs(F), /xlog, /ylog, charsize=1.5, ytitle=textoidl('Flux (erg cm^{-2} s^{-1})'),$
+					xtitle=textoidl('P (g cm^{-2})'),/nodata, yrange=[1d19,3d22], ystyle=1,$
+					xrange=[1d23,8d32], xstyle=1
+			ind = where(gamma le 175.0 and F gt 0.0,cnt)
+			if (cnt gt 0) then begin
+				plotsym, 0, /fill
+				oplot, y[ind], F[ind], thick=3, psym=8, col=80
+			endif
+			ind = where(gamma le 175.0 and F lt 0.0,cnt)
+			if (cnt gt 0) then begin
+				plotsym, 0
+				oplot, y[ind], -F[ind], thick=3, linestyle=0, col=80, psym=8
+			endif
+			ind = where(gamma gt 175.0 and F gt 0.0,cnt)
+			if (cnt gt 0) then begin
+				plotsym, 0,/fill
+				oplot, y[ind], F[ind], thick=3, psym=8, col=120
+			endif
+			ind = where(gamma gt 175.0 and F lt 0.0,cnt)
+			if (cnt gt 0) then begin
+				plotsym, 0
+				oplot, y[ind], -F[ind], thick=3, psym=8, col=120
+			endif
 
+
+
+			oplot, ym, Tm, linestyle=2
+		endif
+
+		if (1) then begin
 		; plot lower panel
 		tt2=tt[where(tt*24*3600.0 le time,ntt)]
 		ff2=ff[where(tt*24*3600.0 le time)]
 		ploterror, tobs, Fobs, Fobse,/xlog, xtitle=textoidl('Time (d)'), $
 			ytitle=textoidl('T_{eff} (eV)'), charsize=1.5, $
-			xrange=[1.0,7d3],xstyle=1,psym=2,yrange=[min(Fobs)-10.0,max(Fobs)+70.0], ystyle=1
+			xrange=[1.0,7d3],xstyle=1,psym=2,yrange=[min(Fobs)-30.0,max(Fobs)+70.0], ystyle=1
 		if (ntt gt 1) then begin
 			oplot,tt2,FF2,linestyle=0
 		endif
 		oplot, ttx, FFx, linestyle=1
+		endif
+
 
 		if keyword_set(delay) then begin
 			for i=1L,delay do begin
@@ -2360,7 +2505,7 @@ pro prof2, delay=delay, png=png, source=source
 		endif
 
 		if keyword_set(png) then begin
-			if ((alog10(time)-alog10(oldtime)) gt 0.01 or oldtime eq 0) then begin
+			if (abs(alog10(abs(time))-alog10(abs(oldtime))) gt 0.01 or oldtime eq 0) then begin
 				count++	
 				image = TVRD(0,0,!D.X_Size,!D.Y_Size,True=1, Order=order)
 				filename=string(format='("png/",I03,".png")',count)
@@ -2523,7 +2668,7 @@ endif
 			erase
 			plot, rho, T, /xlog, /ylog, ytitle=textoidl('T (K)'),$
 					xtitle=textoidl('\rho (g cm^{-3})'), yrange=[1e7,1e10],ystyle=1, $
-					xrange=[5d8,1d14], xstyle=1
+					xrange=[5d5,1d14], xstyle=1
 			oplot, y0, T0, linestyle=1
 			oplot, ym, Tm, linestyle=2
 
@@ -2588,6 +2733,18 @@ pro initialT10,ps=ps
 ;	T10,source='B1e15E1.0_1e9',/overplot,ls=2
 ;	T10,source='B1e15E0.3_1e9',/overplot,ls=2
 	
+;T10,source='slope3',ls=0, nread=14, tt=0.01
+;T10,source='slope4',ls=0, nread=14, tt=0.01, /overplot
+;T10,source='slope5',ls=0, nread=14, tt=0.01, /overplot
+T10,source='',ls=1, nread=14, tt=0.01
+T10,source='',ls=0, nread=14, tt=1.0, /overplot
+T10,source='',ls=0, nread=14, tt=3.0, /overplot
+T10,source='',ls=0, nread=14, tt=10.0, /overplot
+;T10,source='',ls=0, nread=14, tt=30.0, /overplot
+;T10,source='',ls=0, nread=14, tt=100.0, /overplot
+
+	
+	if (0) then begin
 	ttshow=0.0001
 T10, source='B1e14E10_1e9_mu1',ls=1, tt=ttshow, nread=14
 T10, source='B1e14E1_1e9_mu1',ls=1, tt=ttshow, nread=14,/overplot
@@ -2596,13 +2753,16 @@ T10, source='B1e14E30_1e9_mu1',ls=1, tt=ttshow, nread=14,/overplot
 T10, source='B1e14E3_1e9_mu1',ls=1, tt=ttshow, nread=14,/overplot
 T10, source='B1e14E0.3_1e9_mu1',ls=1, tt=ttshow, nread=14,/overplot
 
-	ttshow=10.0
+
+	ttshow=1.0
 T10, source='B1e14E10_1e9_mu1',ls=0, tt=ttshow, nread=14,/overplot
 T10, source='B1e14E1_1e9_mu1',ls=0, tt=ttshow, nread=14,/overplot
 T10, source='B1e14E100_1e9_mu1',ls=0, tt=ttshow, nread=14,/overplot
 T10, source='B1e14E30_1e9_mu1',ls=0, tt=ttshow, nread=14,/overplot
 T10, source='B1e14E3_1e9_mu1',ls=0, tt=ttshow, nread=14,/overplot
 T10, source='B1e14E0.3_1e9_mu1',ls=0, tt=ttshow, nread=14,/overplot
+
+endif
 
 	E = [0.3,1.0,3.0,10.0,30.0,100.0]	
 	for i=0, n_elements(E)-1 do begin
@@ -2611,6 +2771,13 @@ T10, source='B1e14E0.3_1e9_mu1',ls=0, tt=ttshow, nread=14,/overplot
 	T = 4.5d8 * (rho * 1d-10)^(-0.5) * E[i]^0.6
 	;oplot, rho, T, col=250
 	endfor
+		
+	rho = 9.0+2.0*0.01*dindgen(100)
+	rho = 10^rho
+	T = 4.2d8 * (rho * 1d-10)^(-0.5) * (10.0*((rho*1d-10)^1.333))^0.63
+	oplot, rho, T, col=250
+		
+	
 		
 ;	T10,source='B1e14E100.0_1e9',/overplot
 ;	T10,source='B1e14E30.0_1e9',/overplot
@@ -2708,14 +2875,14 @@ pro T10, delay=delay, png=png, source=source,overplot=overplot, ls=ls, nread=nre
 			endif else begin
 				plot, rho, T, /xlog, /ylog, ytitle=textoidl('T (K)'),$
 					xtitle=textoidl('\rho (g cm^{-3})'), yrange=[1e8,1e10],ystyle=1, $
-					xrange=[1d9,3d11], xstyle=1,linestyle=ls, charsize=1.3
+					xrange=[5d8,3d11], xstyle=1,linestyle=ls, charsize=1.3
 				oplot, ym, Tm, linestyle=2
 				;oplot, ym, TD/3.5, linestyle=4
 				oplot, rhoc, cv*1e8, linestyle=3
-				oplot, rhonu, Tnu*1e8, linestyle=4
+			;	oplot, rhonu, Tnu*1e8, linestyle=4
 				xyouts, 1.5e11,3e9,textoidl('\Gamma=175')	,charsize=1.01, orientation=20		
 				xyouts, 1.2e11,1.75e9,textoidl('C_{V,e}=C_{V,ion}')	,charsize=1.01, orientation=20		
-				xyouts, 1.5e11,1.2e9,textoidl('t_{therm}=t_\nu')	,charsize=1.01, orientation=0	
+			;	xyouts, 1.5e11,1.2e9,textoidl('t_{therm}=t_\nu')	,charsize=1.01, orientation=0	
 				xyouts, 1.5e10,1.5e8,textoidl('E_{25}=0.3,1,3,10,30,100'),charsize=1.2
 				;xyouts, 6d10,6d9, textoidl('t=1 day'),charsize=1.1
 			endelse

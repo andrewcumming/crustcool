@@ -1,17 +1,17 @@
-Tc	1e8
-Edep	1.0
+Tc	2e8
+Edep	100.0
 rhot	1e9
-rhob	1e10
+rhob	1e11
 mass	1.4
 radius	12.0
 Qimp	1
-angle_mu	-1
+angle_mu	1
 
 timetorun	20000.0
 instant 1
 
 # need to precalc if anything below changes
-precalc	1
+precalc	0
 Bfield	1e14
 ngrid	100
 SFgap	1
@@ -27,13 +27,4 @@ sph 0
 #>1.01e11 -1
 #>-1 -1
 
-Bfield	1e15
-
-angle_mu	-1.0
-
-Edep	100
-
-Tc	2e8
-
-precalc	0
-
+ytop	1e10
