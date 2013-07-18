@@ -82,7 +82,7 @@ C%C  111 format(1P,11E11.3,I2)
 C%C      end
 
       subroutine EOSMAG(Zion,CMI,RHO,TEMP,GAMAG,
-     *  DENS,GAMI,CHI,TPT,LIQSOL,PnkT,UNkT,SNk,CV,CHIR,CHIT)
+     *  DENS,GAMI,CHI,TPT,LIQSOL,PnkT,UNkT,SNk,CVE,CVI,CHIR,CHIT)
 !f2py   intent(in) :: Zion,CMI,RHO,TEMP,GAMAG,LIQSOL
 !f2py   intent(out) ::DENS,GAMI,CHI,TPT,LIQSOL,PnkT,UNkT,SNk,CV,CHIR,CHIT
 *                                                       Version 06.07.12
@@ -285,7 +285,8 @@ C%C      end
       UNkT=UINT/DTI ! beta U / N_i
       SNk=Stot/DENSI ! S / N_i k_B
 ** Second-order:
-      CV=CVtot/DENSI ! C_V per ion
+	CVE=CVtotE/DENSI ! C_V per ion
+	CVI=CVtotI/DENSI ! C_V per ion
       CHIR=PDLR/PRESS ! d ln P / d ln\rho
       CHIT=PDLT/PRESS ! d ln P / d ln T
       return

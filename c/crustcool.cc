@@ -916,7 +916,6 @@ void set_up_initial_temperature_profile(void)
 	
 	// first run some accretion with heating, long enough for the crust
 	// to get into a thermal steady-state
-	G.accreting = !G.instant_heat;
 	for (int i=G.N+1; i>=1; i--) {
 		// a linear profile between top and bottom
 		//double Ti = pow(10.0,log10(G.Tc) + log10(G.Tt/G.Tc)*log10(G.P[i]/G.Pb)/log10(G.Pt/G.Pb));
@@ -929,6 +928,14 @@ void set_up_initial_temperature_profile(void)
 	}
 	clock_t timer;
 	start_timing(&timer);
+	
+	// First, let the crust cool for 10 years to get into eqm with the core
+	G.accreting = 0;  // switch off heating for this one
+	ODE.go(0.0, 10.0*3.15e7, 1e6, 1e-8, derivs);
+	for (int i=1; i<=G.N+1; i++)
+		ODE.set_bc(i,ODE.get_y(i,ODE.kount));
+
+	G.accreting = !G.instant_heat;	
 	double dt=G.outburst_duration*3.15e7*0.01;
 	if (dt > 1e6) dt=1e6;
 	ODE.go(0.0, G.outburst_duration*3.15e7,dt, 1e-8, derivs);
@@ -985,13 +992,13 @@ void set_up_initial_temperature_profile(void)
 								double Kcondperp=0.0;
 			double Kcond = potek_cond(&Kcondperp);
 								
-			I+=sqrt(EOS.CP()/(Kcond*EOS.rho))*G.P[i]*G.dx/G.g;
+			I+=sqrt(EOS.CV()/(Kcond*EOS.rho))*G.P[i]*G.dx/G.g;
 			double tt = I*I*0.25/(24.0*3600.0);
 	//		tt = 0.25 * EOS.rho * EOS.CP() * pow(G.P[i]/(G.g*EOS.rho),2.0)/(Kcond*24.0*3600.0);
 
 			E+=energy_deposited(i)*crust_heating(i)*G.mdot*G.g*G.outburst_duration*3.15e7*
 				4.0*PI*G.radius*G.radius*1e10*G.dx*G.P[i]/G.g;
-				
+							
 			fprintf(fp, "%d %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", i, G.P[i], Ti, EOS.rho,EOS.CV(), 
 					Kcond, EOS.Yn, 1e-39*EOS.Yn * EOS.rho/1.67e-24, tt,E,EOS.A[1],EOS.Z[1],EOS.TC(),
 					EOS.Chabrier_EF(),Kcondperp,0.4*1e-9*EOS.rho*pow(EOS.Ye()/0.4,3.0)*EOS.Z[1]/34.0, EOS.cve, EOS.cvion);

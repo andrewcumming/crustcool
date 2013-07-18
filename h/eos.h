@@ -84,7 +84,7 @@ public:
 
 	int use_potek_cond, use_potek_eos;
 	double potek_cond(void);
-	void potek_eos(double *P_out, double *cv_out);
+	void potek_eos(double *P_out, double *cv_out_i, double *cv_out_e);
 
 
  private:

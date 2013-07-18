@@ -24,7 +24,7 @@ extern "C"{
 					double *RHSIGMA,double *RKAPPA,double *RTKAPPA,double *RHKAPPA);
   void eosmag_(double *Zion,double *CMI,double *RHO,double *TEMP,double *GAMAG,
      			double *DENS,double *GAMI,double *CHI,double *TPT,double *LIQSOL,
-				double *PnkT,double *UNkT,double *SNk,double *CV,double *CHIR,double *CHIT);
+				double *PnkT,double *UNkT,double *SNk,double *CVE,double *CVI,double *CHIR,double *CHIT);
 };
 
 
@@ -145,7 +145,7 @@ double Eos::ptot(void)
 
 	if (this->use_potek_eos) {
 		double dummy;
-		potek_eos(&P,&dummy);
+		potek_eos(&P,&dummy,&dummy);
 	} else {
 		
   double f;
@@ -530,58 +530,58 @@ double Eos::CV(void)
   // Calculates the specific heat at constant volume (density)
 {
 	
-	double cv;
-	if (this->use_potek_eos) {
-		double dummy;
-		potek_eos(&dummy,&cv);
+	if (this->use_potek_eos && !(this->Yn>0.0)) {
+		double dummy, dummy2, dummy3;
+		potek_eos(&dummy,&dummy2,&dummy3);
+		this->cvion = dummy3;
+		this->cve=dummy2;
 	} else {
-	
-	
-  double gg, alpha;
+		
+  		double gg, alpha;
 
-  // first the IONS
-  gg=this->gamma();
+  		// first the IONS
+  		gg=this->gamma();
 
-  if (gg < this->gamma_melt) {  // liquid
-	    // alpha comes from Chabrier's fit
-    double a1,a2,a3,b1,b2,b3,b4;
-    a1=-0.9070; a2=0.62954; a3=-0.5*sqrt(3.0)-a1/sqrt(a2);
-    b1=4.56e-3; b2=211.6; b3=-1.0e-4; b4=4.62e-3;
-    alpha=0.5*pow(gg,1.5)*(a3*(gg-1.0)/pow(gg+1.0,2.0)-a1*a2/pow(gg+a2,1.5))
-      +pow(gg,2.0)*(b3*(pow(gg,2.0)-b4)/pow(pow(gg,2.0)+b4,2.0)-
-		    b1*b2/pow(gg+b2,2.0));
-    cvion=8.3144e7*(1.5+alpha)*this->Yi();
-    cv_alpha=alpha;
+  		if (gg < this->gamma_melt) {  // liquid
+	    	// alpha comes from Chabrier's fit
+    		double a1,a2,a3,b1,b2,b3,b4;
+    		a1=-0.9070; a2=0.62954; a3=-0.5*sqrt(3.0)-a1/sqrt(a2);
+    		b1=4.56e-3; b2=211.6; b3=-1.0e-4; b4=4.62e-3;
+    		alpha=0.5*pow(gg,1.5)*(a3*(gg-1.0)/pow(gg+1.0,2.0)-a1*a2/pow(gg+a2,1.5))
+      				+pow(gg,2.0)*(b3*(pow(gg,2.0)-b4)/pow(pow(gg,2.0)+b4,2.0)-b1*b2/pow(gg+b2,2.0));
+    		this->cvion=8.3144e7*(1.5+alpha)*this->Yi();
+    		cv_alpha=alpha;
 
-  } else {  // solid
+  		} else {  // solid
 
-    double eta=7.76e-5*this->Z[1]*sqrt(this->Yi()*this->rho/(this->A[1]*(1.0-this->Yn)))/this->T8;
+    		double eta=7.76e-5*this->Z[1]*sqrt(this->Yi()*this->rho/(this->A[1]*(1.0-this->Yn)))/this->T8;
  
-    double alphaeta=0.399*eta;
-    double gameta=0.899*eta;
-    double dd,dd1,dd2;
-    double x=alphaeta;
-    dd1=pow(3.141592654,4.0)/(5.0*pow(x,3.0));
-    dd1-=3.0*exp(-x)*(6.0+x*(6.0+x*(3.0+x)))/pow(x,3.0);
-    dd2=1.0-0.375*x+0.05*x*x;
-    if (dd1 > dd2) dd=dd2; else dd=dd1;
-    cvion=8.3144e7*this->Yi()*(8.0*dd-6*alphaeta/(exp(alphaeta)-1.0)+(pow(gameta,2.0)*exp(gameta)/pow(exp(gameta)-1.0,2.0)));
-    
-  }
+    		double alphaeta=0.399*eta;
+    		double gameta=0.899*eta;
+    		double dd,dd1,dd2;
+    		double x=alphaeta;
+    		dd1=pow(3.141592654,4.0)/(5.0*pow(x,3.0));
+    		dd1-=3.0*exp(-x)*(6.0+x*(6.0+x*(3.0+x)))/pow(x,3.0);
+    		dd2=1.0-0.375*x+0.05*x*x;
+    		if (dd1 > dd2) dd=dd2; else dd=dd1;
+    		this->cvion=8.3144e7*this->Yi()*(8.0*dd-6*alphaeta/(exp(alphaeta)-1.0)+(pow(gameta,2.0)*exp(gameta)/pow(exp(gameta)-1.0,2.0)));
+      }
+  	
 
-  // RADIATION
+  	// ELECTRONS
+  	{ // modified version of Paczynksi's fit for cve
+    	double dT,temp,p1,p2;
+    	temp=1.001*this->T8; dT=temp-this->T8;
+	//    p1=this->pe(); this->T8+=dT; p2=this->pe(); this->T8-=dT;
+       	p1=this->pemod(); this->T8+=dT; p2=this->pemod(); this->T8-=dT;
+    	this->cve=(1/((this->f()-1)*this->rho))*1e-8*(p2-p1)/dT;
+	}
+}
+  	// RADIATION
    	//cvrad=3.0256e10*pow(this->T8,3)/this->rho;
-    cvrad=4.0*RADa*1e24*pow(this->T8,3)/this->rho;
-  //cvrad=0.0;
+    this->cvrad=4.0*RADa*1e24*pow(this->T8,3)/this->rho;
+  	//cvrad=0.0;
   
-  // ELECTRONS
-  { // modified version of Paczynksi's fit for cve
-    double dT,temp,p1,p2;
-    temp=1.001*this->T8; dT=temp-this->T8;
-//    p1=this->pe(); this->T8+=dT; p2=this->pe(); this->T8-=dT;
-       p1=this->pemod(); this->T8+=dT; p2=this->pemod(); this->T8-=dT;
-    cve=(1/((this->f()-1)*this->rho))*1e-8*(p2-p1)/dT;
-  }
 
   // NEUTRONS
 	double cvneut=0.0;
@@ -624,13 +624,11 @@ double Eos::CV(void)
 
 //    cvion=8.3144e7*3.0*this->Yi();
 
+//	printf("-->%lg %lg\n",this->cve, this->cvion);
+
 
   // total
-  cv = cve+cvion+cvrad+cvneut;
-
- }
-return cv;
-
+	return this->cvion+this->cve+this->cvrad+cvneut;
 
 }
 /*
@@ -1622,7 +1620,7 @@ double Eos::J(double x,double y)
 
 
 
-void Eos::potek_eos(double *P_out, double *cv_out)
+void Eos::potek_eos(double *P_out, double *cv_out_e, double *cv_out_i)
 {
 /*
 	"""Magnetic EOS from Potekhin & Chabrier 2013. Input: Z,A,rho,T,B,LIQSOL
@@ -1658,13 +1656,14 @@ void Eos::potek_eos(double *P_out, double *cv_out)
 	double TT = this->T8*1e8/3.1577e5;
 	double BB = this->B/2.3505e9;
 	double GAMAG = 0.0;
-	double DENS, GAMI, CHI, TPT, LIQSOL, PnkT, UNkT,SNk,CV,CHIR,CHIT;
+	double DENS, GAMI, CCHI, TPT, LIQSOL=1, PnkT, UNkT,SNk,CCVI,CCVE,CHIR,CHIT;
 //	if (TT<0.0) TT=100.0;
-	eosmag_(&Zion,&CMI,&RR,&TT,&GAMAG,&DENS,&GAMI,&CHI,&TPT,&LIQSOL,&PnkT,&UNkT,&SNk,&CV,
+	eosmag_(&Zion,&CMI,&RR,&TT,&GAMAG,&DENS,&GAMI,&CCHI,&TPT,&LIQSOL,&PnkT,&UNkT,&SNk,&CCVE,&CCVI,
 			&CHIR,&CHIT);
 	//Multiply pressure by 8.31447e13 rho T6/CMImean to get cgs pressure
-	*P_out = PnkT * 8.31447e13 * this->rho * 100.0*this->T8/CMI;
-	*cv_out = CV * 8.31447e7/CMI;
+	*P_out = PnkT * 8.31447e13 * this->rho * 100.0*this->T8/this->A[1];
+	*cv_out_e = CCVE * 8.31447e7/this->A[1];
+	*cv_out_i = CCVI * 8.31447e7/this->A[1];
 }
 
 
