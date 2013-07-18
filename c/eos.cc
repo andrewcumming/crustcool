@@ -17,6 +17,17 @@
 
 void* pt2Object;
 
+
+extern "C"{
+  void condegin_(double *temp,double *densi,double *B,double *Zion,double *CMI,
+					double *CMI1,double *Zimp, double *RSIGMA,double *RTSIGMA,
+					double *RHSIGMA,double *RKAPPA,double *RTKAPPA,double *RHKAPPA);
+  void eosmag_(double *Zion,double *CMI,double *RHO,double *TEMP,double *GAMAG,
+     			double *DENS,double *GAMI,double *CHI,double *TPT,double *LIQSOL,
+				double *PnkT,double *UNkT,double *SNk,double *CV,double *CHIR,double *CHIT);
+};
+
+
 // ------------------------ initialise ----------------------------------
 
 void Eos::tidy(void)
@@ -41,6 +52,8 @@ void Eos::init(int n)
   this->gamma_melt=175.0;
   this->Q=900.0; // treat the crust as a liquid for conductivities
   this->B=0.0; // default is unmagnetized 
+	this->use_potek_cond = 0;
+	this->use_potek_eos = 0;
 }
 
 // ------------------------ mean molecular weights ------------------------
@@ -104,19 +117,21 @@ double Eos::pe(void)
 		pedr=1.231e1*pow(rY,4.0/3.0);
 	  ped=1/sqrt((1/pow(pedr,2))+(1/pow(pednr,2)));
 	
-//	if (rY<7.09e3*pow(B12,1.5)) {
-//		double xr = 2.96e-5*rY/B12;
-//		double ef = 9.11*9e-8*(sqrt(1.0+xr*xr)-1.0);
-//		pednr = 1e-14 * (2.0/3.0)*ef*rY/1.67d-24;		
-//		pedr = 1e-14 * 0.5*ef*rY/1.67d-24;
-//	  ped1=1/sqrt((1/pow(pedr,2))+(1/pow(pednr,2)));
-//	} else {
-//		ped1=ped2;
-//	}
-  	//}
-//	ped = 1/sqrt((1/pow(ped1,2))+(1/pow(ped2,2)));
-  pend=8.254e-7*1e8*this->T8*rY;
-  return(1e14*sqrt(pow(ped,2)+pow(pend,2)));
+	if (0) {//(rY<7.09e3*pow(B12,1.5)) {
+		double xr = 2.96e-5*rY/B12;
+		
+		double TB8 = 1.343*1e-12*this->B/sqrt(1.0+xr*xr);
+		if (this->T8 < TB8) {
+		
+		double ef = 9.11*9e-8*(sqrt(1.0+xr*xr)-1.0);
+		pednr = 1e-14 * (2.0/3.0)*ef*rY/1.67e-24;		
+		pedr = 1e-14 * 0.5*ef*rY/1.67e-24;
+	  	ped=1.0/sqrt((1.0/pow(pedr,2))+(1.0/pow(pednr,2)));
+	}
+	}
+  	
+  	pend=8.254e-7*1e8*this->T8*rY;
+  	return(1e14*sqrt(pow(ped,2)+pow(pend,2)));
 }
 
 
@@ -126,10 +141,16 @@ double Eos::ptot(void)
   // species 1 has Z>2 i.e. not hydrogen or helium, this is a trick to only
   // apply Coulomb corrections in the ocean
 {
+	double P;
+
+	if (this->use_potek_eos) {
+		double dummy;
+		potek_eos(&P,&dummy);
+	} else {
+		
   double f;
   if (this->Z[1]>2.0) f=1.0+this->Uex()/3.0; else f=1.0;
 
-  double P;
   P=8.254e15*this->rho*this->T8*Yi()*f;   // ions
   P+=pe();                                // electrons  
   P+=RADa*1e32*pow(this->T8,4)/3.0;         // radiation
@@ -144,7 +165,8 @@ double Eos::ptot(void)
     EFn=1.730*k+25.05*k*k-30.47*k*k*k+17.42*k*k*k*k;  // in MeV
     P+=0.4*EFn*1.6e-6*this->rho*this->Yn/1.66e-24;
   }
-  return P;
+	}
+  	return P;
 }
 
 
@@ -507,6 +529,14 @@ double Eos::del_ad(void)
 double Eos::CV(void)
   // Calculates the specific heat at constant volume (density)
 {
+	
+	double cv;
+	if (this->use_potek_eos) {
+		double dummy;
+		potek_eos(&dummy,&cv);
+	} else {
+	
+	
   double gg, alpha;
 
   // first the IONS
@@ -596,7 +626,12 @@ double Eos::CV(void)
 
 
   // total
-  return cve+cvion+cvrad+cvneut;
+  cv = cve+cvion+cvrad+cvneut;
+
+ }
+return cv;
+
+
 }
 /*
 double Eos::CV(void)
@@ -968,9 +1003,9 @@ double Eos::opac(void)
 
   // This is the fitting formula for the electron scattering
   // opacity from Paczynski
-  //  this->kes=(0.4*Ye())/((1+pow(this->T8/4.5,0.86)));
+	//this->kes=0.4*Ye();
   this->kes=(0.4*Ye())/((1+2.7e11*this->rho*pow(1e8*this->T8,-2.0))*
-			(1+pow(this->T8/4.5,0.86)));
+		(1+pow(this->T8/4.5,0.86)));
 
   /*
   if (this->rho < 1000.0) {
@@ -1016,6 +1051,17 @@ double Eos::opac(void)
 
   //  if (this->Z[1]==26.0) this->kff*=0.5;
 
+
+	{
+	// Free-free opacity from Potekhin:
+		double TRy = 100.0*this->T8/(0.15789*this->Z[1]*this->Z[1]);
+		double c7 = 108.8 + 77.6*pow(TRy,0.834);
+		c7 /= 1.0+0.502*pow(TRy,0.355)+0.245*pow(TRy,0.834);
+		this->kff = this->kes * 2e4 * pow(this->Z[1],2.0) * this->rho /
+			(c7 * this->A[1] * pow(100.0*this->T8,3.5));
+	}
+
+
   // total radiative opacity
   this->kappa_rad=this->kff+this->kes;
 
@@ -1025,29 +1071,28 @@ double Eos::opac(void)
 	double A = 1.0 + (1.097+0.777*TRy)*pow(f,0.617)*pow(1.0-f,0.77)/(1.0+0.536*TRy);
 	this->kappa_rad*=A;
 
-//	if (this->B > 0.0) {
-		if (0) {
-	// now include a magnetic correction
-	// Potekhin et al. 2001 eqs 21-23
-//		double xr=1.009*pow(1e-6*this->rho*this->Ye(),1.0/3.0);
-		
+	if (this->B > 0.0) {
+		// now include a magnetic correction
+		// Potekhin et al. 2001 eqs 21-23
+//		double xr=1.009*pow(1e-6*this->rho*this->Ye(),1.0/3.0);		
 		double xr;
 		if (this->rho < 7.09e3*pow(1e-12*this->B,1.5)/this->Ye()) {
 			xr = 2.96e-5*this->rho*this->Ye()*1e12/this->B;			
 			//if (xr < sqrt(1.38e-8*this->T8/(9.11e-28*9e20))) xr=1e-10;
 		} else {
+//			xr=1.009*pow(1e-6*this->rho*this->Ye(),1.0/3.0);	
 			xr = this->x();
 		}
 		
 		double TB8 = 1.343*1e-12*this->B/sqrt(1.0+xr*xr);
 		double u = TB8/(2.0*this->T8);
-		double A1,A2,A3;
+		double AA1,AA2,AA3;
 		double a1=0.0949, a2=0.1619, a3=0.2587, b1=0.0610,
 			b2=0.1400, b3=0.1941, c1=0.09, c2=0.0993, c3=0.0533;
-		A1=a1-b1*pow(f,c1);
-		A2=a2-b2*pow(f,c2);
-		A3=a3-b3*pow(f,c3);
-		double corr = 1.0  + u*u*(A1*u+pow(A2*u,2.0))/(1.0+A3*u*u);
+		AA1=a1-b1*pow(f,c1);
+		AA2=a2-b2*pow(f,c2);
+		AA3=a3-b3*pow(f,c3);
+		double corr = 1.0  + u*u*(AA1*u+pow(AA2*u,2.0))/(1.0+AA3*u*u);
 		this->kappa_rad /= corr;
 	}
 
@@ -1057,9 +1102,15 @@ double Eos::opac(void)
  // kappa_rad*=exp(TP/this->T8);
  // double up=TP/this->T8;
  // kappa_rad*=(1-2.448*pow(0.1*up,2.0)+16.40*pow(0.1*up,6.0));
-
+	// Correction for plasma frequency from Potekhin et al. (2003) ApJ 594,404
+	kappa_rad *= exp(0.005 *
+		log(1.0 + 1.5*sqrt(this->rho*1e-6*this->Ye())*(28.8/(8.625*this->T8))));
+		
   // Conduction
-  this->kcond=3.024e20*pow(this->T8,3)/(K_cond(ef)*this->rho);
+	double KK;
+	if (use_potek_cond) KK = potek_cond();
+	else KK = K_cond(ef);
+  this->kcond=3.024e20*pow(this->T8,3)/(KK*this->rho);
  
   // Add up opacities  
   kappa=1.0/((1.0/this->kcond)+(1.0/this->kappa_rad));
@@ -1283,8 +1334,8 @@ vc=x/sqrt(1+x*x);
 	
 	// magnetic field part
 	double corr=1.0;
-	
-	if (this-> B > 0.0) {
+	if (0) {
+//	if (this-> B > 0.0) {
 	double bn=this->B/4.414e13;
 	double xr;
 	if (this->rho < 7.09e3*pow(1e-12*this->B,1.5)/this->Ye()) {
@@ -1567,3 +1618,64 @@ double Eos::J(double x,double y)
                                  pow(PI,5)*y4*pow(13.91+y,-4.)/6);
 }
 
+
+
+
+
+void Eos::potek_eos(double *P_out, double *cv_out)
+{
+/*
+	"""Magnetic EOS from Potekhin & Chabrier 2013. Input: Z,A,rho,T,B,LIQSOL
+	where
+	if LIQSOL=0 or 1 on the input, then:
+	*        if (either GAMI or 1/RS is below its critical value) then
+	*           liquid regime and LIQSOL=0 on the output
+	*        otherwise solid regime and LIQSOL=1 on the output
+	*     if LIQSOL=2 or 3 on the input, then:
+	*        if (LIQSOL=2) then liquid regime and LIQSOL=2 on the output
+	*        if (LIQSOL=3) then solid regime and LIQSOL=3 on the output
+	*     if LIQSOL=4 or 5 on the input, then
+	*         consider non-ideal free energy FC1:
+	*        if (FC1=min in liquid) then liquid regime, output LIQSOL=4
+	*        if (FC1=min in solid) then solid regime, output LIQSOL=5
+	Output:
+	*         DENS - electron number density [in a.u.=6.7483346e24 cm^{-3}]
+	*         GAMI - ion-ion Coulomb coupling constant
+	*         CHI = mu_e/kT, where mu_e is the electron chem.potential
+	*         TPT - ionic quantum parameter (T_p/T)
+	*         LIQSOL - regulator of the solid vs liquid regime (see below)
+	*         PnkT - pressure / n_i kT, where n_i is the ion number density
+	*         UNkT - internal energy per kT per ion
+	*         SNk - total dimensionless entropy per 1 ion (assumes spin=1/2)
+	*         CV - heat capacity per ion, divided by the Boltzmann constant
+	*         CHIR - inverse compressibility -(d ln P / d ln V)_T ("\chi_r")
+	*         CHIT = (d ln P / d ln T)_V ("\chi_T")	
+	"""
+*/	
+	double Zion = this->Z[1];
+	double CMI = this->A[1];
+	double RR = this->rho;
+	double TT = this->T8*1e8/3.1577e5;
+	double BB = this->B/2.3505e9;
+	double GAMAG = 0.0;
+	double DENS, GAMI, CHI, TPT, LIQSOL, PnkT, UNkT,SNk,CV,CHIR,CHIT;
+//	if (TT<0.0) TT=100.0;
+	eosmag_(&Zion,&CMI,&RR,&TT,&GAMAG,&DENS,&GAMI,&CHI,&TPT,&LIQSOL,&PnkT,&UNkT,&SNk,&CV,
+			&CHIR,&CHIT);
+	//Multiply pressure by 8.31447e13 rho T6/CMImean to get cgs pressure
+	*P_out = PnkT * 8.31447e13 * this->rho * 100.0*this->T8/CMI;
+	*cv_out = CV * 8.31447e7/CMI;
+}
+
+
+double Eos::potek_cond(void)
+// returns the thermal conductivity in cgs from Potekhin's fortran code
+{
+	double s1,s2,s3,k1,k2,k3;
+	double null=0.0, Zimp=sqrt(this->Q), AA=this->A[1]*(1.0-this->Yn);
+	double Bfield=this->B/4.414e13;
+	double temp=this->T8*1e2/5930.0;
+	double rr=this->rho/(this->A[1]*15819.4*1822.9);
+	condegin_(&temp,&rr,&Bfield,&this->Z[1],&AA,&this->A[1],&Zimp, &s1,&s2,&s3,&k1,&k2,&k3);
+	return k1*2.778e15;
+}

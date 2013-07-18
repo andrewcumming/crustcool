@@ -38,12 +38,7 @@ struct file_pointers {
 void jacobn(double, double *, double *, double **, int){};
 void doint(double F);
 void lc_derivs(double y, double ff[], double dfdy[]);
-extern "C"{
-  void condegin_(double *temp,double *densi,double *B,double *Zion,double *CMI,double *CMI1,double *Zimp, double *RSIGMA,double *RTSIGMA,double *RHSIGMA,double *RKAPPA,double *RTKAPPA,double *RHKAPPA);
- // void conduct_(double *temp,double *densi,double *B,double *Zion,double *CMI,double *Zimp, double *RSIGMA,double *RTSIGMA,double *RHSIGMA,double *RKAPPA,double *RTKAPPA,double *RHKAPPA,double *RHKAPPA,double *RHKAPPA,double *RHKAPPA,double *RHKAPPA,double *RHKAPPA,double *RHKAPPA,double *RHKAPPA,double *RHKAPPA,double *RHKAPPA);
-}
 double find_surf_eqn(double y);
-double potek_cond(void);
 
 //------------------------------------------------------------------------
 
@@ -67,9 +62,10 @@ int main(void)
   	ODE2.init(1);
 
   	// now try different surface fluxes
- //	for (int i=0; i<=5; i++) {
-   // 	double F=17.0+i*1.25;
-	for (int i=0; i<=120; i++) {
+	//for (int i=2; i<=5; i++) {
+	//	{ int i = 2;
+	  //  	double F=17.0+i*1.2;
+	for (int i=0; i<=180; i++) {
 	    	double F=17.0+i*0.05;
    		doint(F);
     	printf("."); fflush(stdout);
@@ -125,12 +121,15 @@ void doint(double F)
   	// we do this in two steps: light element layer
   	EOS.init(1); 
 	EOS.B=G.Bfield;
+	EOS.use_potek_eos = 0;
+	EOS.use_potek_cond = 0;
+	
   	EOS.X[1]=1.0; EOS.A[1]=4.0; EOS.Z[1]=2.0;
 	//EOS.X[1]=1.0; EOS.A[1]=56.0; EOS.Z[1]=26.0;
 
   	// set surface temperature. We integrate from tau=2/3
   	double Tt,yt;
-  	yt=zbrent(find_surf_eqn,1e-5,1e3,1e-5);
+  	yt=zbrent(find_surf_eqn,1e-5,1e5,1e-5);
   	if (yt==1e-5 || yt==1e3) printf("yt out of bounds (%lg)\n", yt);
 	//printf("yt=%lg\n", yt);
   	Tt=pow(F/5.67e-5,0.25);
@@ -147,10 +146,13 @@ void doint(double F)
   	EOS.tidy();
   	EOS.init(1);
 	EOS.B=G.Bfield;
-  	EOS.A[1]=56.0; EOS.Z[1]=26.0;  EOS.X[1]=1.0;
+	EOS.Q=0.0;
+	EOS.use_potek_cond = 0;
+	EOS.use_potek_eos = 0;
+ 	EOS.A[1]=56.0; EOS.Z[1]=26.0;  EOS.X[1]=1.0;
   
   	// integrate through the ocean to the desired depth 
-  	ODE.go_simple(G.yi,18.5,(int)(80*(18.5-G.yi)),lc_derivs);
+  	ODE.go_simple(G.yi,18.5,(int)(160*(18.5-G.yi)),lc_derivs);
 
 	int flag =0;
 	for (int ii=1; ii<=ODE.kount; ii++) {
@@ -189,33 +191,24 @@ void lc_derivs(double x, double ff[], double dfdx[])
   	// find density; the composition is already set
   	EOS.P=G.g*y; EOS.T8=T*1e-8; 
   	EOS.rho=EOS.find_rho();
+	EOS.Yn=0.0;
 	if (x > G.yi) EOS.set_comp();
 
   	double kappa=EOS.opac();
-
-  	// here I call Potekhin's routine for the conductivity  
- 	//EOS.kcond=3.024e20*pow(EOS.T8,3)/(potek_cond()*EOS.rho); 
-  	//kappa=1.0/((1.0/EOS.kcond)+(1.0/EOS.kappa_rad));
+	if (0) {//}(EOS.kcond < EOS.kappa_rad*5.0) {
+		double mykcond = EOS.kcond;
+		// here I call Potekhin's routine for the conductivity  
+ 		EOS.kcond=3.024e20*pow(EOS.T8,3)/(EOS.potek_cond()*EOS.rho);
+		// and then swap it in
+  		kappa=1.0/((1.0/EOS.kcond)+(1.0/EOS.kappa_rad));
+		//printf("%lg %lg %lg %lg %lg %lg\n", EOS.rho, EOS.T8, EOS.kcond, mykcond, EOS.kcond/mykcond, potek_cond());
+	}
 
   	// Heat equation for constant flux
   	dfdx[1]=2.303*y*3305.1*G.F*kappa/pow(T,3.0);
 
-  	//printf("%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", x, ff[1], dfdx[1], 
-	//EOS.opac(), EOS.Chabrier_EF(), EOS.kff, EOS.kes, EOS.kcond, log10(EOS.rho), 
-	//EOS.kgaunt, EOS.x());
+//  	printf("%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", x, ff[1], dfdx[1], 
+//		EOS.opac(), EOS.Chabrier_EF(), EOS.kff, EOS.kes, EOS.kcond, log10(EOS.rho), 
+//		EOS.kgaunt, EOS.x());
 }
 
-
-double potek_cond()
-// returns the thermal conductivity in cgs from Potekhin's fortran code
-{
-      double s1,s2,s3,k1,k2,k3;
-      double null=0.0, Zimp=sqrt(EOS.Q), AA=EOS.A[1]*(1.0-EOS.Yn);
-	  double Bfield=EOS.B/4.414e13;
-      double temp=EOS.T8*1e2/5930.0;
-      double rr=EOS.rho/(EOS.A[1]*15819.4*1822.9);
-   //   conduct_(&temp,&rr,&Bfield,&EOS.Z[1],&AA,&Zimp, &s1,&s2,&s3,&null,&k1,&k2,&k3,
-	//			&null,&null,&null,&null,&null,&null,&null,&null);
-  	condegin_(&temp,&rr,&Bfield,&EOS.Z[1],&AA,&EOS.A[1],&Zimp, &s1,&s2,&s3,&k1,&k2,&k3);
-      return k1*2.778e15;
-}

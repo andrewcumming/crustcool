@@ -81,6 +81,12 @@ public:
 
 	double B;
 
+
+	int use_potek_cond, use_potek_eos;
+	double potek_cond(void);
+	void potek_eos(double *P_out, double *cv_out);
+
+
  private:
   int ns;  // number of species
   double Fermi_n, Fermi_alpha;

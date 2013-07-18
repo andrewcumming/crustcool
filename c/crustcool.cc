@@ -74,6 +74,7 @@ struct globals {
 	double Qrho;
 	int use_piecewise;
 	int force_precalc;
+	int use_my_envelope;
 	int include_sph;
 	FILE *fp,*fp2;
 	double Qinner;
@@ -126,6 +127,7 @@ int main(int argc, char *argv[])
 	G.running_from_command_line=1;	
 	G.outburst_duration = (1.0/24.0) * 1.0/(365.0);  // rapid heating for magnetar case	(1 hour)
 	EOS.accr = 0;   // set crust composition
+	EOS.use_potek_eos = 0;
 	EOS.B=0; //2.2e14;   // magnetic field in the crust   (set B>0 for magnetar case)
 	EOS.gap = 1;    // 0 = no gap, normal neutrons
 	EOS.kncrit = 0.0;  // neutrons are normal for kn<kncrit (to use this set gap=4)
@@ -142,6 +144,7 @@ int main(int argc, char *argv[])
 	G.gpe=0;
 	G.force_cooling_bc=0;
 	G.extra_heating=0;
+	G.use_my_envelope=0;
 	G.yt=1e12;
 	
 	// now read from the file 'init.dat'
@@ -199,6 +202,8 @@ int main(int argc, char *argv[])
 			if (!strncmp(s,"cooling_bc",10)) G.force_cooling_bc=(int) x;
 			if (!strncmp(s,"extra_heating",13)) G.extra_heating=(int) x;
 			if (!strncmp(s,"energy_slope",12)) G.energy_slope=x;
+			if (!strncmp(s,"potek_eos",9)) EOS.use_potek_eos=(int) x;
+			if (!strncmp(s,"envelope",8)) G.use_my_envelope=(int) x;
 		}
 	}
 
@@ -552,7 +557,7 @@ double calculate_heat_flux(int i, double *T)
 	 	flux = 0.5*(G.K[i]+G.K[i-1])*(T[i]-T[i-1])/G.dx;	
 	else {
 		// cooling boundary condition
-		if (EOS.B == 0.0) {
+		if (EOS.B == 0.0 || G.use_my_envelope) {
 			// from my envelope calculation (makegrid.cc)
 			flux = (G.g/2.28e14)*TEFF.get(T[i]);
 		} else {
@@ -691,9 +696,13 @@ void calculate_vars(int i, double T, double P, double *CP, double *K, double *NU
 	// sometimes we get a nan value for T here from the integrator
 	// In this case, set the temperature to be some value.. this seems to
 	// deal with this problem ok
-	if (isnan(T)) T=1e7;
+	if (isnan(T) || T<0.0) T=1e7;
 	
 	double beta=log10(T);
+	
+	if (beta > G.betamax) beta = G.betamax;
+	if (beta < G.betamin) beta = G.betamin;
+		
 	if (beta <= G.betamax && beta >= G.betamin) {
 		// lookup values in the precalculated table
 		int j = 1 + (int) ((beta-G.betamin)/G.deltabeta);
@@ -744,7 +753,7 @@ void calculate_vars(int i, double T, double P, double *CP, double *K, double *NU
 		else *EPS=0.0;
 	} else {
 		// if beta is outside the range of the precalculated table, then calculate directly
-		//printf("Note: log10T outside range (%lg)\n", beta);
+		printf("Note: log10T outside range (T=%lg beta=%lg)\n", T,beta);
 		EOS.P=P; 
 		EOS.T8=1e-8*T; 		
 		EOS.rho=G.rho[i];
@@ -1185,8 +1194,11 @@ void get_TbTeff_relation(void)
 	// the file "out/grid" is made by makegrid.cc
 	// it contains  (column depth, T, flux)  in cgs
 	FILE *fp;
-	if (G.gpe) fp = fopen("out/grid_He4","r");
-	else fp = fopen("out/grid_He9","r");
+	if (G.use_my_envelope) fp = fopen("out/grid","r");
+	else {
+		if (G.gpe) fp = fopen("out/grid_He4","r");
+		else fp = fopen("out/grid_He9","r");
+	}
 	//FILE *fp = fopen("grid_sorty","r");
 	FILE *fp2 = fopen("gon_out/TbTeff", "w");
 	

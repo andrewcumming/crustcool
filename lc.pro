@@ -1070,7 +1070,7 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 	xr=[0.01,10000.0]
 	if (strcmp(source,'2259',4)) then yr=[1d34,1d35]
 	if (strcmp(source,'fluxes1822',10)) then begin
-		yr=[1d32,2d35]
+		yr=[1d32,2d37]
 		xr=[0.1,10000]
 	endif
 	if (strcmp(source,'fluxes1547',10)) then yr=[1d33,1d36]
@@ -1117,7 +1117,7 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 	F2*=4.0*!dpi*1.12d6^2
 	Fin*=4.0*!dpi*1.12d6^2
 	
-	if keyword_set(Lscale) then Fm=Fm*Lscale+2.3d33
+	if keyword_set(Lscale) then Fm=Fm*Lscale+2.3d31
 	
 ;		plot, t, F, /xlog, /ylog, xtitle=textoidl('Time (d)'), $
 ;				ytitle=textoidl('Luminosity (erg s^{-2})'), linestyle=0, charsize=1.5, $
@@ -2039,10 +2039,10 @@ pro surf3, ps=ps
 
 	TT=7.0+3.0*0.01*dindgen(100)
 	LL=1.7d35 * (10^(TT-9.0))^2.1
-	oplot, LL,10^TT, col=250
+;	oplot, LL,10^TT, col=250
 	TT=7.0+3.0*0.01*dindgen(100)
 	LL=0.93d35 * (10^(TT-9.0))^2.1
-	oplot, LL,10^TT, col=250
+;	oplot, LL,10^TT, col=250
 
 	oplot, [2d31,3d31],[2.1d9,2.1d9]
 	xyouts, 3.5d31, 2d9, textoidl('PY  B=0,10^{13},10^{14},10^{15}G'), charsize=1.2
@@ -2060,14 +2060,14 @@ pro surf3, ps=ps
 ;	print, T
 ;	oplot, F,T, thick=3, col=250
 
-	if (0) then begin
+	if (1) then begin
 	print, 'gon_out/TbTeff'
 	readcol, 'gon_out/TbTeff', T, F, format=('X,X,X,X,D,D')
 	radius=11.2
-	ZZ=1.32
+		ZZ=1.32
 	F *= 4.0*!dpi*1d10*radius^2
 	F/=ZZ^2
-	;oplot, F, T, col=250
+	oplot, F, T, col=250
 
 	ytop=12.0
 		print, 'out/grid'
@@ -2079,7 +2079,7 @@ pro surf3, ps=ps
 		F *= 4.0*!dpi*1d10*radius^2
 		F/=ZZ^2
 		ind=where(abs(y-ytop) lt 0.01)
-		;oplot, F[ind], T[ind], col=120
+		oplot, F[ind], T[ind], col=120
 
 		B=1d16
 		chi = 1.0 + 0.0492 * (1d-12*B)^0.292 / (T[ind]*1d-9)^0.24
@@ -2111,13 +2111,13 @@ pro surf3plot, B, overplot=overplot, ls=ls, usearras=usearras, nocorr=nocorr, us
 ;	B=1d15
 	Tc=7.0 + dindgen(40)*0.025*2.5
 	Tc=10^Tc
-;	grav = 2.28d14
-;	radius=11.2
-;	ZZ=1.32
-; R=12km, M=1.4M_sun
-	grav = 1.6d14
-	radius=12.0
-	ZZ=1.24
+	grav = 2.28d14
+	radius=11.2
+	ZZ=1.32
+;; R=12km, M=1.4M_sun
+;	grav = 1.6d14
+;	radius=12.0
+;	ZZ=1.24
 		
 	; Potekhin & Yakovlev 2001 eq.(27)
 	T9 = Tc*1d-9
@@ -2193,8 +2193,8 @@ endif else begin
 	if keyword_set(overplot) then begin
 		oplot, flux,Tc, linestyle=ls
 	endif else begin
-		plot, flux, Tc, /xlog,/ylog, ytitle=textoidl('T_c (K)'),yrange=[1d7,4e9],ystyle=1,$
-	 		xtitle=textoidl('L_\infty (erg s^{-1})'), charsize=1.5, xrange=[1d31,1d36]
+		plot, flux, Tc, /xlog,/ylog, ytitle=textoidl('T_c (K)'),yrange=[1d7,8e9],ystyle=1,$
+	 		xtitle=textoidl('L_\infty (erg s^{-1})'), charsize=1.5, xrange=[1d31,1d38]
 	endelse
 
 endelse

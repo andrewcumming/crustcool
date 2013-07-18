@@ -127,12 +127,7 @@ C%C      end
       data PI/3.14159265d0/
       data BOHR/137.036/
 *   -------------------   RESTRICTIONS:   --------------------------   *
-      if (TEMP.le.0..or.DENSI.le.0..or.B.lt.0..or.Zion.le.0.
-     & .or.CMI.le.0.) stop'CONDEGIN: Non-positive input parameter'
-      if (CMI1.lt.CMI) stop'CONDEGIN: Incorrect CMI1'
-      if (Zion.lt..5) stop'CONDEGIN: Too small ion charge'
-      if (CMI.lt.1.) stop'CONDEGIN: Too small ion mass'
-      if (DENSI.gt.1.d6) stop'CONDEGIN: Too high density'
+
 *   -----------------   PLASMA PARAMETERS   ------------------------   *
       DENS=DENSI*Zion ! DENS - number density of electrons
       SPHERION=(.75/PI/DENSI)**.3333333 ! Ion sphere radius
@@ -455,7 +450,7 @@ C      endif
       implicit double precision (A-H), double precision (O-Z)
       save
       data EPS/1.d-2/,EPS1/1.D-3/,EULER/0.5772156649 d0/
-      if(XS.lt.0..or.XW0.lt.0..or.V.lt.0..or.XW1.lt.0.)stop'COULAN2'
+
       do I=0,1
         if (I.eq.0) then
            XW=XW0+XW1
@@ -499,7 +494,7 @@ C      endif
            CL1=.5*(CL0+XS/(XS+1.)*E1-(1.+B)*EL)
            CL2=.5*(E2-XS*XS/(1.+XS)*E1-2.*XS*CL0+XS*(2.+B)*EL)
         else
-           stop'COULAN2:invalid KEY'
+           !stop'COULAN2:invalid KEY'
         endif
         if (I.eq.0) then ! 1st term calculated
            COULAN2=CL1-V**2*CL2
@@ -611,7 +606,6 @@ C      endif
       GAMI=Zion**2/(BOHR*SPHERION*TEMP)
       TRP=Zion/GAMI*dsqrt(CMI*AUM*SPHERION/3.d0/BOHR) ! =T/T_pi
       OMPI=TEMP/TRP ! ion plasma frequency
-      if (GAMI.lt.TINY**.2) pause'CONDIN: GAMI is too low: kappa>HUGE'
 *   ---------------------- reduced ion heat capacity:
       call HLfit8(1.d0/TRP,F,U,CV,S,1)
 *   ---------------------- ion-electron:
@@ -640,7 +634,6 @@ C      endif
       RKAPie=CV*DENSI*CS*FLEN/3. ! Eq.(42) of CH'07
 *   ---------------------- ion-ion:
       if (TRP.lt.1./dlog(1./TINY)) then
-         pause'CONDI: T is too low:kappa>HUGE'
          RKAPi=RKAPie
       else
          RKAP0=OMPI*DENSI*SPHERION**2
@@ -705,7 +698,7 @@ C      endif
          C9=.00492387
          C11=.00437506
       else
-         stop'HLfit: unknown lattice type'
+         !stop'HLfit: unknown lattice type'
       endif
       if (eta.gt.1./EPS) then ! asymptote of Eq.(13) of BPY'01
          U=3./(C11*eta**3)
