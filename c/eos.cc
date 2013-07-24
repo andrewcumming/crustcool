@@ -1050,7 +1050,7 @@ double Eos::opac(void)
   //  if (this->Z[1]==26.0) this->kff*=0.5;
 
 
-	{
+	if (this->B > 0.0) {
 	// Free-free opacity from Potekhin:
 		double TRy = 100.0*this->T8/(0.15789*this->Z[1]*this->Z[1]);
 		double c7 = 108.8 + 77.6*pow(TRy,0.834);

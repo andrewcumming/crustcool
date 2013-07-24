@@ -193,7 +193,7 @@ void Ode_Int::odeint(double ystart[], int nvar, double x1, double x2,
 
   if (kmax>0) xsav=x-this->dxsav*2.0;
   for (nstp=1;nstp<=MAXSTP;nstp++) {
-	 if (this->verbose) printf("--- t=%lg delt=%lg\n", x, h);
+	 if (this->verbose) printf("--- t=%lg delt=%lg nstep=%d\n", x, h,nstp);
     (*derivs)(x,y,dydx);
     
     for (i=1;i<=nvar;i++)

@@ -68,29 +68,56 @@ int main(void)
 	for (int i=0; i<=180; i++) {
 	    	double F=17.0+i*0.05;
    		doint(F);
+		printf("Did doint for F=%lg\n",F);
     	printf("."); fflush(stdout);
-    	//  for (int j=1; j<=ODE2.kount; j++) 
-    	// fprintf(fp.out, "%lg %lg %lg\n", ODE2.get_x(j), log10(ODE2.get_y(1,j)), F);
-	 	
+
+		EOS.init(1);
+		EOS.B=G.Bfield;
+		EOS.use_potek_cond = 0;
+		EOS.use_potek_eos = 0;
+
+	  	EOS.X[1]=1.0; EOS.A[1]=4.0; EOS.Z[1]=2.0;
+
+    	for (int j=1; j<=ODE2.kount; j++) {
+
+
+					double y=pow(10.0,ODE2.get_x(j));
+				  	double T=ODE2.get_y(1,j);
+
+			  	// find density; the composition is already set
+			  	EOS.P=G.g*y; EOS.T8=T*1e-8; 
+			  	EOS.rho=EOS.find_rho();
+				double rhorho=EOS.rho;
+
+		      	printf("%lg %lg %lg %lg %lg\n", ODE2.get_x(j), log10(ODE2.get_y(1,j)), F, log10(rhorho),
+						log10(EOS.eps_nu()));
+
+	      	fprintf(fp.out, "%lg %lg %lg %lg %lg\n", ODE2.get_x(j), log10(ODE2.get_y(1,j)), F, log10(rhorho),
+					log10(EOS.eps_nu()));
+	} 	
 	
-	//EOS.init(1);
-	//	EOS.B=G.Bfield;
-	  //	EOS.A[1]=56.0; EOS.Z[1]=26.0;  EOS.X[1]=1.0;
+	EOS.use_potek_cond = 1;
+	EOS.use_potek_eos = 1;
+	EOS.A[1]=56.0; EOS.Z[1]=26.0;  EOS.X[1]=1.0;
+	
 
     	for (int j=1; j<=ODE.kount; j++) {
 			double y=pow(10.0,ODE.get_x(j));
 		  	double T=ODE.get_y(1,j);
 
 		  	// find density; the composition is already set
-		//  	EOS.P=G.g*y; EOS.T8=T*1e-8; 
-		  //	EOS.rho=EOS.find_rho();
-			//if (log10(y) > G.yi) EOS.set_comp();
-//			double rhorho=EOS.rho;
-			double rhorho=0.0;
+		  	EOS.P=G.g*y; EOS.T8=T*1e-8; 
+		  	EOS.rho=EOS.find_rho();
+			if (log10(y) > G.yi) EOS.set_comp();
+			double rhorho=EOS.rho;
 
-      	fprintf(fp.out, "%lg %lg %lg %lg\n", ODE.get_x(j), log10(ODE.get_y(1,j)), F, rhorho);
+	    	printf("%lg %lg %lg %lg %lg\n", ODE.get_x(j), log10(ODE.get_y(1,j)), F, log10(rhorho),
+					log10(EOS.eps_nu()*y));
+
+      	fprintf(fp.out, "%lg %lg %lg %lg %lg\n", ODE.get_x(j), log10(ODE.get_y(1,j)), F, log10(rhorho),
+				log10(EOS.eps_nu()*y));
 }
-//EOS.tidy();
+	EOS.tidy();
   	}
   	printf("\n");
 
@@ -135,11 +162,17 @@ void doint(double F)
   	Tt=pow(F/5.67e-5,0.25);
   	ODE2.set_bc(1,Tt);
 
+	printf("Starting heliun layer\n");
+
+
   	// integrate
-  	ODE2.go(log10(yt),G.yi,1e-6,1e-8,lc_derivs);
+//  	ODE2.go(log10(yt),G.yi,1e-6,1e-8,lc_derivs);
+  	ODE2.go_simple(log10(yt),G.yi,(int)(80*(18.5-G.yi)),lc_derivs);
 
   	// keep the base temperature for the next integration
   	base_T=ODE2.get_y(1,ODE2.kount);
+
+	printf("Finished heliun layer\n");
 
   	// tidy up and reinitialize for the ocean
   	ODE.set_bc(1,base_T);
@@ -147,13 +180,14 @@ void doint(double F)
   	EOS.init(1);
 	EOS.B=G.Bfield;
 	EOS.Q=0.0;
-	EOS.use_potek_cond = 0;
-	EOS.use_potek_eos = 0;
+	EOS.use_potek_cond = 1;
+	EOS.use_potek_eos = 1;
  	EOS.A[1]=56.0; EOS.Z[1]=26.0;  EOS.X[1]=1.0;
   
   	// integrate through the ocean to the desired depth 
-  	ODE.go_simple(G.yi,18.5,(int)(160*(18.5-G.yi)),lc_derivs);
+  	ODE.go_simple(G.yi,18.5,(int)(80*(18.5-G.yi)),lc_derivs);
 
+/*
 	int flag =0;
 	for (int ii=1; ii<=ODE.kount; ii++) {
 		double y=pow(10.0,ODE.get_x(ii));
@@ -164,19 +198,19 @@ void doint(double F)
 	  	EOS.rho=EOS.find_rho();
 		if (log10(y) > G.yi) EOS.set_comp();
 
-	  	double kappa=EOS.opac();
+	  //	double kappa=EOS.opac();
 	
-		if (EOS.kcond < EOS.kappa_rad && !flag) {
-			flag=1;
+		//if (EOS.kcond < EOS.kappa_rad && !flag) {
+		//	flag=1;
 			//printf("%lg %lg %lg %lg %lg %lg\n", y, EOS.rho, EOS.T8*1e8, EOS.kappa_rad, EOS.kcond,3.024e20*pow(EOS.T8,3)/(potek_cond()*EOS.rho));
-		}
+//		}
 
 	  	// here I call Potekhin's routine for the conductivity  
 	 	//EOS.kcond=3.024e20*pow(EOS.T8,3)/(potek_cond()*EOS.rho); 
 	  	//kappa=1.0/((1.0/EOS.kcond)+(1.0/EOS.kappa_rad));
 	 	
 	}
-
+*/
 
   	EOS.tidy();
 }
@@ -207,8 +241,13 @@ void lc_derivs(double x, double ff[], double dfdx[])
   	// Heat equation for constant flux
   	dfdx[1]=2.303*y*3305.1*G.F*kappa/pow(T,3.0);
 
-//  	printf("%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", x, ff[1], dfdx[1], 
-//		EOS.opac(), EOS.Chabrier_EF(), EOS.kff, EOS.kes, EOS.kcond, log10(EOS.rho), 
-//		EOS.kgaunt, EOS.x());
+//	if (EOS.B>0.0) {
+//		double conv_grad = 2.303*T*EOS.del_ad();
+//		if (dfdx[1] > conv_grad) dfdx[1]=conv_grad;
+//	}
+
+// 	printf("%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", x, ff[1], dfdx[1], 
+//	EOS.opac(), EOS.Chabrier_EF(), EOS.kff, EOS.kes, EOS.kcond, log10(EOS.rho), 
+//		EOS.kgaunt, EOS.x(),EOS.del_ad());
 }
 

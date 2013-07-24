@@ -32,7 +32,7 @@ void get_TbTeff_relation(void);
 double crust_heating_rate(double y);
 double crust_heating(int i);
 double energy_deposited(int i);
-void output_result_for_step(int j, FILE *fp, FILE *fp2, double timesofar);
+void output_result_for_step(int j, FILE *fp, FILE *fp2, double timesofar, double *last_time_output);
 void start_timing(clock_t *timer);
 void stop_timing(clock_t *timer, const char*string);
 void read_in_data(const char *fname);
@@ -54,7 +54,7 @@ struct globals {
   	double dx; 
   	double *P, *CP, *K, *F, *NU, *rho, *EPS, *Tmelt, *GammaT, *LoverT;
 	double *Qheat,*Qimp;
-	double **CP_grid, **K1_grid, **K0_grid, **NU_grid, **EPS_grid, **K1perp_grid, **K0perp_grid;
+	double **CP_grid, **K1_grid, **K0_grid, **NU_grid, **EPS_grid, **KAPPA_grid, **K1perp_grid, **K0perp_grid;
 	double betamin, betamax, deltabeta;
 	int nbeta;
   	double g, ZZ,mass, radius;
@@ -128,6 +128,7 @@ int main(int argc, char *argv[])
 	G.outburst_duration = (1.0/24.0) * 1.0/(365.0);  // rapid heating for magnetar case	(1 hour)
 	EOS.accr = 0;   // set crust composition
 	EOS.use_potek_eos = 0;
+	EOS.use_potek_cond = 1;
 	EOS.B=0; //2.2e14;   // magnetic field in the crust   (set B>0 for magnetar case)
 	EOS.gap = 1;    // 0 = no gap, normal neutrons
 	EOS.kncrit = 0.0;  // neutrons are normal for kn<kncrit (to use this set gap=4)
@@ -264,7 +265,7 @@ int main(int argc, char *argv[])
 	if (G.output) {
   		G.fp=fopen("gon_out/out","w");
   		G.fp2=fopen("gon_out/prof","w");
-  		fprintf(G.fp,"%d\n",G.N+1);
+  		fprintf(G.fp,"%d %lg\n",G.N+1,G.g);
 	}
 
 	G.output = 1;
@@ -301,7 +302,7 @@ int main(int argc, char *argv[])
 void calculate_cooling_curve(void) 
 {
   	int nsteps=0;
-  	double timesofar=0.0;
+  	double timesofar=0.0,last_time_output=0.0;
   	double dtstart=1e-6;  // start timestep in sec
 
   	while (true) {	
@@ -328,11 +329,12 @@ void calculate_cooling_curve(void)
 		//ODE.go_scale(0.0, G.time_to_run, 1e4, derivs);
 		ODE.go(0.0, G.time_to_run, dtstart, 1e-8, derivs);
 		stop_timing(&timer,"ODE.go");
-		
 		// output 
 		if (G.output) {
-			for (int j=1; j<=ODE.kount; j++) output_result_for_step(j,G.fp,G.fp2,timesofar);
+			start_timing(&timer);
+			for (int j=1; j<=ODE.kount; j++) output_result_for_step(j,G.fp,G.fp2,timesofar,&last_time_output);
 			fflush(G.fp); fflush(G.fp2);
+			stop_timing(&timer,"output");
 		}
       timesofar+=G.time_to_run;
       nsteps+=ODE.kount;
@@ -407,7 +409,7 @@ void stop_timing(clock_t *time, const char*string)
 }
 
 
-void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar) 
+void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar,double *last_time_output) 
 {
 	for (int i=1; i<=G.N+1; i++) calculate_vars(i,ODE.get_y(i,j),G.P[i],&G.CP[i],&G.K[i],&G.NU[i],&G.EPS[i]);
 	double T0;
@@ -431,15 +433,19 @@ void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar)
 
 	free_vector(TT,1,G.N+1);
 
-
+	double Lnu=0.0;
+	for (int i=1; i<=G.N; i++) Lnu += G.NU[i]*G.dx*G.P[i]/G.g;
+	
 	// output time, fluxes and TEFF that are already redshifted
-	fprintf(fp2, "%lg %lg %lg %lg %lg %lg %lg %lg %lg\n", (timesofar+ODE.get_x(j))*G.ZZ, 
+	fprintf(fp2, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", (timesofar+ODE.get_x(j))*G.ZZ, 
 			pow((G.radius/11.2),2.0)*G.F[2]/(G.ZZ*G.ZZ), pow((G.radius/11.2),2.0)*FF/(G.ZZ*G.ZZ),
 			ODE.get_y(G.N-5,j), pow((G.g/2.28e14)*TEFF.get(ODE.get_y(1,j))/5.67e-5,0.25)/G.ZZ, 
 			ODE.get_y(1,j), pow((G.g/2.28e14)*TEFF.get(ODE.get_y(1,j))/5.67e-5,0.25),
-			pow((G.radius/11.2),2.0)*G.F[G.N+1]/(G.ZZ*G.ZZ),pow((G.radius/11.2),2.0)*G.F[G.N]/(G.ZZ*G.ZZ));
+			pow((G.radius/11.2),2.0)*G.F[G.N+1]/(G.ZZ*G.ZZ),pow((G.radius/11.2),2.0)*G.F[G.N]/(G.ZZ*G.ZZ),
+			4.0*PI*pow(1e5*G.radius,2.0)*Lnu/(G.ZZ*G.ZZ));
 
-	if (j % 1 == 0 || j==ODE.kount) {   // output every nth cycle
+		if ((log10((timesofar+ODE.get_x(j))*G.ZZ)-log10(*last_time_output) >= 0.02) || (timesofar+ODE.get_x(j))*G.ZZ < 1e5) {
+//			if (j % 1 == 0 || j==ODE.kount) {   // output every nth cycle
 		// temperature profile
 		fprintf(fp,"%lg\n",G.ZZ*(timesofar+ODE.get_x(j)));
 		double del,gamma;
@@ -448,12 +454,14 @@ void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar)
 			if (i>1) del = (ODE.get_y(i+1,j)-ODE.get_y(i-1,j))/(2.0*G.dx*ODE.get_y(i,j));
 			else del=1.0;
 			gamma = G.GammaT[i]/(1e8*EOS.T8);
-			fprintf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", 
+			EOS.set_comp();
+			fprintf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", 
 				G.P[i], ODE.get_y(i,j), G.F[i], G.NU[i],
 				G.g*(G.F[i+1]-G.F[i])/(G.dx*G.P[i]), EOS.rho, EOS.CP()*EOS.rho, 
 				ODE.get_d(i,j),1e8*pow(EOS.P/2.521967e17,0.25), EOS.opac(), del, EOS.del_ad(),
-				2.521967e-15*pow(ODE.get_y(i,j),4)/G.P[i], gamma);	
+				2.521967e-15*pow(ODE.get_y(i,j),4)/G.P[i], gamma,EOS.eps_nu());	
  		}
+		*last_time_output=(timesofar+ODE.get_x(j))*G.ZZ;
 	}
 }
 
@@ -726,6 +734,12 @@ void calculate_vars(int i, double T, double P, double *CP, double *K, double *NU
 		}
 		double KK,KKperp;
 		KK=G.g*K0*K1/(K0*Qval+(1.0-Qval)*K1);
+
+		double kappa;
+		kappa=G.KAPPA_grid[i][j] + (G.KAPPA_grid[i][j+1]-G.KAPPA_grid[i][j])*interpfac;
+		kappa*=G.g;
+		KK += kappa;
+		
 		if (EOS.B > 0) {
 			KKperp=0.0; //G.g*K0perp*K1perp/(K0perp*Qval+(1.0-Qval)*K1perp);
 			if (G.angle_mu >= 0.0) {
@@ -834,6 +848,11 @@ void set_up_initial_temperature_profile_piecewise(char *fname)
 	fclose(fp);
 	int nvec=i-1;
 
+	if (nvec == 0) {
+		printf("ERROR:The piecewise flag is set but the temperature profile is not specified in init.dat!\n");
+		exit(0);
+	}
+
 	double totalEd=0.0;
 
 	// now assign initial temperatures
@@ -928,23 +947,28 @@ void set_up_initial_temperature_profile(void)
 	}
 	clock_t timer;
 	start_timing(&timer);
-	
-	// First, let the crust cool for 10 years to get into eqm with the core
+
+	if (1) {
+	// First, let the crust cool for 30 years to get into eqm with the core
 	G.accreting = 0;  // switch off heating for this one
-	ODE.go(0.0, 10.0*3.15e7, 1e6, 1e-8, derivs);
+	ODE.go(0.0, 30.0*3.15e7, 1e6, 1e-8, derivs);
 	for (int i=1; i<=G.N+1; i++)
 		ODE.set_bc(i,ODE.get_y(i,ODE.kount));
+	}
 
 	G.accreting = !G.instant_heat;	
-	double dt=G.outburst_duration*3.15e7*0.01;
+	double dt=G.outburst_duration*3.15e7*0.0001;
 	if (dt > 1e6) dt=1e6;
+	//	ODE.verbose  = 1;
+	ODE.dxsav = 100.0;
 	ODE.go(0.0, G.outburst_duration*3.15e7,dt, 1e-8, derivs);
 	stop_timing(&timer,"ODE.go (initial heating)");
 	printf("number of steps = %d  (time=%lg)\n", ODE.kount, ODE.get_x(ODE.kount));
 
 	double timesofar = -G.outburst_duration*3.15e7;
+	double last_time_output = timesofar;
 	if (G.output) {
-		for (int j=1; j<=ODE.kount; j++) output_result_for_step(j,G.fp,G.fp2,timesofar);
+		for (int j=1; j<=ODE.kount; j++) output_result_for_step(j,G.fp,G.fp2,timesofar,&last_time_output);
 		fflush(G.fp); fflush(G.fp2);
 	}
 
@@ -998,10 +1022,11 @@ void set_up_initial_temperature_profile(void)
 
 			E+=energy_deposited(i)*crust_heating(i)*G.mdot*G.g*G.outburst_duration*3.15e7*
 				4.0*PI*G.radius*G.radius*1e10*G.dx*G.P[i]/G.g;
-							
-			fprintf(fp, "%d %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", i, G.P[i], Ti, EOS.rho,EOS.CV(), 
+											
+			fprintf(fp, "%d %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", i, G.P[i], Ti, EOS.rho,EOS.CV(), 
 					Kcond, EOS.Yn, 1e-39*EOS.Yn * EOS.rho/1.67e-24, tt,E,EOS.A[1],EOS.Z[1],EOS.TC(),
-					EOS.Chabrier_EF(),Kcondperp,0.4*1e-9*EOS.rho*pow(EOS.Ye()/0.4,3.0)*EOS.Z[1]/34.0, EOS.cve, EOS.cvion);
+					EOS.Chabrier_EF(),Kcondperp,0.4*1e-9*EOS.rho*pow(EOS.Ye()/0.4,3.0)*EOS.Z[1]/34.0, EOS.cve, EOS.cvion,
+					EOS.chi(&EOS.rho), EOS.chi(&EOS.T8), G.P[i]/(G.g*EOS.rho));
 				EOS.Q=Q_store;	
 		}
 	}	
@@ -1010,8 +1035,6 @@ void set_up_initial_temperature_profile(void)
 	printf("Total energy deposited=%lg (redshifted=%lg)\n",E,E/G.ZZ);
 
 }
-
-
 
 
 
@@ -1033,6 +1056,7 @@ void precalculate_vars(void)
 	G.CP_grid = matrix(1,G.N+2,1,G.nbeta);	
 	G.K1_grid = matrix(1,G.N+2,1,G.nbeta);	
 	G.K0_grid = matrix(1,G.N+2,1,G.nbeta);	
+	G.KAPPA_grid = matrix(1,G.N+2,1,G.nbeta);	
 	G.K1perp_grid = matrix(1,G.N+2,1,G.nbeta);	
 	G.K0perp_grid = matrix(1,G.N+2,1,G.nbeta);	
 	G.NU_grid = matrix(1,G.N+2,1,G.nbeta);	
@@ -1076,24 +1100,32 @@ void precalculate_vars(void)
 				double Kcond,Kcondperp;
 				//Kcond = EOS.K_cond(EOS.Chabrier_EF());
 				Kcond = potek_cond(&Kcondperp);   
+				//Kcond = 3.03e20*pow(EOS.T8,3)/(EOS.opac()*G.y[i]);
+				//Kcondperp=Kcond;
 				//if (Kcondperp < 1e-2*Kcond) Kcondperp=1e-2*Kcond;
 				G.K0_grid[i][j]=EOS.rho*Kcond/G.P[i];
 				G.K0perp_grid[i][j]=EOS.rho*Kcondperp/G.P[i];
 				EOS.Q=1.0;
 				//Kcond = EOS.K_cond(EOS.Chabrier_EF());
+				//Kcond = 3.03e20*pow(EOS.T8,3)/(EOS.opac()*G.y[i]);
+				//Kcondperp=Kcond;
 				Kcond = potek_cond(&Kcondperp);
 				//if (Kcondperp < 1e-2*Kcond) Kcondperp=1e-2*Kcond;
 				G.K1_grid[i][j]=EOS.rho*Kcond/G.P[i];
 				G.K1perp_grid[i][j]=EOS.rho*Kcondperp/G.P[i];
 				EOS.Q=Q_store;  // restore to previous value
 
+				double kappa=EOS.opac();
+				G.KAPPA_grid[i][j] = 3.03e20*pow(EOS.T8,3)/(EOS.kappa_rad*G.P[i]);
+				//G.KAPPA_grid[i][j] = 0.0;
+
 				// We include thermal conductivity only. The equivalent expression but putting in all sources
 				// of opacity would be
 				//3.03e20*pow(EOS.T8,3)/(EOS.opac()*G.y[i]);
 
-				fprintf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg\n", EOS.T8, G.CP_grid[i][j], 
+				fprintf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg %lg\n", EOS.T8, G.CP_grid[i][j], 
 					G.K0_grid[i][j],G.K1_grid[i][j], G.K0perp_grid[i][j],G.K1perp_grid[i][j],
-					G.NU_grid[i][j], G.EPS_grid[i][j]);
+					G.NU_grid[i][j], G.EPS_grid[i][j], G.KAPPA_grid[i][j] );
 
 				G.EPS_grid[i][j]*=energy_deposited(i);
 
@@ -1109,9 +1141,9 @@ void precalculate_vars(void)
 			fscanf(fp, "Grid point %d  P=%lg  rho=%lg  A=%lg  Z=%lg Yn=%lg:  T8,CP,K,eps_nu,eps_nuc\n",
 					&kk,&dd,&dd,&dd,&dd,&dd);
 			for (int j=1; j<=G.nbeta; j++) {		
-				fscanf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg\n", &EOS.T8, &G.CP_grid[i][j], 
+				fscanf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg %lg\n", &EOS.T8, &G.CP_grid[i][j], 
 					&G.K0_grid[i][j],&G.K1_grid[i][j], &G.K0perp_grid[i][j],&G.K1perp_grid[i][j],
-					&G.NU_grid[i][j], &G.EPS_grid[i][j]);
+					&G.NU_grid[i][j], &G.EPS_grid[i][j],&G.KAPPA_grid[i][j]);
 				// always calculate the crust heating..
 				G.EPS_grid[i][j]=crust_heating(i);
 				G.EPS_grid[i][j]*=energy_deposited(i);
@@ -1201,7 +1233,15 @@ void get_TbTeff_relation(void)
 	// the file "out/grid" is made by makegrid.cc
 	// it contains  (column depth, T, flux)  in cgs
 	FILE *fp;
-	if (G.use_my_envelope) fp = fopen("out/grid","r");
+//	if (G.use_my_envelope) fp = fopen("out/grid","r");
+	if (G.use_my_envelope) {
+		if (EOS.B == 1e15) fp = fopen("out/grid_1e15_potek","r");
+		else if (EOS.B == 1e14) fp = fopen("out/grid_1e14_potek","r");
+		else {
+			printf("Don't know which envelope model to use for this B!\n");
+			exit(1);
+		}
+	}
 	else {
 		if (G.gpe) fp = fopen("out/grid_He4","r");
 		else fp = fopen("out/grid_He9","r");
@@ -1209,11 +1249,11 @@ void get_TbTeff_relation(void)
 	//FILE *fp = fopen("grid_sorty","r");
 	FILE *fp2 = fopen("gon_out/TbTeff", "w");
 	
-	double y,T,F,rho;
+	double y,T,F,rho,dummy;
 	int count = 0;
 	while (!feof(fp)) {
 		
-		fscanf(fp, "%lg %lg %lg %lg\n", &y, &T, &F,&rho);
+		fscanf(fp, "%lg %lg %lg %lg %lg\n", &y, &T, &F,&rho,&dummy);
 		//printf("%lg %lg %lg\n", y, T, F);
 		if (y == log10(G.yt)) {  // select out the points which correspond to the top column
 			count++;
@@ -1358,7 +1398,7 @@ void set_up_grid(int ngrid, const char *fname)
 		// GammaT[i] refers to i+1/2
 		// The following line uses a composition of 56Fe to calculate gamma,
 		// it avoids jumps in the melting point associated with e-capture boundaries
-		if (1) {
+		if (0) {
 			double Z=26.0,A=56.0;   // 28Si
 			G.GammaT[i] = pow(Z*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*A*1.67e-24),1.0/3.0)/1.38e-16;
 		} else {

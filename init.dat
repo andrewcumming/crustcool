@@ -1,17 +1,17 @@
-Tc	2e8
-Edep	100.0
+Tc	1e8
+Edep	1.0
 rhot	1e9
 rhob	1e11
 mass	1.4
 radius	12.0
 Qimp	1
-angle_mu	1
+angle_mu	-1
 
 timetorun	20000.0
 instant 1
 
 # need to precalc if anything below changes
-precalc	0
+precalc	1
 Bfield	1e14
 ngrid	100
 SFgap	1
@@ -27,4 +27,23 @@ sph 0
 #>1.01e11 -1
 #>-1 -1
 
-ytop	1e10
+envelope	1
+ytop	1e9
+Bfield	1e14
+
+angle_mu	1
+
+Edep	3.0
+energy_slope	1.333
+Tc	5e7
+rhot	1e8
+
+precalc	0
+
+
+piecewise	0
+>0	1e9
+>300000000000	1e9
+>303000000000	-1
+>-1	-1
+

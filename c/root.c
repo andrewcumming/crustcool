@@ -14,7 +14,7 @@ float zbrent(float (*func)(float), float x1, float x2, float tol)
   float a=x1,b=x2,c=x2,d,e,min1,min2;
   float fa=(*func)(a),fb=(*func)(b),fc,p,q,r,s,tol1,xm;
 
-  if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0));
+  if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0)){};
     //    printf("Root must be bracketed in zbrent! (x1=%lg x2=%lg)\n",
     //   x1,x2);
   fc=fb;

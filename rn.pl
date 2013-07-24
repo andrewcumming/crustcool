@@ -2,7 +2,7 @@
 
 
 # Bfield
-if (1) {
+if (0) {
 	@Bfield = (1.8e13,5.6e13,5.6e14);
 #	@Bfield = (1e13,3e13,1e14,1.8e14,3e14,1e15,1.8e15);
 	
@@ -32,9 +32,10 @@ if (1) {
 
 # Crust heating at different depths
 #
-if (0) {
+if (1) {
 
-	@rhovec = (3e9,1e10,3e10,1e11,3e11);
+#	@rhovec = (3e9,1e10,3e10,1e11,3e11);
+	@rhovec = (1e8,3e8,1e9,3e9,1e10,3e10,1e11,3e11);
 
 foreach $rho (@rhovec) {
 	system "cp init/init.dat.default init.dat";
@@ -42,13 +43,13 @@ foreach $rho (@rhovec) {
 #	system "echo \"angle_mu\t-1\n\" >>init.dat";
 	system "echo \"angle_mu\t1\n\" >>init.dat";
 	system "echo \"Tc\t5e7\n\" >>init.dat";
-	if ($ener > 3e9) {
+	if ($rho > 1e8) {
 		system "echo \"precalc\t0\n\" >>init.dat";	
 	}
 
 	system "echo \"piecewise\t1\" >>init.dat";
-	system "echo \">0\t2e9\" >>init.dat";
-	system "echo \">".$rho."\t2e9\" >>init.dat";
+	system "echo \">0\t1e9\" >>init.dat";
+	system "echo \">".$rho."\t1e9\" >>init.dat";
 	$rho1=1.01*$rho;
 	system "echo \">".$rho1."\t-1\" >>init.dat";
 	system "echo \">-1\t-1\n\" >>init.dat";
@@ -60,7 +61,8 @@ foreach $rho (@rhovec) {
 #		$command = sprintf("mv gon_out/prof gon_out/prof_new_B1e14_T2e9_rho%g",$rho);
 #		$command = sprintf("mv gon_out/prof gon_out/prof_new_B1e14_T2e9_rho%g_mu1",$rho);
 #		$command = sprintf("mv gon_out/prof gon_out/prof_new_B1e14_T2e9_Tc5e7_rho%g",$rho);
-		$command = sprintf("mv gon_out/prof gon_out/prof_new_B1e14_T2e9_Tc5e7_rho%g_mu1",$rho);
+$command = sprintf("mv gon_out/prof gon_out/prof_new_B1e14_T1e9_Tc5e7_rho%g_mu1_env",$rho);
+#$command = sprintf("mv gon_out/prof gon_out/prof_new_B1e14_T2e9_Tc1e8_rho%g_mu1_env",$rho);
 	system $command;
 	print "$command\n";
 #	system "mv gon_out/prof gon_out/prof_B1e14E".$rho."_mu1";
@@ -136,18 +138,41 @@ foreach $ener (@Edep) {
 	system "echo \"Bfield\t1e14\n\" >>init.dat";
 	system "echo \"angle_mu\t1\n\" >>init.dat";
 	system "echo \"Edep\t$ener\n\" >>init.dat";
-	system "echo \"Tc\t2e8\n\" >>init.dat";
+	system "echo \"Tc\t1e8\n\" >>init.dat";
 	if ($ener > 0.3) {
 		system "echo \"precalc\t0\n\" >>init.dat";	
 	}
 	sleep 3;
 	system "crustcool";
 	sleep 10;
-	system "mv gon_out/prof gon_out/prof_B1e14E".$ener."_1e9_mu1";
-	system "mv gon_out/out gon_out/out_B1e14E".$ener."_1e9_mu1";
+	system "mv gon_out/prof gon_out/prof_B1e14E".$ener."_1e9_mu1_env";
+	system "mv gon_out/out gon_out/out_B1e14E".$ener."_1e9_mu1_env";
 	sleep 3;
 }
 
+foreach $ener (@Edep) {
+	system "cp init/init.dat.default init.dat";
+	system "echo \"Bfield\t1e15\n\" >>init.dat";
+	system "echo \"angle_mu\t1\n\" >>init.dat";
+	system "echo \"Edep\t$ener\n\" >>init.dat";
+	system "echo \"Tc\t1e8\n\" >>init.dat";
+	if ($ener > 0.3) {
+		system "echo \"precalc\t0\n\" >>init.dat";	
+	}
+	sleep 3;
+	system "crustcool";
+	sleep 10;
+	system "mv gon_out/prof gon_out/prof_B1e15E".$ener."_1e9_mu1_env";
+	system "mv gon_out/out gon_out/out_B1e15E".$ener."_1e9_mu1_env";
+	sleep 3;
+}
+
+
+}
+
+
+
+if (0) {
 foreach $ener (@Edep) {
 	system "cp init/init.dat.default init.dat";
 	system "echo \"Bfield\t1e14\n\" >>init.dat";
