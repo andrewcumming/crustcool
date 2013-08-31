@@ -490,7 +490,7 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 end
 
 
-pro lcplot, namestring, ls, tscal=tscal, linecol=linecol,Lscale=Lscale,Lmin=Lmin
+pro lcplot, namestring, ls, tscal=tscal, linecol=linecol,Lscale=Lscale,Lmin=Lmin,mu=mu
 	if (namestring ne '') then namestring='_'+namestring
 	if not keyword_set(Lmin) then Lmin = 1d33
 ;	if keyword_set(Lscale) then begin
@@ -507,6 +507,12 @@ pro lcplot, namestring, ls, tscal=tscal, linecol=linecol,Lscale=Lscale,Lmin=Lmin
 	Fm*=4.0*!dpi*1.12d6^2
 ;	Fmin=min(Fm)
 
+	if keyword_set(mu) then begin
+		sin2theta = 4.0*mu*mu/(1.0+3.0*mu*mu)
+		Fm*=sin2theta
+		tm/=sin2theta
+	endif
+	
 	if keyword_set(tscal) then begin
  	;	tm/=tscal
 	endif
@@ -524,6 +530,66 @@ pro lcplot, namestring, ls, tscal=tscal, linecol=linecol,Lscale=Lscale,Lmin=Lmin
 	endelse
 	print, 'Plotted ', namestring
 end
+
+
+pro lcsum2, namestring, ls, Rvec=Rvec, muup=muup, Lscale=Lscale
+	
+	name = 'gon_out/prof_'+namestring+'_mu1.0'
+	print, 'Reading file ',name
+	readcol, name, tm,Fm,format=('D,X,D'),/silent	
+	tm/=(24.0*3600.0)  ; convert time to days
+	Fm*=4.0*!dpi*1.12d6^2
+	
+	LL = [Fm[0]]
+	for i=1L,n_elements(tm)-1 do begin
+		II = 0.0
+;		for j=1L,i do begin
+;			II+=2.0*Fm[j]*(tm[j]-tm[j-1])/(tm[j]*(4.0*(tm[i]/tm[j])-3.0)^1.5)
+;		endfor
+
+		nmu = 30
+		for j=-nmu+1,nmu do begin
+			mu=(1.0/nmu)*j
+			; dipole l=1
+			;mup2 = 4.0*mu*mu/(1.0+3.0*mu*mu)
+			; l=2
+			mup2 = (1.0 - 6.0*mu^2 + 9.0*mu^4)/(1.0 - 2.0*mu^2 + 5.0*mu^4)
+			II += 0.5 * (1.0/nmu) * mup2 * interpol(Fm,tm,tm[i]*mup2)
+		endfor
+
+		LL=[LL,II]
+	endfor
+
+	;oplot, tm, LL, linestyle=ls, col=180
+
+
+		LL = [Fm[0]]
+		for i=1L,n_elements(tm)-1 do begin
+			II = 0.0
+	;		for j=1L,i do begin
+	;			II+=2.0*Fm[j]*(tm[j]-tm[j-1])/(tm[j]*(4.0*(tm[i]/tm[j])-3.0)^1.5)
+	;		endfor
+
+			nmu = 30
+			for j=1,nmu do begin
+				mu=(1.0/nmu)*j
+				; dipole l=1
+				mup2 = 4.0*mu*mu/(1.0+3.0*mu*mu)
+				; l=2
+				;mup2 = (1.0 - 6.0*mu^2 + 9.0*mu^4)/(1.0 - 2.0*mu^2 + 5.0*mu^4)
+				II +=  (1.0/nmu) * mup2 * interpol(Fm,tm,tm[i]*mup2)
+			endfor
+
+			LL=[LL,II]
+		endfor
+
+		oplot, tm, LL, linestyle=ls
+	
+	
+end
+
+
+
 
 	
 pro lcsum, namestring, ls, Rvec=Rvec, muup=muup, Lscale=Lscale
@@ -1134,11 +1200,11 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 ;		!p.charthick=3
  ; 	endif
 	
-	yr=[6d32,1d37]
-	xr=[0.01,8000.0]
+	yr=[5d32,1d36]
+	xr=[0.1,9000.0]
 	if (strcmp(source,'2259',4)) then yr=[1d34,1d35]
 	if (strcmp(source,'fluxes1822',10)) then begin
-		yr=[1d32,2d37]
+		yr=[1d31,3d35]
 		xr=[0.1,10000]
 	endif
 	if (strcmp(source,'fluxes1547',10)) then yr=[1d33,1d36]
@@ -1191,7 +1257,7 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 ;				ytitle=textoidl('Luminosity (erg s^{-2})'), linestyle=0, charsize=1.5, $
 ;				xrange=[0.01,1000.0],xstyle=1, yrange=[1d35,1d38]
 	if not keyword_set(overplot) then begin
-		plot, tm, Fm, /xlog,/ylog, xtitle=textoidl('Days after outburst (d)'), $
+		plot, tm, Fm, /xlog,/ylog, xtitle=textoidl('Time (d)'), $
 			;xtitle=textoidl('Days since BAT trigger (d)'), $
 			ytitle=textoidl('Luminosity (erg s^{-1})'), linestyle=0, $
 			xrange=xr,xstyle=1, yrange=yr, ystyle=1, nodata=noplot
@@ -1267,10 +1333,38 @@ if (0) then begin
 endif
 
 
+if (0) then begin
+lcplot, 'maxL_15', 0, Lscale=0.1, Lmin = PYL(5e7,1e15), linecol=250
+lcplot, 'maxL_14', 0, Lscale=0.1, Lmin = PYL(5e7,1e14), linecol=80
+lcplot, 'maxL_3e14', 0, Lscale=0.1, Lmin = PYL(5e7,3e14), linecol=120
+;lcplot, 'maxL_3e15', 0, Lscale=0.1, Lmin = PYL(5e7,3e15), linecol=250
+lcplot, 'maxL_0', 0, Lscale=0.1, Lmin = PYL(5e7,0)
+
+xyouts, 0.3,1d35, textoidl('B=0')
+xyouts, 0.3,10^34.8, textoidl('B=10^{14}G'), col=80
+xyouts, 0.3,10^34.6, textoidl('B=10^{15}G'), col=250
+xyouts, 0.3,10^34.4, textoidl('B=3\times 10^{15}G'), col=120
+;xyouts, 0.3,10^34.2, textoidl('B=3\times 10^{15}G'), col=250
+
+readcol, 'out/fcontour_0.dat', Fcont, tcont, format=('X,X,X,D,X,X,D')
+tcont/=24.0*3600.0
+Fcont=10^Fcont
+Fcont*=4.0*!dpi*1.2d6^2/(1.24^2)
+oplot,  tcont*1.24/2, 0.5*(1.6/2.28)*Fcont*0.1, linestyle=2
+
+readcol, 'out/fcontour_14.dat', Fcont, tcont, format=('X,X,X,D,X,X,D')
+tcont/=24.0*3600.0
+Fcont=10^Fcont
+Fcont*=4.0*!dpi*1.2d6^2/(1.24^2)
+oplot,  tcont*1.24/2, 0.5*(1.6/2.28)*Fcont*0.1, linestyle=2, col=80
+
+endif
+
+
 ;lcplot, 'temp_1',1
 ;lcplot, 'temp_2',2
 ;lcplot, 'temp_3',3
-if (1) then begin
+if (0) then begin
 ;	lcplot, 'B1e15E3.0_1e9',2
 ;	lcplot, 'B1e15E1.0_1e9',2
 ;	lcplot, 'B1e15E0.3_1e9',2
@@ -1284,7 +1378,7 @@ if (1) then begin
 ;lcplot, 'B1e14E100.0_1e9',0
 ;lcplot, 'B1e14E30.0_1e9',0
 
-
+if (0) then begin
 areaf=0.1
 lfloor=PYL(1e8,1e14)
 lcplot, 'B1e14E3_1e9_mu1_env',0,Lscale=areaf,Lmin=lfloor
@@ -1293,6 +1387,7 @@ lcplot, 'B1e14E0.3_1e9_mu1_env',0,Lscale=areaf,Lmin=lfloor
 lcplot, 'B1e14E10_1e9_mu1_env',0,Lscale=areaf,Lmin=lfloor
 lcplot, 'B1e14E100_1e9_mu1_env',0,Lscale=areaf,Lmin=lfloor
 lcplot, 'B1e14E30_1e9_mu1_env',0,Lscale=areaf,Lmin=lfloor
+endif
 
 if (0) then begin
 lcplot, 'B1e15E3_1e9',2,Lscale=areaf
@@ -1319,13 +1414,14 @@ xyouts, 40.0,10^(36.4), textoidl('E_{25}=0.3, 1, 3, 10, 30, 100'),charsize=1.1
 ;xyouts, 80.0,4d35, textoidl('B=10^{14},10^{15} G'),charsize=1.2
 endif
 
-t = dindgen(10)*0.1*2.0 + 1.0
-L = 35.5 - 1.05*(t-1.0)
+if (0) then begin
+t = dindgen(10)*0.1*2.0
+L = 34.5 - 1.5*(t-1.0)
 t+=0.2
-ind = where(L gt 34.0 and L lt 35.0)
+ind = where(L gt 33.0 and L lt 35.0)
 oplot, 10^t[ind], 10^L[ind], linestyle=2
 xyouts, 300.0,3d34,textoidl("L\propto t^{-1.05}"),charsize=1.1
-
+endif
 ;plot_anal, 0.0, 5d35
 
 
@@ -1355,32 +1451,35 @@ lcplot, 'B15E100.0Q1',0
 lcplot, 'B15E300.0Q1',0
 xyouts, 80.0,6d35, textoidl('E_{25}=0.3,1,3,10,100,300')
 endif
+
 if (0) then begin
-	lcplot, 'deep1',2  ; sph, Tc=1e8  gap 1
-	lcplot, 'deep2',0  ; sph, Tc=3e7K, gap 1
-;	lcplot, 'deep3',0
-;	lcplot, 'deep4',0
-	;lcplot, 'deep5',3
-;	lcplot, 'deep8',3
-;	lcplot, 'deep7',3
-;	lcplot, 'deep9',1
-;	lcplot, 'deep10',1
-;	lcplot, 'deep11',2
-;	lcplot, 'deep12',2
+	lcplot, 'deep1',0, Lscale=0.1, Lmin=PYL(3e7,1d14)  ; no sph, Tc=3e7  gap 1  Q=1
+	lcplot, 'deep2',2, Lscale=0.1, Lmin=PYL(3e7,1d14)  ; no sph, Tc=3e7  gap 5
+	lcplot, 'deep3',1, Lscale=0.1, Lmin=PYL(3e7,1d14)  ; no sph, Tc=3e7  gap 4
+	lcplot, 'deep4',3, Lscale=0.1, Lmin=PYL(3e7,1d14)  ; no sph, Tc=3e7  gap 0
+
+	lcplot, 'deep5',0, Lscale=0.1, Lmin=PYL(3e7,1d14),linecol=250  ; sph, Tc=3e7  gap 1
+	lcplot, 'deep6',2, Lscale=0.1, Lmin=PYL(3e7,1d14),linecol=250  ; sph, Tc=3e7  gap 5
+	lcplot, 'deep7',1, Lscale=0.1, Lmin=PYL(3e7,1d14),linecol=250  ; sph, Tc=3e7  gap 4
+	lcplot, 'deep8',3, Lscale=0.1, Lmin=PYL(3e7,1d14),linecol=250  ; sph, Tc=3e7  gap 0
+
+	lcplot, 'deep9',0, Lscale=0.1, Lmin=PYL(3e7,1d14),linecol=80  ; no sph, Tc=3e7  gap 1  Q=0
+	lcplot, 'deep10',0, Lscale=0.1, Lmin=PYL(3e7,1d14),linecol=180  ; no sph, Tc=3e7  gap 1  Q=10
 
 
-lcplot, 'deep13',0   ; as "2" but with Q=10
-lcplot, 'deep14',0   ; as "2" but with Q=0
-
-lcplot, 'deep15',2  ; as "2" but with Q=0
-lcplot, 'deep16',2   ; as "2" but with Q=10
+	lcplot, 'deep11',0, Lscale=0.1, Lmin=PYL(1e8,1d14),linecol=80  ; no sph, Tc=3e7  gap 1  Q=0
+	lcplot, 'deep12',0, Lscale=0.1, Lmin=PYL(1e8,1d14)  ; no sph, Tc=3e7  gap 1  Q=1
+	lcplot, 'deep13',0, Lscale=0.1, Lmin=PYL(1e8,1d14),linecol=180  ; no sph, Tc=3e7  gap 1  Q=10
+	
+	
+	
 
 ;	xyouts,500.0,2d32,textoidl('with'),charsize=1.2
 ;	xyouts,500.0,1.2d32,textoidl('SF phonons'),charsize=1.2
 ;	xyouts,2000.0,1d33,textoidl('SF phonons'),charsize=1.2
 ;	xyouts,2000.0,1.8d33,textoidl('without'),charsize=1.2
 
-xyouts, 1500.0, 8d33, textoidl('Q_{imp}=0,1,10')
+;xyouts, 1500.0, 8d33, textoidl('Q_{imp}=0,1,10')
 
 ;xyouts,2500.0,1.2d32,textoidl('without SF phonons'),charsize=0.9
 ;xyouts,400.0,1d32,textoidl('with SF phonons'),charsize=0.9
@@ -1527,6 +1626,27 @@ endif
 ;	lcplot, '1900_noneut', 1   ; turned off neutrinos, Q=0,B=1e15,Tc=7e8,E25=17,
 					; grid has yt=1e10, heats everywhere
 	
+	
+if (0) then begin
+	lcplot, 'T1e9_y1e10_mu1.0',1
+	lcplot, 'T1e9_y1e10_mu1.0',0,Lscale=0.1,Lmin=PYL(1e8,1d14) 
+	lcsum2, 'T1e9_y1e10', 2
+
+	y=35.7
+	oplot, [100.0,200.0],[10^y,10^y], linestyle=0
+	xyouts, 250.0, 10^(y-0.01), textoidl('Radial magnetic field'), charsize=1.01
+	xyouts, 250.0, 10^(y-0.15), textoidl('(f_{surf}=0.1)'), charsize=1.01
+	y=35.35
+	oplot, [100.0,200.0],[10^y,10^y], linestyle=1
+	xyouts, 250.0, 10^(y-0.01), textoidl('Radial magnetic field'), charsize=1.01
+	xyouts, 250.0, 10^(y-0.15), textoidl('(f_{surf}=1)'), charsize=1.01
+	y=35.0
+	oplot, [100.0,200.0],[10^y,10^y], linestyle=2
+	xyouts, 250.0, 10^(y-0.01), textoidl('Dipole magnetic field'), charsize=1.01
+	xyouts, 250.0, 10^(y-0.15), textoidl('(f_{surf}=1)'), charsize=1.01
+
+endif
+	
 if (strcmp(source,'fluxes1822',10)) then begin		
 	;lcplot, '1822_A', 1  ; 2e9 to 3e10  E25=2.3  Q=1   B=6e13   Tc=2e7
 ;	lcplot, '1822_B', 0	   ; 2e9 to 3e10  E25=2.3  Q=10   B=6e13   Tc=2e7
@@ -1536,18 +1656,41 @@ if (strcmp(source,'fluxes1822',10)) then begin
 ;lcplot, '1822_edep', 2  
 
 if (0) then begin
-lcplot, '1822_new_withB_mu1.0',1, linecol=80
-lcplot, '1822_new_withB_mu0.9',1, linecol=80
-lcplot, '1822_new_withB_mu0.8',1, linecol=80
-lcplot, '1822_new_withB_mu0.7',1, linecol=80
-lcplot, '1822_new_withB_mu0.6',1, linecol=80
-lcplot, '1822_new_withB_mu0.5',1, linecol=80
-lcplot, '1822_new_withB_mu0.4',1, linecol=80
-lcplot, '1822_new_withB_mu0.3',1, linecol=80
-lcplot, '1822_new_withB_mu0.2',1, linecol=80
-lcplot, '1822_new_withB_mu0.1',1, linecol=80
+;lcplot, '1822_new_withB_mu0.9',0
+;lcplot, '1822_new_withB_mu0.8',0
+;lcplot, '1822_new_withB_mu0.7',0
+;lcplot, '1822_new_withB_mu0.6',0
+;lcplot, '1822_new_withB_mu0.5',0
+;lcplot, '1822_new_withB_mu0.4',0
+;lcplot, '1822_new_withB_mu0.3',0
+;lcplot, '1822_new_withB_mu0.2',0
+;lcplot, '1822_new_withB_mu0.1',0
+
+;lcplot, '1822_new_withB_mu1.0',1,mu=0.9
+;lcplot, '1822_new_withB_mu1.0',1,mu=0.8
+;lcplot, '1822_new_withB_mu1.0',1,mu=0.7
+;lcplot, '1822_new_withB_mu1.0',1,mu=0.6
+;lcplot, '1822_new_withB_mu1.0',1,mu=0.5
+;lcplot, '1822_new_withB_mu1.0',1,mu=0.4
+;lcplot, '1822_new_withB_mu1.0',1,mu=0.3
+;lcplot, '1822_new_withB_mu1.0',1,mu=0.2
+;lcplot, '1822_new_withB_mu1.0',1,mu=0.1
+
+lcplot, '1822_new_withB_Tc2e7_mu1.0',0
+lcsum, '1822_new_withB_Tc2e7', 2
+lcsum2, '1822_new_withB_Tc2e7', 0
+
+
+lcplot, '1822_new_withB_mu1.0',0
 lcsum, '1822_new_withB', 2
-lcplot, '1822_new_step'
+lcsum2, '1822_new_withB', 0
+
+lcplot, 'deep1',0, Lscale=1.0, Lmin=PYL(3e7,1d14)
+lcplot, 'deep12',0, Lscale=1.0, Lmin=PYL(1e8,1d14)
+
+;lcplot, '1822_new_step_Tc2e7',linecol=250
+
+
 endif else begin
 	
 	if (0) then begin
@@ -2118,7 +2261,8 @@ pro surf3, ps=ps
 ;	surf3plot, 1d16,/overplot, ls=0
 ;	surf3plot, 1d15,/overplot, ls=0,/nocorr
 ;	surf3plot, 1d14,/overplot, ls=3
-	surf3plot, 1d14, ls=2,/nocorr
+surf3plot, 1d14, ls=2,/nocorr
+surf3plot, 1d15, ls=2,/nocorr,/overplot
 	surf3plot, 1.0, ls=2,/overplot, col=80
 ;	surf3plot, 1.0,/overplot, /usearras,ls=2
 ;	surf3plot, 1.0,/overplot, /usegpe,ls=1
@@ -2184,8 +2328,8 @@ xyouts, 4d36, 2.7d9, textoidl('14'), charsize=1.1
 		ind=where(abs(y-ytop) lt 0.01)
 		oplot, F[ind], T[ind]
 
-		print, 'out/grid_1e14_potek'
-		readcol, 'out/grid_1e14_potek', y, T, F, format=('D,D,D')
+		print, 'out/grid_1e15_nopotek'
+		readcol, 'out/grid_1e15_nopotek', y, T, F, format=('D,D,D')
 		F=10^F
 		T=10^T
 		radius=11.2
@@ -2195,13 +2339,13 @@ xyouts, 4d36, 2.7d9, textoidl('14'), charsize=1.1
 
 		ytop=14.0
 		ind=where(abs(y-ytop) lt 0.01)
-;		oplot, F[ind], T[ind], col=120, linestyle=1
+		oplot, F[ind], T[ind], col=120, linestyle=0
 		ytop=12.0
 		ind=where(abs(y-ytop) lt 0.01)
-;		oplot, F[ind], T[ind], col=120, linestyle=1
+		oplot, F[ind], T[ind], col=120, linestyle=0
 		ytop=9.0
 		ind=where(abs(y-ytop) lt 0.01)
-;		oplot, F[ind], T[ind], col=120, linestyle=1
+		oplot, F[ind], T[ind], col=120, linestyle=0
 
 
 		print, 'out/grid_He4'
@@ -2242,16 +2386,25 @@ end
 
 function PYL, Tc, B, radius=radius, ZZ=ZZ, grav=grav
 	if not keyword_set(radius) then radius=12.0
-	if not keyword_set(ZZ) then ZZ=1.24
-	if not keyword_set(grav) then grav=1.6d14
+	if not keyword_set(ZZ) then ZZ=1.2364
+	if not keyword_set(grav) then grav=1.60355d14
 
 	T9 = Tc*1d-9
 	xi = T9 - 0.001*(1d-14*grav)^0.25*sqrt(7.0*T9);
 	flux = 5.67d-5 * 1d24 * grav*1d-14 * ((7*xi)^2.25+(0.333*xi)^1.25);
 	; now correct for B ... 
 	; use the enhancement along the field direction;
-	chi = 1.0 + 0.0492 * (1d-12*B)^0.292 / T9^0.24
-	flux *= chi^4
+;	chi = 1.0 + 0.0492 * (1d-12*B)^0.292 / T9^0.24
+;	flux *= chi^4
+
+	; or use eq. (31) or PY2001  which gives F(B)/F(0)
+	bet = 0.074*sqrt(1d-12*B)*T9^(-0.45);
+	a1=5059.0*T9^0.75/sqrt(1.0 + 20.4*sqrt(T9) + 138.0*T9^1.5 + 1102.0*T9*T9);
+	a2=1484.0*T9^0.75/sqrt(1.0 + 90.0*T9^1.5+ 125.0*T9*T9);
+	a3=5530.0*T9^0.75/sqrt(1.0 + 8.16*sqrt(T9) + 107.8*T9^1.5+ 560.0*T9*T9);
+	fac = (1.0 + a1*bet^2 + a2*bet^3 + 0.007*a3*bet^4)/(1.0+a3*bet^2);
+ 	flux *= fac
+
 
 	flux *= 4.0*!dpi*1d10*radius^2
 	flux/=ZZ^2
@@ -2747,7 +2900,8 @@ end
 
 
 ;	name = 'out/grid_1e15_potek'
-	name = 'out/grid_1e14_potek'
+;name = 'out/grid_3e15_potek'
+name = 'out/grid_1e14_potek'
 ;	name = 'out/grid_He4'
 ;	name = 'out/grid_He9'
 ;	name = 'out/grid'
@@ -3465,7 +3619,7 @@ end
 pro fcontour
 
 	print, 'Reading out/grid (this will take a while)'
-	readcol, 'out/grid_1e14_potek', ya, Ta, Fa, rhoa, epsa, format=('D,D,D,D,D')
+	readcol, 'out/grid', ya, Ta, Fa, rhoa, epsa,cva, format=('D,D,D,D,D,D')
 	print, 'Done..'
 	
 	plot, [1d19,1d32], [1d7,1d10], /xlog,/ylog,/nodata,xtitle=textoidl('Pressure (cgs)'),$
@@ -3486,13 +3640,21 @@ pro fcontour
 		eps = epsa[where(ya eq y)]
 		T = Ta[where(ya eq y)]
 		rho = rhoa[where(ya eq y)]
+		cv = cva[where(ya eq y)]
 		
 		ind = where((eps - F) lt 0.0, count)
 		if (count lt n_elements(F) and count gt 0 and y gt 10.0) then begin
 			j = count-1
-			printf, lun, j, y, F[j], eps[j], T[j], rho[j]
+			interp = (F[j]-eps[j])/(F[j]-eps[j] - (F[j+1]-eps[j+1]))			
+			interp=1.0-interp
+			Fout = F[j]*interp + (1.0-interp)*F[j+1]
+			epsout = eps[j]*interp + (1.0-interp)*eps[j+1]
+			Tout = T[j]*interp + (1.0-interp)*T[j+1]
+			rhoout = rho[j]*interp + (1.0-interp)*rho[j+1]
+			cvout = alog10(cv[j])*interp + (1.0-interp)*alog10(cv[j+1])			
+			printf, lun, j, y, Fout, epsout, Tout, rhoout, (10^y*10^cvout*10^Tout)/10^Fout
 			yy=[yy,y]
-			TT=[TT,T[j]]
+			TT=[TT,Tout]
 		endif
 				
 	endforeach
@@ -3506,5 +3668,54 @@ end
 
 	
 	
+
+
+
+pro neut4, ps=ps
+	
+	if keyword_set(ps) then open_ps, 'ps/neut4.ps'
+
+	readcol, 'out/neut4.dat', rho, e1,e2,e3,e4,e5,e6,e7, format=('D,D,D,D,D,D,D,D')
+
+	plot, rho, e1, /xlog,/ylog, xtitle=textoidl('\rho (g cm^{-3})'), yrange=[1d18,1d23],$
+	 			ystyle=1, xrange=[1d8,1d14], xstyle=1, charsize=1.6, $
+				ytitle=textoidl('Q_\nu (erg cm^{-3} s^{-1})')
+
+;	oplot, rho, e2, linestyle=1
+;	oplot, rho, e3, linestyle=2
+;	oplot, rho, e4, linestyle=3
+	oplot, rho, e6, linestyle=2
+
+;	oplot, rho, e7, col=250
+
+	xyouts, 3d11, 3d19,textoidl('B=10^{14} G'),col=80
+	xyouts, 2d12, 8d20,textoidl('B=10^{15} G')
+
+
+
+	readcol, 'out/neut5.dat', rho, e1,e2,e3,e4,e5,e6,e7, format=('D,D,D,D,D,D,D,D')
+
+	oplot, rho, e1, linestyle=0, col=80
+;	oplot, rho, e2, linestyle=1
+;	oplot, rho, e3, linestyle=2
+;	oplot, rho, e4, linestyle=3
+	oplot, rho, e6, linestyle=2, col=80
+
+
+
+	if keyword_set(ps) then close_ps
+
+end
+
+
+
+pro econd
+
+	readcol, 'gon_out/initial_condition', rho, sigma, nel,format=('X,X,X,D,X,X,X,X,X,X,X,X,X,D,D')
+	
+;	plot, rho, sigma, /xlog,/ylog
+	plot, nel, sigma, /xlog,/ylog
+	
+end
 
 

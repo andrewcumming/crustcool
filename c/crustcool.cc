@@ -911,8 +911,8 @@ void set_up_initial_temperature_profile_piecewise(char *fname)
 			I+=sqrt(EOS.CP()/(Kcond*EOS.rho))*(G.P[i]-G.P[i-1])/G.g;
 			double tt = I*I*0.25/(24.0*3600.0);
 			
-			fprintf(fp, "%d %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", i, G.P[i], Ti, EOS.rho,EOS.CV(), 
-					Kcond, EOS.Yn, 1e-39*EOS.Yn * EOS.rho/1.67e-24, tt,E,EOS.A[1],EOS.Z[1],TTC);
+			fprintf(fp, "%d %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", i, G.P[i], Ti, EOS.rho,EOS.CV(), 
+					Kcond, EOS.Yn, 1e-39*EOS.Yn * EOS.rho/1.67e-24, tt,E,EOS.A[1],EOS.Z[1],TTC, EOS.econd(), EOS.Ye()*EOS.rho/1.67e-24);
 		}
 	}	
 	
@@ -1023,10 +1023,10 @@ void set_up_initial_temperature_profile(void)
 			E+=energy_deposited(i)*crust_heating(i)*G.mdot*G.g*G.outburst_duration*3.15e7*
 				4.0*PI*G.radius*G.radius*1e10*G.dx*G.P[i]/G.g;
 											
-			fprintf(fp, "%d %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", i, G.P[i], Ti, EOS.rho,EOS.CV(), 
+			fprintf(fp, "%d %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", i, G.P[i], Ti, EOS.rho,EOS.CV(), 
 					Kcond, EOS.Yn, 1e-39*EOS.Yn * EOS.rho/1.67e-24, tt,E,EOS.A[1],EOS.Z[1],EOS.TC(),
 					EOS.Chabrier_EF(),Kcondperp,0.4*1e-9*EOS.rho*pow(EOS.Ye()/0.4,3.0)*EOS.Z[1]/34.0, EOS.cve, EOS.cvion,
-					EOS.chi(&EOS.rho), EOS.chi(&EOS.T8), G.P[i]/(G.g*EOS.rho));
+					EOS.chi(&EOS.rho), EOS.chi(&EOS.T8), G.P[i]/(G.g*EOS.rho), EOS.econd());
 				EOS.Q=Q_store;	
 		}
 	}	
@@ -1235,8 +1235,10 @@ void get_TbTeff_relation(void)
 	FILE *fp;
 //	if (G.use_my_envelope) fp = fopen("out/grid","r");
 	if (G.use_my_envelope) {
-		if (EOS.B == 1e15) fp = fopen("out/grid_1e15_potek","r");
+		if (EOS.B == 1e15) fp = fopen("out/grid_1e15_nopotek","r");
 		else if (EOS.B == 1e14) fp = fopen("out/grid_1e14_potek","r");
+		else if (EOS.B == 3e14) fp = fopen("out/grid_3e14_potek","r");
+		else if (EOS.B == 3e15) fp = fopen("out/grid_3e15_potek","r");
 		else {
 			printf("Don't know which envelope model to use for this B!\n");
 			exit(1);
@@ -1347,7 +1349,7 @@ void set_up_grid(int ngrid, const char *fname)
   	double *dens = vector(1,1001);
   	double *pres = vector(1,1001);
   	for (int i=1; i<=1001; i++) {
-		dens[i] = 5.0 + (i-1)*(14.3-5.0)*0.001;
+		dens[i] = 5.0 + (i-1)*(15.0-5.0)*0.001;
 		EOS.rho = pow(10.0,dens[i]);
 		set_composition();
 		pres[i] = log10(EOS.ptot());

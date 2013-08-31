@@ -47,7 +47,7 @@ public:
 
   double Q, Q1,Q2,Q3,Q4, Qout, Q5,Q6;
 
-  double cvion, cv_alpha, cvrad,cve;
+  double cvion, cv_alpha, cvrad,cve,cvneut;
 
   int accr;
   int gap;

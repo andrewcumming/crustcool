@@ -89,11 +89,11 @@ int main(void)
 			  	EOS.rho=EOS.find_rho();
 				double rhorho=EOS.rho;
 
-		      	printf("%lg %lg %lg %lg %lg\n", ODE2.get_x(j), log10(ODE2.get_y(1,j)), F, log10(rhorho),
-						log10(EOS.eps_nu()));
+		      	printf("%lg %lg %lg %lg %lg %lg\n", ODE2.get_x(j), log10(ODE2.get_y(1,j)), F, log10(rhorho),
+						log10(EOS.eps_nu()), EOS.CV());
 
-	      	fprintf(fp.out, "%lg %lg %lg %lg %lg\n", ODE2.get_x(j), log10(ODE2.get_y(1,j)), F, log10(rhorho),
-					log10(EOS.eps_nu()));
+	      	fprintf(fp.out, "%lg %lg %lg %lg %lg %lg\n", ODE2.get_x(j), log10(ODE2.get_y(1,j)), F, log10(rhorho),
+					log10(EOS.eps_nu()),EOS.CV());
 	} 	
 	
 	EOS.use_potek_cond = 1;
@@ -111,11 +111,11 @@ int main(void)
 			if (log10(y) > G.yi) EOS.set_comp();
 			double rhorho=EOS.rho;
 
-	    	printf("%lg %lg %lg %lg %lg\n", ODE.get_x(j), log10(ODE.get_y(1,j)), F, log10(rhorho),
-					log10(EOS.eps_nu()*y));
+	    	printf("%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", ODE.get_x(j), log10(ODE.get_y(1,j)), F, log10(rhorho),
+					log10(EOS.eps_nu()*y), EOS.CV(), EOS.cvion,EOS.cv_alpha,EOS.cve,EOS.cvneut,EOS.Yn ,EOS.eta());
 
-      	fprintf(fp.out, "%lg %lg %lg %lg %lg\n", ODE.get_x(j), log10(ODE.get_y(1,j)), F, log10(rhorho),
-				log10(EOS.eps_nu()*y));
+      	fprintf(fp.out, "%lg %lg %lg %lg %lg %lg\n", ODE.get_x(j), log10(ODE.get_y(1,j)), F, log10(rhorho),
+				log10(EOS.eps_nu()*y), EOS.CV());
 }
 	EOS.tidy();
   	}

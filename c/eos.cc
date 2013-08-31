@@ -564,7 +564,8 @@ double Eos::CV(void)
     		dd1-=3.0*exp(-x)*(6.0+x*(6.0+x*(3.0+x)))/pow(x,3.0);
     		dd2=1.0-0.375*x+0.05*x*x;
     		if (dd1 > dd2) dd=dd2; else dd=dd1;
-    		this->cvion=8.3144e7*this->Yi()*(8.0*dd-6*alphaeta/(exp(alphaeta)-1.0)+(pow(gameta,2.0)*exp(gameta)/pow(exp(gameta)-1.0,2.0)));
+    		this->cvion=8.3144e7*this->Yi()*(8.0*dd-6*alphaeta/(exp(alphaeta)-1.0)+(pow(gameta,2.0)*exp(gameta)/pow(exp(gameta)-1.0,2.0)));	
+			if (isnan(this->cvion)) this->cvion=0.0;
       }
   	
 
@@ -584,7 +585,7 @@ double Eos::CV(void)
   
 
   // NEUTRONS
-	double cvneut=0.0;
+	this->cvneut=0.0;
   if (this->Yn > 0.0) {
 	
 	//cvneut = this->Yn*0.5*PI*PI*1.38e-16*1.38e-16*this->T8*1e8/(1.67e-24*this->Chabrier_EF()*1.6e-9);	
@@ -1678,3 +1679,68 @@ double Eos::potek_cond(void)
 	condegin_(&temp,&rr,&Bfield,&this->Z[1],&AA,&this->A[1],&Zimp, &s1,&s2,&s3,&k1,&k2,&k3);
 	return k1*2.778e15;
 }
+
+
+
+
+
+double Eos::econd(void)
+  // calculates the electrical conductivity
+{
+  double x1, x2, sig, x, lambda, nu, theta, beta;
+
+  if (this->gamma() < this->gamma_melt || this->Q == 900.0) { // if Q=900 treat as liquid
+    
+    // This is the method from the WD paper, where I interpolate using x
+    // choose appropriate value for x
+    x1=this->x();
+    x2=0.26*sqrt(this->T8);
+    x=sqrt(x1*x1+x2*x2);
+    //if (x1>x2) x=x1; else x=x2;
+
+  //  x=x1;
+    sig=8.48e21*this->Ye()*pow(x,3.0)/(this->YZ2()*(1+x*x));
+    //printf("got here\n");
+
+    sig/=this->lamei(0);
+    
+    //    printf("back\n");
+
+    // here, write sig directly in terms of Fermi integrals
+    //    sig=9.47e23*pow(this->T8,3.0)*this->Fermi(2.0,this->eta())/this->rho;
+    //sig/=this->YZ2()*this->lamei();
+    
+  } else { // solid --- NB assumes A=2Z and single species
+    double TU,ka,sm1;
+
+    TU=2.2e8*sqrt(1e-12*this->rho)*this->Ye()*pow(this->Z[1]/60.0,1.0/3.0);
+
+    x=this->x(); beta=x/sqrt(1+x*x);
+    nu=9.55e16*this->T8*this->Fep(0)/beta; // phonons
+
+    // add exponential suppression when the Umklapp scatterings freeze out
+    //if (this->T8  < 1e-8*TU) 
+    nu*=exp(-1e-8*TU/this->T8);
+
+    //nu=9.55e16*this->T8*13.0/beta;
+    /* old phonons from Urpin & Yakovlev
+    theta=0.56*sqrt(1e-9*this->rho)/this->T8;
+    nu=1.24e18*this->T8*(2-beta*beta)/(beta*sqrt(1+pow(theta/3.5,2.0)));
+    */
+
+    // Coulomb log from Itoh & Kohyama 1996
+    ka=1.92*pow(this->Ye()/this->Yi(),1.0/3.0);
+    sm1=0.5*log(1.0+0.4*ka*ka);
+    lambda=sm1*(1.0+2.5*beta*beta/(ka*ka))-0.5*beta*beta;
+
+    nu+=1.75e16*this->Q*lambda*sqrt(1+x*x)/this->Z[1]; // impurities
+
+    //sig=1.49e22*x*x*beta*1e16/nu;
+    sig=1.52e25*1e17*pow(this->rho*1e-12*Ye(),2.0/3.0)/nu;
+  }  
+  return sig;
+}
+
+
+
+
