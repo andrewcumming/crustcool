@@ -9,6 +9,7 @@ gon_out/*
 out/*
 init/*
 !init/init.dat.mcmc
+!init/init.dat.1659_example
 project.tmproj
 ps/*
 tmp

@@ -1,0 +1,24 @@
+
+# Fit to MXB 1659 cooling curve
+# see below for different options
+
+mass	1.62
+radius	11.2
+timetorun	10000.0
+toutburst 2.5
+mdot	0.1
+
+precalc 1
+ngrid	100
+SFgap	1
+kncrit	0
+accreted 1
+
+Qimp	4.4
+Tc	3.1e7
+Tt	4.2e8
+
+cooling_bc	1
+extra_heating	1
+extra_Q	1.4
+extra_y	1e13
