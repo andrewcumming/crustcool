@@ -81,6 +81,7 @@ public:
 
 	double B;
 
+	double rho_core;
 
 	int use_potek_cond, use_potek_eos;
 	double potek_cond(void);

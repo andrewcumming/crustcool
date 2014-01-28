@@ -1,56 +1,32 @@
-Tc	1e8
-Edep	1.0
-rhot	1e9
-rhob	1e11
-mass	1.4
-radius	10.0
-Qimp	1
-angle_mu	-1
 
-timetorun	20000.0
-instant 1
+# Fit to MXB 1659 cooling curve
+# see below for different options
 
-# need to precalc if anything below changes
-precalc	1
-Bfield	1e14
-ngrid	100
+output 0
+
+mass	1.62
+radius	11.2
+Bfield  0
+mdot	2.0
+
+precalc 0
+ngrid	50
 SFgap	1
-kcnrit	0.0
-sph 0
+kncrit	0.0
+sph	0
 
+piecewise	0
+timetorun	4000.0
+neutrinos	1
+instant	0
 
-#piecewise 1
-#>0 -1
-#>1e9 -1
-#>1.01e9 7e9
-#>1e11 7e9
-#>1.01e11 -1
-#>-1 -1
+toutburst 2.5
+accreted 1
+gpe	0
 
-envelope	1
-ytop	1e9
-Bfield	1e14
-gpe	1
+ytop	1e12
 
-angle_mu	1
+Tt	3.41731e+08
+Qimp	0.0811445
+Tc	3.28679e+07
 
-Edep	10.0
-#energy_slope	1.333
-Tc	1e8
-rhot	1e8
-
-precalc	0
-
-
-piecewise	1
-##
->0	1e8
->-1	1e8
-##
-
->0	-1
->1e8	-1
->1.01e8	1e9
->1e10	1e9
->1.01e10	-1
->-1	-1

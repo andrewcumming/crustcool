@@ -388,20 +388,27 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 
 		if keyword_set(ps) then open_ps, 'tc.ps'
 
+!p.multi=[0,1,1,0,0]
 
 	if (not keyword_set(source)) then source='1659'
 
 	if (source eq '1659' or source eq '1731') then begin
-		xr=[1.0,7000.0]
-		yr=[40,160]
+		xr=[1.0,10000.0]
+		yr=[40,140]
 	endif
 	if (source eq '0748') then begin
-		xr=[10.0,3000.0]
-		yr=[50,140]
+		xr=[10.0,100000.0]
+		yr=[80,140]
 	endif
+	if (source eq '0556') then begin
+		xr=[1.0,50000.0]
+		yr=[50,300]
+	endif
+
+
 	if (source eq 'XTEJ') then begin
 		xr=[1.0,10000.0]
-		yr=[100,180]
+		yr=[50,180]
 	endif
 	if (source eq 'terz2' or source eq 'terz') then begin
 		xr=[10.0,3000.0]
@@ -418,9 +425,14 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 	readcol, 'data/'+source, t0, n, format=('D,I'), numline=1
 	readcol, 'data/'+source, t, F, Fe, temp, tempe, skipline=1, format=('D,D,D,D,D')	
 	t=t-t0[0]
-	ploterror, t, temp, tempe, psym=1, /xlog, xtitle=textoidl('Time (d)'),$
-			ytitle=textoidl('T_{eff} (keV)'), charsize=1.4, xrange=xr,xstyle=1,$
-			yrange=yr, ystyle=1,/ylog
+;	ploterror, t, temp, tempe, psym=1, /xlog, xtitle=textoidl('Time (d)'),$
+;			ytitle=textoidl('T_{eff} (keV)'), charsize=1.4, xrange=xr,xstyle=1,$
+;			yrange=yr, ystyle=1,/ylog
+
+		ploterror, t, temp, tempe, psym=1, /xlog, xtitle=textoidl('Time (d)'),$
+				ytitle=textoidl('T_{eff} (eV)'), charsize=1.4, xrange=xr,xstyle=1,$
+				yrange=yr, ystyle=1
+
 
 		if not keyword_set(noplot) then begin
 		; plot lightcurve from simulation
@@ -429,7 +441,7 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 		; the output is already redshifted
 		; but needs to be converted to eV
 		FF = 1.38d-16*Teff/(1.6d-12)
-		oplot, tt,FF,linestyle=0;,col=250
+		oplot, tt,FF,linestyle=0,col=250
 		endif
 	
 		if (source eq 'terz2' or source eq 'terz') then begin
@@ -450,24 +462,33 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 
 
 
-		if (source eq '1659' or source eq '1731' or source eq 'XTEJ' or source eq '0748') and not keyword_set(noextras) then  begin
+		if (source eq '1659' or source eq '1731' or source eq 'XTEJ' or source eq '0748' or source eq '0556') and not keyword_set(noextras) then  begin
 		; plot lightcurve from simulation
-		readcol, 'gon_out/prof_'+source+'_1', tt,Teff, format=('F,X,X,X,F')
+		readcol, 'gon_out/prof_'+source+'_A', tt,Teff, format=('F,X,X,X,F')
+		tt/=(24*3600.0)
+		; the output is already redshifted
+		; but needs to be converted to eV
+		FF = 1.38d-16*Teff/(1.6d-12)
+		oplot, tt,FF,linestyle=0
+		; plot lightcurve from simulation
+		readcol, 'gon_out/prof_'+source+'_B', tt,Teff, format=('F,X,X,X,F')
 		tt/=(24*3600.0)
 		; the output is already redshifted
 		; but needs to be converted to eV
 		FF = 1.38d-16*Teff/(1.6d-12)
 		oplot, tt,FF,linestyle=1
-		; plot lightcurve from simulation
-		readcol, 'gon_out/prof_'+source+'_2', tt,Teff, format=('F,X,X,X,F')
-		tt/=(24*3600.0)
+
+;		readcol, 'gon_out/prof_'+source+'_C', tt,Teff, format=('F,X,X,X,F')
+;		tt/=(24*3600.0)
 		; the output is already redshifted
 		; but needs to be converted to eV
-		FF = 1.38d-16*Teff/(1.6d-12)
+;		FF = 1.38d-16*Teff/(1.6d-12)
 ;		oplot, tt,FF,linestyle=2
+
 		endif
 
-		if (source eq '1731') then xyouts, 700,132,textoidl('KS 1731-260')
+		if (source eq '0556') then xyouts, 300,270,textoidl('MAXI J0556-332')
+		if (source eq '1731') then xyouts, 700,120,textoidl('KS 1731-260')
 		if (source eq '1659') then xyouts, 800,132,textoidl('MXB 1659-29')
 ;		if (source eq '1659') then xyouts, 200,152,textoidl('MXB 1659-29')
 		if (source eq 'XTEJ') then xyouts, 500,170,textoidl('XTE J1701-462')
@@ -480,10 +501,10 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 ;		oplot, 10^t, 10^F, linestyle=2, col=250, thick=2
 		t=[1.0,2.5]
 		F=alog10(140.0)-0.1*(t-1.0)
-		oplot, 10.0^t, 10.0^F, linestyle=2, col=250, thick=2
+		;oplot, 10.0^t, 10.0^F, linestyle=2, col=250, thick=2
 		t=[1.0,2.5]
 		F=alog10(129.0)-0.09*(t-1.0)
-		oplot, 10.0^t, 10.0^F, linestyle=2, col=120, thick=2
+		;oplot, 10.0^t, 10.0^F, linestyle=2, col=120, thick=2
 
 
 	if keyword_set(ps) then close_ps
@@ -529,12 +550,20 @@ pro lcplot, namestring, ls, tscal=tscal, linecol=linecol,Lscale=Lscale,Lmin=Lmin
 		oplot, tm, Fm,linestyle=ls
 	endelse
 	print, 'Plotted ', namestring
+	
+	openw, lun, '1.dat', /get_lun
+	for i=0,n_elements(tm)-1 do printf, lun, tm[i], Fm[i], format='(g,g)'
+	free_lun, lun
+	
 end
 
 
-pro lcsum2, namestring, ls, Rvec=Rvec, muup=muup, Lscale=Lscale
+pro lcsum2, namestring, ls, Rvec=Rvec, mumin=mumin, Lscale=Lscale
 	
-	name = 'gon_out/prof_'+namestring+'_mu1.0'
+	if not keyword_set(mumin) then mumin=0
+	
+	name = 'gon_out/prof_'+namestring
+	;if (namestring eq '') then namestring = 'gon_out/prof'
 	print, 'Reading file ',name
 	readcol, name, tm,Fm,format=('D,X,D'),/silent	
 	tm/=(24.0*3600.0)  ; convert time to days
@@ -577,7 +606,9 @@ pro lcsum2, namestring, ls, Rvec=Rvec, muup=muup, Lscale=Lscale
 				mup2 = 4.0*mu*mu/(1.0+3.0*mu*mu)
 				; l=2
 				;mup2 = (1.0 - 6.0*mu^2 + 9.0*mu^4)/(1.0 - 2.0*mu^2 + 5.0*mu^4)
-				II +=  (1.0/nmu) * mup2 * interpol(Fm,tm,tm[i]*mup2)
+				if (mup2 gt mumin) then begin
+					II +=  (1.0/nmu) * mup2 * interpol(Fm,tm,tm[i]*mup2)
+				endif
 			endfor
 
 			LL=[LL,II]
@@ -585,6 +616,9 @@ pro lcsum2, namestring, ls, Rvec=Rvec, muup=muup, Lscale=Lscale
 
 		oplot, tm, LL, linestyle=ls
 	
+		openw, lun, '2.dat', /get_lun
+		for i=0,n_elements(tm)-1 do printf, lun, tm[i], LL[i], format='(g,g)'
+		free_lun, lun
 	
 end
 
@@ -1204,8 +1238,8 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 	xr=[0.1,9000.0]
 	if (strcmp(source,'2259',4)) then yr=[1d34,1d35]
 	if (strcmp(source,'fluxes1822',10)) then begin
-		yr=[1d31,3d35]
-		xr=[0.1,10000]
+		yr=[1d31,2d35]
+		xr=[0.5,10000]
 	endif
 	if (strcmp(source,'fluxes1547',10)) then yr=[1d33,1d36]
 	if (strcmp(source,'1659',4)) then yr=[1d31,1d36]
@@ -1237,6 +1271,8 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 	if (strcmp(source,'1900',4)) then yr=[1d34,1d38]
 	if (strcmp(source,'SGR1900',7)) then yr=[1d34,2d37]
 
+	if (strcmp(source,'1731',4)) then yr=[1d32,3d35]
+
 	if keyword_set(all) then yr=[2d32,3d36]
 	
 	Lq=0.0
@@ -1264,8 +1300,8 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 	endif
 ;	oplot, t,F,linestyle=1
 
-	if not keyword_set(noplot) then oplot, tm, abs(Fin), col=80
-	if not keyword_set(noplot) then oplot, tm, abs(Lnu), col=180
+	;if not keyword_set(noplot) then oplot, tm, abs(Fin), col=80
+	;if not keyword_set(noplot) then oplot, tm, abs(Lnu), col=180
 
 	ind = where(Fin lt 0.0)
 	Lin=0.0
@@ -1648,14 +1684,19 @@ if (0) then begin
 endif
 	
 if (strcmp(source,'fluxes1822',10)) then begin		
-	;lcplot, '1822_A', 1  ; 2e9 to 3e10  E25=2.3  Q=1   B=6e13   Tc=2e7
+	lcsum2,'1822_new_B', 2  ; 2e9 to 3e10  E25=2.3  Q=1   B=6e13   Tc=2e7
+	lcplot, '1822_new_C',0,Lscale=0.15,Lmin=PYL(1.5d7,1d14) 
+	
+		
+;	lcsum2,'temp',0
+	;	lcplot, '1822_A', 1  ; 2e9 to 3e10  E25=2.3  Q=1   B=6e13   Tc=2e7
 ;	lcplot, '1822_B', 0	   ; 2e9 to 3e10  E25=2.3  Q=10   B=6e13   Tc=2e7
-	;lcplot, '1822_C', 3   ; 2e9 to 1e10  E25=1.7  Q=1   B=1e15   Tc=1.5e7
-	;lcplot, '1822_D', 1   ; 3.5e9 to 5.5e9  E25=11  Q=10   B=1e15   Tc=1.5e7
+;	lcplot, '1822_C', 3   ; 2e9 to 1e10  E25=1.7  Q=1   B=1e15   Tc=1.5e7
+;	lcplot, '1822_D', 1   ; 3.5e9 to 5.5e9  E25=11  Q=10   B=1e15   Tc=1.5e7
 ;lcplot, '1822_step', 0  
 ;lcplot, '1822_edep', 2  
 
-if (0) then begin
+if (1) then begin
 ;lcplot, '1822_new_withB_mu0.9',0
 ;lcplot, '1822_new_withB_mu0.8',0
 ;lcplot, '1822_new_withB_mu0.7',0
@@ -1676,17 +1717,17 @@ if (0) then begin
 ;lcplot, '1822_new_withB_mu1.0',1,mu=0.2
 ;lcplot, '1822_new_withB_mu1.0',1,mu=0.1
 
-lcplot, '1822_new_withB_Tc2e7_mu1.0',0
-lcsum, '1822_new_withB_Tc2e7', 2
-lcsum2, '1822_new_withB_Tc2e7', 0
+;lcplot, '1822_new_withB_Tc2e7_mu1.0',0
+;lcsum, '1822_new_withB_Tc2e7', 2
+;lcsum2, '1822_new_withB_Tc2e7', 0
 
 
-lcplot, '1822_new_withB_mu1.0',0
-lcsum, '1822_new_withB', 2
-lcsum2, '1822_new_withB', 0
+;lcplot, '1822_new_withB_mu1.0',0
+;lcsum, '1822_new_withB', 2
+;lcsum2, '1822_new_withB', 0
 
-lcplot, 'deep1',0, Lscale=1.0, Lmin=PYL(3e7,1d14)
-lcplot, 'deep12',0, Lscale=1.0, Lmin=PYL(1e8,1d14)
+;lcplot, 'deep1',0, Lscale=1.0, Lmin=PYL(3e7,1d14)
+;lcplot, 'deep12',0, Lscale=1.0, Lmin=PYL(1e8,1d14)
 
 ;lcplot, '1822_new_step_Tc2e7',linecol=250
 
@@ -1835,7 +1876,7 @@ endif
 			if (strcmp(source,'fluxes1547',10)) then dd=3.9
 			F*=4.0*!dpi*(3.086d21*dd)^2
 			dF*=4.0*!dpi*(3.086d21*dd)^2
-			oploterror, t, F, dF, psym=1,/nohat, col=250, errcol=250
+			oploterror, t, F, dF, psym=1,/nohat;, col=250, errcol=250
 				
 			if (strcmp(source,'fluxes1822',10)) then begin
 				readcol, 'data/'+source, t2, F2, dF2,flag, format=('D,X,D,D,X,I'),skipline=1		
@@ -1843,7 +1884,7 @@ endif
 				ind = where(flag eq 1)			
 				F2*=4.0*!dpi*(3.086d21*dd)^2
 				dF2*=4.0*!dpi*(3.086d21*dd)^2
-				oploterror, t2[ind], F2[ind], dF2[ind], psym=6,/nohat,symsize=1, col=250, errcol=250
+				oploterror, t2[ind], F2[ind], dF2[ind], psym=6,/nohat,symsize=1 ;, col=250, errcol=250
 				t = [t,t2[ind]]
 				F = [F,F2[ind]]
 				ind = sort(t)
@@ -2177,7 +2218,7 @@ pro surf2
 	ytop=12.0   ; log10 of column depth of outer grid point
 	;ytop=13.6   ; log10 of column depth of outer grid point
 
-	readcol, 'grid_sorty', y, T, F, format=('D,D,D')
+	readcol, 'out/grid', y, T, F, format=('D,D,D')
 	F=10^F
 	Teff = (F/5.67e-5)^0.25
 	T=10^T
@@ -2192,7 +2233,7 @@ pro surf2
 		T=10^T
 		ind=where(abs(y-ytop) lt 0.01)
 		
-		oplot, Teff[ind], T[ind]
+	;	oplot, Teff[ind], T[ind]
 
 	readcol, 'gon_out/prof', T,Teff, format=('X,X,X,X,X,F,F')
 	oplot, Teff,T, thick=3
@@ -2527,9 +2568,9 @@ pro init_plotone,name, ls=ls,lcol=lcol,ener=ener
 	;endif					
 						
 	if keyword_set(lcol) then begin
-		oplot,rho,T,linestyle=ls,col=lcol
+		oplot,y/2.28d14,T,linestyle=ls,col=lcol
 	endif else begin
-		oplot,rho,T,linestyle=ls
+		oplot,y/2.28d14,T,linestyle=ls
 	endelse
 
 
@@ -2542,7 +2583,7 @@ pro initialT, ps=ps, ener=ener
 	
 		!p.multi=[0,1,1,0,0]
 	
-		plot, [6d8,3d11], [5d7,1e10], /xlog,/ylog, /nodata, xtitle=textoidl('\rho (g cm^{-3})'),$
+		plot, [6d8,3d18], [5d7,1e9], /xlog,/ylog, /nodata, xtitle=textoidl('Column depth (g cm^{-2})'),$
 				ytitle=textoidl('T (K)'), ystyle=1, xstyle=1,charsize=1.3
 
 			if (0) then begin
@@ -2560,7 +2601,7 @@ pro initialT, ps=ps, ener=ener
 			init_plotone,'B1e15E30.0',ls=2;,lcol=250
 			init_plotone,'B1e15E100.0',ls=2;,lcol=80
 		endif
-		if (1) then begin
+		if (0) then begin
 			init_plotone,'B1e14E100.0_1e9',ener=100.0
 			init_plotone,'B1e14E30.0_1e9',ener=30.0
 			init_plotone,'B1e14E10.0_1e9',ener=10.0
@@ -2575,12 +2616,18 @@ pro initialT, ps=ps, ener=ener
 			init_plotone,'B1e15E30.0_1e9',ls=2;,lcol=250
 			init_plotone,'B1e15E100.0_1e9',ls=2;,lcol=80
 		endif else begin
-			init_plotone,'B1e14E3.0_1e9',ener=3.0,ls=3
-			init_plotone, 'B1e14E3.0_1e9_constantT4.2e8',ls=0
-			init_plotone, 'B1e14E3.0_1e9_E10.8constantpergram',ls=2
+		;	init_plotone,'B1e14E3.0_1e9',ener=3.0,ls=3
+		;	init_plotone, 'B1e14E3.0_1e9_constantT4.2e8',ls=0
+		;	init_plotone, 'B1e14E3.0_1e9_E10.8constantpergram',ls=2
 		endelse
 		
-		init_plotone,'',ls=0,lcol=160
+		init_plotone,'',ls=0,lcol=250
+		init_plotone,'1731_1',ls=0
+		init_plotone,'1731_2',ls=0
+							
+							
+		readcol, 'ign.CC', T, y,format=('D,X,D,X')
+		oplot, y, T, linestyle=2
 							
 		; plot TB(rho)
 		B=1d15
@@ -2588,7 +2635,7 @@ pro initialT, ps=ps, ener=ener
 		rho = 10^rho
 		x = 10.0*(1d-9*rho*0.5)^0.333
 		T = 1.34e9*1d-13*B/x
-		oplot, rho, T, linestyle=4
+		;oplot, rho, T, linestyle=4
 		
 		
 		;T = alog10(3.5d8) - 0.6*(rho-10.0)
@@ -2601,9 +2648,9 @@ pro initialT, ps=ps, ener=ener
 		readcol, 'gon_out/grid_profile', ym, GammaT, format=('X,X,D,X,X,X,X,X,X,D')
 		Tm = 1e8 * GammaT/175.0
 		print, ym,Tm
-		oplot, ym, Tm, linestyle=1
-		xyouts, 1.5e11,8e8,textoidl('\Gamma=175')	,charsize=0.9, orientation=10		
-		xyouts, 6d10,6d9, textoidl('t=1 hour'),charsize=1.1
+		;oplot, ym, Tm, linestyle=1
+		;xyouts, 1.5e11,8e8,textoidl('\Gamma=175')	,charsize=0.9, orientation=10		
+		;xyouts, 6d10,6d9, textoidl('t=1 hour'),charsize=1.1
 								
 		if keyword_set(ps) then close_ps
 end
@@ -2672,6 +2719,10 @@ pro initial,ps=ps
 						format=('I,D,D,D,D,D,X,X,D')
 
 				y2*=2.28d14
+
+
+			rho=y/2.28d14
+			rho2=y/2.28d14
 
 	!p.multi=[0,2,2,0,0]
 	plot, rho, T,/xlog,/ylog, ytitle=textoidl('T (K)'),xtitle=textoidl('Column depth (g cm^{-2})')
@@ -2786,13 +2837,15 @@ pro prof2, delay=delay, png=png, source=source
 		if (starttime eq -999.0) then starttime=time
 
 		; read in next batch of data
-		data=dblarr(14,ngrid)
+		data=dblarr(15,ngrid)
 		readf, lun, data
 		y=data(0,*)
 		T=data(1,*)
 		F=data(2,*)
 		beta=data(12,*)
 		gamma=data(13,*)
+
+		if (1) then begin ;time gt 0.0) then begin
 
 		; plot upper panel
 		erase
@@ -2871,10 +2924,12 @@ pro prof2, delay=delay, png=png, source=source
 			endif
 		endif
 
+	endif
+
 	endwhile
 	
 	free_lun,lun
-
+	!p.multi=[0,1,1,0,0]
 end
 
 	
@@ -2889,6 +2944,8 @@ end
 		!p.charsize=2
 
 
+openw, lun2, 'out/kippen.dat', /get_lun
+
 
 ;	readcol, 'out/fcontour_15.dat', Pneut, Tneut, format=('X,D,X,X,D')
 	readcol, 'out/fcontour.dat', Pneut, Tneut, format=('X,D,X,X,D')
@@ -2901,12 +2958,12 @@ end
 
 ;	name = 'out/grid_1e15_potek'
 ;name = 'out/grid_3e15_potek'
-name = 'out/grid_1e14_potek'
+;name = 'out/grid_1e14_potek'
+	name = 'out/grid_He9'
 ;	name = 'out/grid_He4'
-;	name = 'out/grid_He9'
 ;	name = 'out/grid'
 	print, 'Reading envelope models from '+name+'... (this takes a while)'
-	readcol, name, ysteady, Tsteady, Fsteady, format=('D,D,D')
+	readcol, name, ysteady, Tsteady, Fsteady,rhosteady, format=('D,D,D,D')
 
 		; read Gamma/T for the initial model, used to plot melting curve
 		readcol, 'gon_out/grid_profile', ym, rhom, GammaT, format=('X,D,D,X,X,X,X,X,X,D')
@@ -3028,8 +3085,6 @@ endif
 			; get the time
 			readf, lun, time
 
-
-
 			; read in next batch of data
 			data=dblarr(15,ngrid)
 			readf, lun, data
@@ -3040,9 +3095,11 @@ endif
 			beta=data(12,*)
 			epsnu=data(14,*)
 
+			if (time gt 0.0) then begin
+
 			if (time le 1d5 or ((alog10(abs(time))-alog10(abs(oldtime))) gt 0.02)) then begin
-					F1 = 0.05*fix((alog10(F[0])-alog10(grav/2.28d14))/0.05)
-					F2 = F1+0.05
+					F1 = 0.1*fix((alog10(F[0])-alog10(grav/2.28d14))/0.1)
+					F2 = F1+0.1
 					Finterp=((alog10(F[0])-alog10(grav/2.28d14))-F1)/(F2-F1)
 					print, 'time=', time, ' log F =', alog10(F[0]), ' rounded F=', F1,F2 
 
@@ -3050,8 +3107,8 @@ endif
 			; plot upper panel
 			erase
 			plot, y, T, /xlog, /ylog, ytitle=textoidl('T (K)'),$
-					xtitle=textoidl('P (erg cm^{-3})'), yrange=[1e7,1e10],ystyle=1, $
-					xrange=[1d19,1d32], xstyle=1
+					xtitle=textoidl('P (erg cm^{-3})'), yrange=[1e7,1e9],ystyle=1, $
+					xrange=[1d19,7d32], xstyle=1
 ;				plot, rho, T, /xlog, /ylog, ytitle=textoidl('T (K)'),$
 ;						xtitle=textoidl('\rho (g cm^{-3})'), yrange=[1e7,1e10],ystyle=1, $
 ;						xrange=[5d5,1d14], xstyle=1
@@ -3070,31 +3127,31 @@ endif
 
 			oplot, y, 10^(7.0 + 3.0 * (alog10(epsnu*y/grav)-Fmin)/deltaF), col=80, linestyle=4
 
-			ind = where(abs(Fsteady-F1) lt 0.01 and 2.28e14*10.0^ysteady le y[0],nind)
-			ind2 = where(abs(Fsteady-F2) lt 0.01 and 2.28e14*10.0^ysteady le y[0],nind)
-			if nind gt 0 then begin
+			ind = where(abs(Fsteady-F1) lt 0.05 and 2.28e14*10.0^ysteady le y[0],nind)
+			ind2 = where(abs(Fsteady-F2) lt 0.05 and 2.28e14*10.0^ysteady le y[0],nind2)
+			if (nind gt 0 and nind2 gt 0) then begin
 				oplot, 2.28e14*10.0^ysteady[ind], 10.0^(Tsteady[ind]+(Tsteady[ind2]-Tsteady[ind])*Finterp), col=120
 			endif
-			ind = where(abs(Fsteady-F1) lt 0.01 and 2.28e14*10.0^ysteady gt y[0],nind)
-			ind2 = where(abs(Fsteady-F2) lt 0.01 and 2.28e14*10.0^ysteady gt y[0],nind)
-			if nind gt 0 then begin
+			ind = where(abs(Fsteady-F1) lt 0.05 and 2.28e14*10.0^ysteady gt y[0],nind)
+			ind2 = where(abs(Fsteady-F2) lt 0.05 and 2.28e14*10.0^ysteady gt y[0],nind2)
+			if  (nind gt 0 and nind2 gt 0) then begin
 				oplot, 2.28e14*10.0^ysteady[ind], 10.0^(Tsteady[ind]+(Tsteady[ind2]-Tsteady[ind])*Finterp), col=120, linestyle=1
 			endif
 
 			if (0) then begin  ; plot the steady-state envelope for the bracketing fluxes
-			ind = where(abs(Fsteady-F2) lt 0.01 and grav*10.0^ysteady le y[0],nind)
+			ind = where(abs(Fsteady-F2) lt 0.05 and grav*10.0^ysteady le y[0],nind)
 			if nind gt 0 then begin
 				oplot, grav*10.0^ysteady[ind], 10.0^Tsteady[ind], col=180
 			endif
-			ind = where(abs(Fsteady-F2) lt 0.01 and grav*10.0^ysteady gt y[0],nind)
+			ind = where(abs(Fsteady-F2) lt 0.05 and grav*10.0^ysteady gt y[0],nind)
 			if nind gt 0 then begin
 				oplot, grav*10.0^ysteady[ind], 10.0^Tsteady[ind], col=180, linestyle=1
 			endif
-			ind = where(abs(Fsteady-F1) lt 0.01 and grav*10.0^ysteady le y[0],nind)
+			ind = where(abs(Fsteady-F1) lt 0.05 and grav*10.0^ysteady le y[0],nind)
 			if nind gt 0 then begin
 				oplot, grav*10.0^ysteady[ind], 10.0^Tsteady[ind], col=180
 			endif
-			ind = where(abs(Fsteady-F1) lt 0.01 and grav*10.0^ysteady gt y[0],nind)
+			ind = where(abs(Fsteady-F1) lt 0.05 and grav*10.0^ysteady gt y[0],nind)
 			if nind gt 0 then begin
 				oplot, grav*10.0^ysteady[ind], 10.0^Tsteady[ind], col=180, linestyle=1
 			endif
@@ -3113,7 +3170,7 @@ endif
 			endif else begin
 				caption='t='+string(time/3.15d7,format='(D5.1)')+' yrs'
 			endelse
-			xyouts, 1d20,4.5d9, textoidl(caption)
+			xyouts, 1d20,4.5d8, textoidl(caption)
 
 			if (0) then begin
 			; plot lower panel
@@ -3144,19 +3201,48 @@ endif
 			endif
 
 			if keyword_set(png) then begin
-				if ((time le 1d5) or ((alog10(abs(time))-alog10(oldtime)) gt 0.02)) then begin
+				if ((time le 1d10) or ((alog10(abs(time))-alog10(oldtime)) gt 0.02)) then begin
 					count++	
 					image = TVRD(0,0,!D.X_Size,!D.Y_Size,True=1, Order=order)
 					filename=string(format='("png/",I03,".png")',count)
 					Write_PNG,filename,image
 					print, 'Writing png for t=',time, alog10(abs(time)), alog10(oldtime), count
 					oldtime=abs(time)
+				
+				
+				if (0) then begin
+					count=0
+					ind = where(abs(Fsteady-F1) lt 0.01 and 2.28e14*10.0^ysteady le y[0],nind)
+					ind2 = where(abs(Fsteady-F2) lt 0.01 and 2.28e14*10.0^ysteady le y[0],nind)
+					if nind gt 0 then begin
+						for jj=0,(nind-1)/10 do begin
+							ii=jj*10
+							printf,lun2,time,10.0^rhosteady[ind[ii]], 10.0^(Tsteady[ind[ii]]+(Tsteady[ind2[ii]]-Tsteady[ind[ii]])*Finterp)
+							count++
+						endfor
+					endif
+				
+						
+					for ii=0,n_elements(rho)-1 do begin
+						printf,lun2,time, rho[ii],T[ii]
+						count++
+					endfor
+
+					print, nind,count
+				endif
+				
+				
+				
 				endif
 			endif
 			oldtime = abs(time)
 			endif
+			
+			
+		endif
 		endwhile
 
+		free_lun,lun2
 		free_lun,lun
 
 	end

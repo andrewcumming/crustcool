@@ -54,6 +54,7 @@ void Eos::init(int n)
   this->B=0.0; // default is unmagnetized 
 	this->use_potek_cond = 0;
 	this->use_potek_eos = 0;
+	this->rho_core = 1.6e14;
 }
 
 // ------------------------ mean molecular weights ------------------------
@@ -411,10 +412,9 @@ void Eos::set_comp(void)
 		 0.7900,0.7806,0.7693,0.7553,0.7381,0.7163,0.6958,0.6699,
 		 0.6354,0.6038,0.5898};
   double Z,A;
-  int i;
   
   if (this->accr==2) { // accreted composition
-    i=0;
+    int i=0;
     while (this->rho > rhomaxa2[i] && i<29) i++;
     if (i==29) i=28; // higher density than HZ's table, 
     // in this case just set it to the last value
@@ -423,27 +423,20 @@ void Eos::set_comp(void)
     // From the composition, work out the neutron fraction
     this->Yn=(Acell2[i]-A)/Acell2[i];
   } else {
-    if (this->accr==1) { // accreted composition
-      i=0;
-      while (this->rho > rhomaxa[i] && i<19) i++;
-      if (i==19) {
-	i=18; // higher density than HZ's table, 
-      // in this case just set it to the last value
-	A=Aa[i]; Z=12; //Z=Za[i];
-      // From the composition, work out the neutron fraction
-      this->Yn=(Acell[i]-A)/Acell[i];
-      } else {
-	A=Aa[i]; Z=Za[i];
-	// From the composition, work out the neutron fraction
-	this->Yn=(Acell[i]-A)/Acell[i];
-      }
+  	if (this->accr==1) { // accreted composition
+    	int i=0;
+		while (this->rho > rhomaxa[i] && i<18) i++;
+		A=Aa[i]; Z=Za[i];
+		//if (i==18) Z=12;
+		// From the composition, work out the neutron fraction
+		this->Yn=(Acell[i]-A)/Acell[i];	
     } else {  // cold matter composition
       	if (this->rho < rhomaxb[11]) {
-			i=0;
+			int i=0;
 			while (this->rho > rhomaxb[i] && i<12) i++;
 			A=Ab[i]; Z=Zb[i]; this->Yn=0.0;
       	} else {
-			i=0;
+			int i=0;
 			while (this->rho > nc[i]*1.66e15 && i<42) i++;
 			A=Ac[i-1]+(Ac[i]-Ac[i-1])*(this->rho-1.66e15*nc[i-1])/(1.66e15*(nc[i]-nc[i-1]));
 			Z=Zc[i-1]+(Zc[i]-Zc[i-1])*(this->rho-1.66e15*nc[i-1])/(1.66e15*(nc[i]-nc[i-1]));
@@ -467,6 +460,16 @@ void Eos::set_comp(void)
   this->X[1]=1.0; this->Z[1]=Z; this->A[1]=A/(1.0-this->Yn);
   
   this->set_Ye=(1.0-this->Yn)*Z/A;
+
+ 
+  if (this->rho > this->rho_core) {
+	
+	this->Yn=0.9;
+	this->X[1]=1.0; this->Z[1]=1.0; this->A[1]=1.0;
+	  this->set_Ye=(1.0-this->Yn);
+	
+	
+	}
 }
 
 
@@ -621,6 +624,19 @@ double Eos::CV(void)
 		}
 
 	}
+
+	if (this->rho>this->rho_core) {
+			 double k, EFn;
+		
+		    // Assume the neutrons are non-relativistic
+		     EFn=1.42*pow(1e-12*rho*Yn,2.0/3.0);
+		    // but we use a fit for EFn which includes interactions
+		    // comes from Mackie and Baym
+		    //k=0.207*pow(1e-12*this->rho*this->Yn, 1.0/3.0);
+		    //EFn=1.730*k+25.05*k*k-30.47*k*k*k+17.42*k*k*k*k;  // in MeV
+		//    P+=0.4*EFn*1.6e-6*this->rho*this->Yn/1.66e-24;
+			cvneut=0.5*3.1415*3.1415*8.3144e7*this->Yn * 1.38e-16*1e8*this->T8/(EFn*1.6e-6);
+		}
 
 
 //    cvion=8.3144e7*3.0*this->Yi();
@@ -1423,7 +1439,7 @@ double Eos::find_rho(void)
 
  // if (2.521967e17*pow(this->T8,4)>this->P) return 1e-1;
 
-  found=zbrent(Wrapper_find_rho_eqn,1e-5,1e15,1e-6);
+  found=zbrent(Wrapper_find_rho_eqn,1e-5,1e16,1e-6);
 return found;
   if (0) {
   // first guess the density
@@ -1599,8 +1615,10 @@ double Eos::K_cond(double ef)
   //corr*=pow(6.0-2.0*beta*beta-(1.0-beta*beta+beta*beta*beta*beta)/lam,2.0);
   //K=K*(1.0-corr); if (K<0.0) return 1e-10;
 
+	if (this->rho>this->rho_core) K=1e19;
+
   return K; 
-  
+ 
 }
 
 
