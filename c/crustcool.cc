@@ -286,11 +286,11 @@ int main(int argc, char *argv[])
   		fprintf(G.fp,"%d %lg\n",G.N+1,G.g);
 	}
 
-	G.output = 0;
+	//G.output = 0;
  	// set up the initial temperature profile
   	if (G.use_piecewise) set_up_initial_temperature_profile_piecewise(fname);
 	else set_up_initial_temperature_profile();
-	G.output = 1;
+	//G.output = 1;
 
 	// calculate the cooling curve
 	calculate_cooling_curve();   // not outputting the heating stage,so start at t=0
@@ -394,7 +394,10 @@ double calculate_chisq(void)
 
 void read_in_data(const char *fname) 
 {
-	if (1) {   // hardcode the data for 1731
+	if (1) {   
+	
+	/*	
+	// hardcode the data for 1731
 	double t0=51930.5;
 	G.obs_n=8;
 	G.obs_time = vector(1,G.obs_n);
@@ -413,6 +416,29 @@ void read_in_data(const char *fname)
 	for (int i=1; i<=G.obs_n; i++) {
 		G.obs_time[i]-=t0;
 	}
+	*/
+	
+	// hardcode the data for 1659
+	double t0=52159.5;
+	G.obs_n=7;
+	G.obs_time = vector(1,G.obs_n);
+	G.obs_temp = vector(1,G.obs_n);
+	G.obs_err = vector(1,G.obs_n);
+	
+	G.obs_time[1]=52197.8; G.obs_temp[1]= 121; G.obs_err[1]= 1;
+	G.obs_time[2]=52563.2; G.obs_temp[2]= 85; G.obs_err[2]= 1;
+	G.obs_time[3]=52712.2; G.obs_temp[3]= 77; G.obs_err[3]= 1;
+	G.obs_time[4]=52768.9; G.obs_temp[4]= 73; G.obs_err[4]= 1;
+	G.obs_time[5]=53560.0; G.obs_temp[5]= 58; G.obs_err[5]= 2;
+	G.obs_time[6]=53576.7; G.obs_temp[6]= 54; G.obs_err[6]= 3;
+	G.obs_time[7]=54583.8; G.obs_temp[7]= 56; G.obs_err[7]= 2;
+	G.obs_time[8]=56113; G.obs_temp[8]= 48.8; G.obs_err[8]= 1.6;
+	
+	for (int i=1; i<=G.obs_n; i++) {
+		G.obs_time[i]-=t0;
+	}
+	
+	
 } else {	
 	
 	printf("Reading data from %s\n", fname);

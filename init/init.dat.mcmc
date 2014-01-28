@@ -26,7 +26,6 @@ gpe	0
 
 ytop	1e12
 
-Tt	4.43009e+08
-Qimp	3.36967
-Tc	3.61177e+07
-
+Tt	4.2e8
+Qimp	3.5
+Tc	3.0e7

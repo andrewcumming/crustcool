@@ -8,5 +8,7 @@ data
 gon_out/*
 out/*
 init/*
+!init/init.dat.mcmc
 project.tmproj
 ps/*
+tmp
