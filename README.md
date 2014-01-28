@@ -81,3 +81,5 @@ Published cooling curves from this code:
 * An et al. (2013) Fig. 1 (see `init.dat.1647`)
 * Scholz et al. (2012) Fig. 8 (`init.dat.1822`)  (and Scholz et al. 2014 submitted)
 * An et al. (2012) Fig.3 (1998 and 2008 outbursts, see `init.dat.1627`)
+
+`mcmc.py` is a python driver for MCMC using a simple Metropolis algorithm. For each set of trial parameters, it creates an `init.dat` file based on `init/init.dat.mcmc`. The output of `crustcool` is redirected to a file `tmp` which is then scanned for the chi-squared value.
