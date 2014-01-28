@@ -17,29 +17,35 @@ The file `init.dat` sets up the run. The parameters are
 				otherwise keep the temperature at the top fixed (to the value Tt) 
 				during accretion.
 	extra_heating	if set, turn on extra heating in the NS ocean during accretion.
-					The depth and strength are set in crust_heating_rate()
+	extra_Q		strength of extra heating in MeV
+	extra_y		depth of extra heating in g/cm^2
 
-	Edep	energy deposited
+	Edep	energy deposited (used for magnetar heating)
 	Einner	(optional) a different value of energy deposited for the inner crust
 	rhot	lowest density to be heated
 	rhob	highest density to be heated
+	energy_slope	energy deposited is multiplied by  (rho_10)**energy_slope
 
 	mass	neutron star mass in solar masses
 	radius	neutron star radius in km
 
 	gpe		1=iron envelope (use out/grid_He4 as the outer boundary)
-			0=He envelope (use out/grid_He9 as the outer boundary; as BC09)
+			0=He envelope (use out/grid_He9 as the outer boundary; same as BC09)
 
 	Bfield  magnetic field strength in the crust in G
 	angle_mu	determines the Teff-Tb relation used for B>0. If angle_mu = -1 (default)
 		then an angle-averaged relation is used; otherwise angle_mu in the range 0 to 1
 		specifies the local angle of the field relative to the vertical
 
+	envelope	if =1 then use the calculated envelop (out/grid_..) for B>0; if =0, then use
+				the analytic envelope from the literature
+
 	mdot	accretion rate in Eddington units (1.0 == 8.8e4 g/cm^2/s)
 
 	precalc	force a precalc (1) or instead load in previously saved precalc (0)
 	ngrid	number of grid points
 	ytop	column depth at the top of the grid (default 1e12)
+	output	write output files (=1) or suppress output (=0) (e.g. for mcmc we don't need output)
 	
 	SFgap	neutron superfluid gap. Choices are
 			0=normal neutrons (not SF)
@@ -49,6 +55,8 @@ The file `init.dat` sets up the run. The parameters are
 			6=BCS from Reddy and Page
 	kncrit	neutrons are normal for kn<kncrit (to use this set SFgap=4)
 	sph		whether to inlcude SF phonons (0=no 1=yes)
+
+	potek_eos	use the EOS routines from Potekhin in the EOS
 
 	piecewise	if =1 then the initial temperature is specified in a piecewise
 				format in the lines beginning with > in this file
@@ -71,5 +79,5 @@ then the code will look for the file `init/init.dat.source` instead of `init.dat
 
 Published cooling curves from this code:
 * An et al. (2013) Fig. 1 (see `init.dat.1647`)
-* Scholz et al. (2012) Fig. 8 (`init.dat.1822`)
+* Scholz et al. (2012) Fig. 8 (`init.dat.1822`)  (and Scholz et al. 2014 submitted)
 * An et al. (2012) Fig.3 (1998 and 2008 outbursts, see `init.dat.1627`)
