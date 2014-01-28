@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 	G.use_piecewise=0;
 	G.Qrho=1e12;
 	G.instant_heat = 0;
-	G.include_sph=1;
+	G.include_sph=0;
 	G.angle_mu=-1.0;
 	G.gpe=0;
 	G.force_cooling_bc=0;
