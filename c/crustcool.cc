@@ -758,17 +758,20 @@ void jacobn(double t, double *T, double *dfdt, double **dfdT, int n)
 		// takes advantage of the tri-diagonal nature to calculate as few dTdt's as needed
 		double f;
 	  // this assumes the arrays dfdt and dfdT are preinitialized to zero (I changed odeint to do this)
-	  for (int i=1; i<n; i++) {
-	    if (i>1) {
-	      T[i-1]*=1.0+e; f=dTdt(i,T);
-	      T[i-1]/=1.0+e; dfdT[i][i-1]=(f-dfdt[i])/(T[i-1]*e);
-	    }
+	  for (int i=2; i<n; i++) {
+	  	T[i-1]*=1.0+e; f=dTdt(i,T);
+	    T[i-1]/=1.0+e; dfdT[i][i-1]=(f-dfdt[i])/(T[i-1]*e);
 	    T[i]*=1.0+e; f=dTdt(i,T);
 	    T[i]/=1.0+e; dfdT[i][i]=(f-dfdt[i])/(T[i]*e);
-	    if (i<=n) {
-	      T[i+1]*=1.0+e; f=dTdt(i,T);
-	      T[i+1]/=1.0+e; dfdT[i][i+1]=(f-dfdt[i])/(T[i+1]*e);
-	    }
+	    T[i+1]*=1.0+e; f=dTdt(i,T);
+	    T[i+1]/=1.0+e; dfdT[i][i+1]=(f-dfdt[i])/(T[i+1]*e);
+	  }
+	  {
+		int i=1;
+		T[i]*=1.0+e; f=dTdt(i,T);
+		T[i]/=1.0+e; dfdT[i][i]=(f-dfdt[i])/(T[i]*e);
+		T[i+1]*=1.0+e; f=dTdt(i,T);
+		T[i+1]/=1.0+e; dfdT[i][i+1]=(f-dfdt[i])/(T[i+1]*e);
 	  }
 	}
 }  
@@ -1014,9 +1017,9 @@ void set_up_initial_temperature_profile(void)
 	// to get into a thermal steady-state
 	for (int i=G.N+1; i>=1; i--) {
 		// a linear profile between top and bottom
-		//double Ti = pow(10.0,log10(G.Tc) + log10(0.3*G.Tt/G.Tc)*log10(G.P[i]/G.Pb)/log10(G.Pt/G.Pb));
+		double Ti = pow(10.0,log10(G.Tc) + log10(0.3*G.Tt/G.Tc)*log10(G.P[i]/G.Pb)/log10(G.Pt/G.Pb));
 		// or constant profile
-		double Ti = G.Tc;
+		//double Ti = G.Tc;
 		// a linear profile adjusts to steady state *much* more quickly,
 		// but for XTEJ for example I want to heat up from isothermal and the crust 
 		// does not get to steady state
