@@ -28,6 +28,9 @@
 #define EPS 1.2e-7
 #define RNMX (1.0-EPS)
 
+#define float double
+
+
 
 void nrerror(const char error_text[])
 /* Numerical Recipes standard error handler */
@@ -134,7 +137,6 @@ void free_matrixf(float **m, long nrl, long nrh, long ncl, long nch)
 
 
 
-#define float double
 
 float *vector(long nl, long nh)
 /* allocate a float vector with subscript range v[nl..nh] */

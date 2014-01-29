@@ -13,7 +13,7 @@ LOCODIR = o
 CC=g++
 #CC=icpc
 #FORTRAN=ifort
-FORTRAN=gfortran -m64
+FORTRAN=gfortran -m64 -O3
 CFLAGS = -O3 -pipe
 #CFLAGS = -lm -parallel -fast 
 
