@@ -1017,9 +1017,9 @@ void set_up_initial_temperature_profile(void)
 	// to get into a thermal steady-state
 	for (int i=G.N+1; i>=1; i--) {
 		// a linear profile between top and bottom
-		double Ti = pow(10.0,log10(G.Tc) + log10(0.3*G.Tt/G.Tc)*log10(G.P[i]/G.Pb)/log10(G.Pt/G.Pb));
+		//double Ti = pow(10.0,log10(G.Tc) + log10(0.3*G.Tt/G.Tc)*log10(G.P[i]/G.Pb)/log10(G.Pt/G.Pb));
 		// or constant profile
-		//double Ti = G.Tc;
+		double Ti = G.Tc;
 		// a linear profile adjusts to steady state *much* more quickly,
 		// but for XTEJ for example I want to heat up from isothermal and the crust 
 		// does not get to steady state
