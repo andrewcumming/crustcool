@@ -8,12 +8,13 @@ LOCCDIR = c
 LOCODIR = o
 
 # compiler
-#CC = /usr/local/bin/g++ 
-#CC = clang 
-CC=g++
+#CC = xcrun c++ 
+##CC = clang 
+CC=c++
 #CC=icpc
 #FORTRAN=ifort
 FORTRAN=gfortran -m64 -O3
+#FORTRAN=gfortran -m64 -O3
 CFLAGS = -O3 -pipe
 #CFLAGS = -lm -parallel -fast 
 
