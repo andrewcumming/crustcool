@@ -85,7 +85,7 @@ fig = triangle.corner(samples,labels=[r"$T_{c,7}$", r"$Q_{imp}$", r"$T_{b,8}$",
 		quantiles=[0.16, 0.5, 0.84])
 #fig = triangle.corner(samples,labels=[r"$T_{c,7}$", r"$Q_{imp}$", r"$T_{b,8}$"],
 #		 quantiles=[0.16, 0.5, 0.84])
-fig.savefig("triangle.png")
+fig.savefig("triangle.pdf")
 
 print("Mean acceptance fraction: {0:.3f}"
                 .format(numpy.mean(sampler.acceptance_fraction)))
