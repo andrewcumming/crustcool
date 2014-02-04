@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
 	G.output=1;
 	
 	// now read from the file 'init.dat'
-	char fname[40];
+	char fname[200];
 	char fnamedefault[10]="init.dat";
 	if (argc >1) {
 		strcat(fname,"init/init.dat.");
@@ -396,10 +396,10 @@ void read_in_data(const char *fname)
 {
 	if (1) {   
 	
-	/*	
+	
 	// hardcode the data for 1731
 	double t0=51930.5;
-	G.obs_n=8;
+	G.obs_n=7;    // 7 data points for BC09
 	G.obs_time = vector(1,G.obs_n);
 	G.obs_temp = vector(1,G.obs_n);
 	G.obs_err = vector(1,G.obs_n);
@@ -416,11 +416,11 @@ void read_in_data(const char *fname)
 	for (int i=1; i<=G.obs_n; i++) {
 		G.obs_time[i]-=t0;
 	}
-	*/
 	
+	/*
 	// hardcode the data for 1659
 	double t0=52159.5;
-	G.obs_n=7;
+	G.obs_n=7;    // 7 data points in BC09
 	G.obs_time = vector(1,G.obs_n);
 	G.obs_temp = vector(1,G.obs_n);
 	G.obs_err = vector(1,G.obs_n);
@@ -437,7 +437,7 @@ void read_in_data(const char *fname)
 	for (int i=1; i<=G.obs_n; i++) {
 		G.obs_time[i]-=t0;
 	}
-	
+	*/
 	
 } else {	
 	

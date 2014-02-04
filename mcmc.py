@@ -88,15 +88,16 @@ while True:
 	if accept_flag:
 		accept_count+=1
 		a = anew
-		Tc.append(a[0])
-		Qimp.append(a[1])
-		Tb.append(a[2])
 		chisq = chisq_new
-		plt.plot(Tc[-1],Qimp[-1],'r+')
-		plt.draw()
-		fmc.write("%g %g %g %g\n" % (a[0],a[1],a[2],chisq))
-		if accept_count % 10 == 0:
-			fmc.flush()
+		
+	Tc.append(a[0])
+	Qimp.append(a[1])
+	Tb.append(a[2])
+	plt.plot(Tc[-1],Qimp[-1],'r+')
+	plt.draw()
+	fmc.write("%g %g %g %g\n" % (a[0],a[1],a[2],chisq))
+	if count % 10 == 0:
+		fmc.flush()
 		
 	print a[0],a[1], 10.0**a[1],a[2], chisq, accept_count, count, 1.0*accept_count/count
 

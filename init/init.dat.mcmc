@@ -9,7 +9,7 @@ radius	11.2
 Bfield  0
 mdot	0.1
 
-precalc 1
+precalc 0
 ngrid	50
 SFgap	1
 kncrit	0.0

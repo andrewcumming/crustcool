@@ -9,7 +9,7 @@ radius	11.2
 Bfield  0
 mdot	0.1
 
-precalc 1
+precalc 0
 ngrid	50
 SFgap	1
 kncrit	0.0
@@ -26,7 +26,7 @@ gpe	0
 
 ytop	1e12
 
-Tt	4.29815e+08
-Qimp	4.95833
-Tc	3.03708e+07
+Tt	4.48297e+08
+Qimp	2.5396
+Tc	3.92829e+07
 
