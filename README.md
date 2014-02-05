@@ -1,6 +1,10 @@
+## Overview and setup
+
 This code follows the thermal evolution of a neutron star crust. It is designed to model observations of accreting neutron stars in quiescence and the decline of magnetar outbursts.
 
-To compile, `make` should compile the cooling code `crustcool`. You will need to create the directory `o` for the object files, as well as directories `gon_out` and `out` which are used for output during the runs.
+To compile, `make` should compile the cooling code `crustcool`. You will need to create the directory `o` for the object files, and a directory `gon_out` for output during the runs.
+
+## Setting parameters 
 
 The file `init.dat` sets up the run. The parameters are
 
@@ -77,10 +81,18 @@ If you give an argument, e.g.
 
 then the code will look for the file `init/init.dat.source` instead of `init.dat`. This is useful to keep different setups for modelling different data sets for example.
 
-*MCMC*
+### MCMC
+
 `mcmc.py` is a python driver for MCMC using a simple Metropolis algorithm. For each set of trial parameters, it creates an `init.dat` file based on `init/init.dat.mcmc`. The output of `crustcool` is redirected to a file `tmp` which is then scanned for the chi-squared value.
 
-*Published cooling curves from this code*
+`mcee.py` is an MCMC driver which uses the [emcee](http://dan.iel.fm/emcee/current) python code. 
+
+`mcplot.py` plots the output of `mcee.py`. It uses the [triangle_plot](http://pypi.python.org/pypi/triangle_plot) plotting routines.
+
+
+### Published cooling curves from this code
+
 * An et al. (2013) Fig. 1 (see `init.dat.1647`)
-* Scholz et al. (2012) Fig. 8 (`init.dat.1822`)  (and Scholz et al. 2014 submitted)
+* Scholz et al. (2012) Fig. 8 (`init.dat.1822`)
+* Scholz et al. 2014 submitted paper on 1822
 * An et al. (2012) Fig.3 (1998 and 2008 outbursts, see `init.dat.1627`)
