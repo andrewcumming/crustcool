@@ -396,7 +396,7 @@ void read_in_data(const char *fname)
 {
 	if (1) {   
 	
-	
+	/*
 	// hardcode the data for 1731
 	double t0=51930.5;
 	G.obs_n=7;    // 7 data points for BC09
@@ -416,11 +416,12 @@ void read_in_data(const char *fname)
 	for (int i=1; i<=G.obs_n; i++) {
 		G.obs_time[i]-=t0;
 	}
+	*/
 	
 	/*
 	// hardcode the data for 1659
 	double t0=52159.5;
-	G.obs_n=7;    // 7 data points in BC09
+	G.obs_n=8;    // 7 data points in BC09
 	G.obs_time = vector(1,G.obs_n);
 	G.obs_temp = vector(1,G.obs_n);
 	G.obs_err = vector(1,G.obs_n);
@@ -438,6 +439,35 @@ void read_in_data(const char *fname)
 		G.obs_time[i]-=t0;
 	}
 	*/
+
+	// hardcode the data for XTEJ
+	double t0=0.0;
+	G.obs_n=14;
+	G.obs_time = vector(1,G.obs_n);
+	G.obs_temp = vector(1,G.obs_n);
+	G.obs_err = vector(1,G.obs_n);
+		
+	G.obs_time[1]=3.12; G.obs_temp[1]=165.387; G.obs_err[1]=3.776;
+	G.obs_time[2]=10.98; G.obs_temp[2]=161.689; G.obs_err[2]=2.710;
+	G.obs_time[3]=16.39; G.obs_temp[3]=156.146; G.obs_err[3]=1.392;
+	G.obs_time[4]=49.66; G.obs_temp[4]=150.495; G.obs_err[4]=1.218;
+	G.obs_time[5]=174.50; G.obs_temp[5]=138.791; G.obs_err[5]=4.009;
+	G.obs_time[6]=298.47; G.obs_temp[6]=138.366; G.obs_err[6]=1.892;
+	G.obs_time[7]=431.24; G.obs_temp[7]=131.826; G.obs_err[7]=2.817;
+	G.obs_time[8]=540.25; G.obs_temp[8]=127.959; G.obs_err[8]=1.578;
+	G.obs_time[9]=592.85; G.obs_temp[9]=134.298; G.obs_err[9]=2.251;
+	G.obs_time[10]=652.79; G.obs_temp[10]=128.455; G.obs_err[10]=2.100;
+	G.obs_time[11]=705.55; G.obs_temp[11]=127.682; G.obs_err[11]=1.848;
+	G.obs_time[12]=795.80; G.obs_temp[12]=127.785; G.obs_err[12]=1.657;
+	G.obs_time[13]=1159.01; G.obs_temp[13]=124.719; G.obs_err[13]=1.740;
+	G.obs_time[14]=1905.96; G.obs_temp[14]=112.500; G.obs_err[14]=3.423;
+		
+	for (int i=1; i<=G.obs_n; i++) {
+		G.obs_time[i]-=t0;
+	}
+
+
+	
 	
 } else {	
 	

@@ -14,5 +14,6 @@ init/*
 project.tmproj
 ps/*
 tmp
-triangle*
 samples*
+*.pdf
+*.png
