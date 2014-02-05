@@ -74,7 +74,7 @@ def lnprob(x):
 	return -get_chisq(x)/2.0
 
 
-nwalkers, ndim = 100, 6
+nwalkers, ndim = 250, 6
 
 # parameters are   x = [Tc7, Qimp, Tb8, mdot, M, R, kncrit]
 p0 = emcee.utils.sample_ball([3.5,0.0,4.2,1.0,1.62,11.2],[0.3,0.1,0.3,0.2,0.1,0.5],nwalkers)

@@ -44,13 +44,6 @@ $(LOCODIR)/eosmag12.o : $(LOCCDIR)/eosmag12.f
 $(LOCODIR)/eos12.o : $(LOCCDIR)/eos12.f
 	$(FORTRAN) -c $(LOCCDIR)/eos12.f -o $(LOCODIR)/eos12.o
 
-$(LOCODIR)/condegin08.o : $(LOCCDIR)/condegin08.f
-	$(FORTRAN) -c $(LOCCDIR)/condegin08.f -o $(LOCODIR)/condegin08.o
-
-$(LOCODIR)/conduct.o : $(LOCCDIR)/conduct.f
-	$(FORTRAN) -c $(LOCCDIR)/conduct.f -o $(LOCODIR)/conduct.o
-
-
 # compile routines from the common directory
 
 $(ODIR)/root.o : $(CDIR)/root.c

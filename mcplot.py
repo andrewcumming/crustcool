@@ -12,7 +12,7 @@ fp.close()
 
 n = samples.shape[0]
 
-samples = samples[2.0*n/3:,:]
+samples = samples[1.0*n/3:,:]
 
 print n, samples.shape
 
