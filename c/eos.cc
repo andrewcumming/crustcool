@@ -13,7 +13,6 @@
 
 #include "../h/odeint.h"
 #include "../h/eos.h"
-#include "../h/special.h"
 
 void* pt2Object;
 
@@ -1406,7 +1405,7 @@ vc=x/sqrt(1+x*x);
 
 #define float double
 
-float expint(int n, float x)
+float Eos::expint(int n, float x)
 {
 	void nrerror(const char error_text[]);
 	int i,ii,nm1;

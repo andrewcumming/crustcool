@@ -91,4 +91,5 @@ public:
  private:
   int ns;  // number of species
   double Fermi_n, Fermi_alpha;
+	double expint(int n, double x);	
 };
