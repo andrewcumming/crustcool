@@ -457,6 +457,8 @@ void Eos::set_comp(void)
   */
 
   //this->X[1]=1.0-this->Yn; 
+
+	// Here we set A[1] to be Acell. This means that Yi = 1/Acell, correctly giving the ion density
   this->X[1]=1.0; this->Z[1]=Z; this->A[1]=A/(1.0-this->Yn);
   
   this->set_Ye=(1.0-this->Yn)*Z/A;
@@ -546,7 +548,7 @@ double Eos::CV(void)
   		gg=this->gamma();
 
   		if (gg < this->gamma_melt) {  // liquid
-	    	// alpha comes from Chabrier's fit
+	    	// alpha comes from Chabrier's fit --- see Potekhin & Chabrier 2000
     		double a1,a2,a3,b1,b2,b3,b4;
     		a1=-0.9070; a2=0.62954; a3=-0.5*sqrt(3.0)-a1/sqrt(a2);
     		b1=4.56e-3; b2=211.6; b3=-1.0e-4; b4=4.62e-3;
@@ -555,8 +557,9 @@ double Eos::CV(void)
     		this->cvion=8.3144e7*(1.5+alpha)*this->Yi();
     		cv_alpha=alpha;
 
-  		} else {  // solid
+  		} else {  // solid    -- This implements equation (5) of Chabrier 1993 
 
+			// In the next line, I am putting the mass of the nucleus  A = Acell(1-Yn) = A[1](1-Yn), ie. no entrainment
     		double eta=7.76e-5*this->Z[1]*sqrt(this->Yi()*this->rho/(this->A[1]*(1.0-this->Yn)))/this->T8;
  
     		double alphaeta=0.399*eta;

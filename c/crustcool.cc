@@ -156,11 +156,16 @@ int main(int argc, char *argv[])
 	// now read from the file 'init.dat'
 	char fname[200];
 	char fnamedefault[10]="init.dat";
-	if (argc >1) {
-		strcat(fname,"init/init.dat.");
+	if (argc > 2) {
+		strcat(fname,"/tmp/init.dat.");
 		strcat(fname,argv[1]);
 	} else {
-		strcat(fname,fnamedefault);
+		if (argc >1) {
+			strcat(fname,"init/init.dat.");
+			strcat(fname,argv[1]);
+		} else {
+			strcat(fname,fnamedefault);
+		}
 	}
 	printf("============================================\n");
 	printf("Reading input data from %s\n",fname);
@@ -442,7 +447,7 @@ void read_in_data(const char *fname)
 
 	// hardcode the data for XTEJ
 	double t0=0.0;
-	G.obs_n=14;
+	G.obs_n=13;
 	G.obs_time = vector(1,G.obs_n);
 	G.obs_temp = vector(1,G.obs_n);
 	G.obs_err = vector(1,G.obs_n);
@@ -460,7 +465,9 @@ void read_in_data(const char *fname)
 	G.obs_time[11]=705.55; G.obs_temp[11]=127.682; G.obs_err[11]=1.848;
 	G.obs_time[12]=795.80; G.obs_temp[12]=127.785; G.obs_err[12]=1.657;
 	G.obs_time[13]=1159.01; G.obs_temp[13]=124.719; G.obs_err[13]=1.740;
-	G.obs_time[14]=1905.96; G.obs_temp[14]=112.500; G.obs_err[14]=3.423;
+//	G.obs_time[14]=1905.96; G.obs_temp[14]=112.500; G.obs_err[14]=3.423;
+	// remove last data point to compare to Page & Reddy
+
 		
 	for (int i=1; i<=G.obs_n; i++) {
 		G.obs_time[i]-=t0;
@@ -1181,7 +1188,7 @@ void precalculate_vars(void)
 	FILE *fp;
 	fp=fopen(s,"r");
 	if (fp == NULL || G.force_precalc ==1) {
-		fp=fopen(s,"w");
+		if (G.output) fp=fopen(s,"w");
 		printf("Precalculating quantities and writing to file %s...\n",s);
 
 		for (int i=1; i<=G.N+1; i++) {
@@ -1190,8 +1197,9 @@ void precalculate_vars(void)
 			EOS.rho = G.rho[i];
 			set_composition();
 			
-			fprintf(fp, "Grid point %d  P=%lg  rho=%lg  A=%lg  Z=%lg Yn=%lg:  T8,CP,K,eps_nu,eps_nuc\n",
-				i, G.P[i], G.rho[i], (1.0-EOS.Yn)*EOS.A[1], EOS.Z[1], EOS.Yn);
+			if (G.output) 
+				fprintf(fp, "Grid point %d  P=%lg  rho=%lg  A=%lg  Z=%lg Yn=%lg:  T8,CP,K,eps_nu,eps_nuc\n",
+					i, G.P[i], G.rho[i], (1.0-EOS.Yn)*EOS.A[1], EOS.Z[1], EOS.Yn);
 		
 			double heating = crust_heating(i);
 		
@@ -1234,9 +1242,10 @@ void precalculate_vars(void)
 				// of opacity would be
 				//3.03e20*pow(EOS.T8,3)/(EOS.opac()*G.y[i]);
 
-				fprintf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg %lg\n", EOS.T8, G.CP_grid[i][j], 
-					G.K0_grid[i][j],G.K1_grid[i][j], G.K0perp_grid[i][j],G.K1perp_grid[i][j],
-					G.NU_grid[i][j], G.EPS_grid[i][j], G.KAPPA_grid[i][j] );
+				if (G.output) 
+					fprintf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg %lg\n", EOS.T8, G.CP_grid[i][j], 
+						G.K0_grid[i][j],G.K1_grid[i][j], G.K0perp_grid[i][j],G.K1perp_grid[i][j],
+						G.NU_grid[i][j], G.EPS_grid[i][j], G.KAPPA_grid[i][j] );
 
 				G.EPS_grid[i][j]*=energy_deposited(i);
 
@@ -1369,7 +1378,8 @@ void get_TbTeff_relation(void)
 		else fp = fopen("out/grid_He9","r");
 	}
 	//FILE *fp = fopen("grid_sorty","r");
-	FILE *fp2 = fopen("gon_out/TbTeff", "w");
+	FILE *fp2;
+	if (G.output) fp2=fopen("gon_out/TbTeff", "w");
 	
 	double y,T,F,rho,dummy;
 	int count = 0;
@@ -1383,12 +1393,12 @@ void get_TbTeff_relation(void)
 			// correct for gravity here:
 			flux[count] = pow(10.0,F); //* (G.g/2.28e14);
 			//printf("%lg %lg\n", T, F);
-			fprintf(fp2, "%d %lg %lg %lg %lg %lg\n", count,y,T,F,temp[count],flux[count]);
+			if (G.output) fprintf(fp2, "%d %lg %lg %lg %lg %lg\n", count,y,T,F,temp[count],flux[count]);
 		}
 	}
 		
 	fclose(fp);
-	fclose(fp2);
+	if (G.output) fclose(fp2);
 	
 	// the following spline contains the flux as a function of temperature
 	// at column depth G.yt
@@ -1497,7 +1507,8 @@ void set_up_grid(int ngrid, const char *fname)
 
   	G.dx=log(G.Pb/G.Pt)/(G.N-1);   // the grid is equally spaced in log column
   
-	FILE *fp = fopen("gon_out/grid_profile","w");
+	FILE *fp;
+	if (G.output) fp = fopen("gon_out/grid_profile","w");
 
 	double Qtot=0.0;
   	for (int i=0; i<=G.N+2; i++) {
@@ -1538,12 +1549,13 @@ void set_up_grid(int ngrid, const char *fname)
 		
 		G.Tmelt[i] = 5e8*pow(G.P[i]/(2.28e14*1.9e13),0.25)*pow(EOS.Z[1]/30.0,5.0/3.0);
 		G.LoverT[i] = 0.8 * 1.38e-16 /(EOS.A[1]*1.67e-24);
-		fprintf(fp, "%d %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", i, G.P[i], G.rho[i], EOS.A[1]*(1.0-EOS.Yn), 
-			EOS.Z[1], EOS.Yn,EOS.A[1],EOS.ptot(), G.Tmelt[i], G.GammaT[i]/1e8, G.LoverT[i]*1e8);
+		if (G.output) 
+			fprintf(fp, "%d %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", i, G.P[i], G.rho[i], EOS.A[1]*(1.0-EOS.Yn), 
+				EOS.Z[1], EOS.Yn,EOS.A[1],EOS.ptot(), G.Tmelt[i], G.GammaT[i]/1e8, G.LoverT[i]*1e8);
 			//,AASpline.get(log10(G.rho[i])),  ZZSpline.get(log10(G.rho[i])), G.Qimp[i], G.Qheat[i]);
   	}
 
-	fclose(fp);
+	if (G.output) fclose(fp);
 
 	if (!G.hardwireQ) QiSpline.tidy();
 

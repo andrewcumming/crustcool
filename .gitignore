@@ -13,7 +13,4 @@ init/*
 !init/init.dat.1659_example
 project.tmproj
 ps/*
-tmp
-samples*
-*.pdf
-*.png
+mcmc/*

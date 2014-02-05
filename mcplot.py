@@ -5,19 +5,19 @@ import matplotlib.pyplot as plt
 import triangle
 
 
-fp = open('samples.dat','r')
+fp = open('mcmc/samples.dat','r')
 samples = numpy.load(fp)
 fp.close()
 
 
-print samples.shape
+n = samples.shape[0]
 
-samples = samples[:10000,:]
+samples = samples[2.0*n/3:,:]
 
-print samples.shape
+print n, samples.shape
 
 fig = triangle.corner(samples,labels=[r"$T_{c,7}$", r"$Q_{imp}$", r"$T_{b,8}$",
 						r"$\dot M$", r"$M (M_\odot)$", r"$R (km)$", r"$k_{n,crit}$"],
-		quantiles=[0.16, 0.5, 0.84], plot_datapoints=True,bins=25,plot_ellipse=True)
+		quantiles=[0.16, 0.5, 0.84], plot_datapoints=True,bins=24,plot_ellipse=False)
 
-fig.savefig('mcplot3.png')
+fig.savefig('mcmc/mcplot.png')
