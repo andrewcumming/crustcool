@@ -1,10 +1,12 @@
-## Overview and setup
+### Overview and setup
 
 This code follows the thermal evolution of a neutron star crust. It is designed to model observations of accreting neutron stars in quiescence and the decline of magnetar outbursts.
 
 To compile, `make` should compile the cooling code `crustcool`. You will need to create the directory `o` for the object files, and a directory `gon_out` for output during the runs.
 
-## Setting parameters 
+The equation of state, heat capacity, conductivity etc. is calculated in eos.cc. The code also uses the [condegin13.f](http://www.ioffe.ru/astro/conduct/index.html) fortran routine by A. Potekhin to calculate thermal conductivity.
+
+### Setting parameters 
 
 The file `init.dat` sets up the run. The parameters are
 
