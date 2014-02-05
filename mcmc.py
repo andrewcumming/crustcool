@@ -8,40 +8,57 @@ import pylab
 
 pylab.ion()
 
-def set_params(a):
-	fin = open('init/init.dat.mcmc','r')
-	fout = open('init.dat','w')
-	data_in = fin.read()
+
+
+def set_params(x,name):
+	data="""output	0
+mass	1.62
+radius	11.2
+Bfield 	0
+mdot	0.1
+precalc	1
+ngrid	50
+SFgap	5
+kncrit	0.0
+sph	0
+piecewise	0
+timetorun	4000.0
+neutrinos	1
+instant	0
+toutburst	1.6
+accreted	1
+gpe	0
+ytop	1e12
+Tt	4.2e8
+Qimp	3.5
+Tc	3.0e7
+"""
 	
-	Tc_to_set = a[0]*1e7
-	Qimp_to_set = 10.0**a[1]
-	Tt_to_set = a[2]*1e8
+	params = {
+		'Tc':x[0]*1e7,
+		'Qimp':10.0**x[1],
+		'Tt':x[2]*1e8,
+	#	'mdot':x[3],
+	#	'mass':x[4],
+	#	'radius':x[5]
+	}
 	
-	for line in data_in.split('\n'):
-		flag = 0
-		if line.find('Tc') != -1:
-			fout.write("Tc\t%g\n" % Tc_to_set)
-			flag = 1
-		if line.find('Qimp') != -1:
-			fout.write("Qimp\t%g\n" % Qimp_to_set)
-			flag = 1
-		if line.find('Tt') != -1:
-			fout.write("Tt\t%g\n" % Tt_to_set)
-			flag = 1
-		if flag==0:
-			fout.write(line+'\n')
-	fin.close()
+	for key,value in params.items():
+		data = re.sub("%s(\\t?\\w?).*\\n" % key,"%s\\t%f\\n" % (key,value),data)
+
+	fout = open('/tmp/init.dat.'+name,'w')
+	fout.write(data)
 	fout.close()
 
 
-def get_chisq():
-	os.system('crustcool >tmp')
-	f=open('tmp','r')
-	data = f.read()
-	for line in data.split('\n'):
-		if line.find('chisq') != -1 and line.find('chisq_nu') == -1:
-			chisq = float(line.split('=')[1])
-	f.close()
+def get_chisq(x):
+	name = str(uuid.uuid4())
+	set_params(x,name)
+	# give crustcool a second parameter so that it looks in /tmp for the init.dat file
+	data = subprocess.check_output( ["crustcool",name,'1'])
+	chisq = float(re.search('chisq = ([-+]?[0-9]*\.?[0-9]+)',data).group(1))
+#	print x[0],x[1],x[2],x[3],x[4],x[5],x[6],chisq
+	os.system('rm /tmp/init.dat.'+name)	
 	return chisq
 
 
@@ -74,8 +91,8 @@ while True:
 		anew[1]=a[1]+fac*0.2*random.gauss(0.0,1.0)
 	# Ttop
 	anew[2]=a[2]+fac*0.2*random.gauss(0.0,1.0)
-	set_params(anew)
-	chisq_new = get_chisq()
+
+	chisq_new = get_chisq(anew)
 
 	accept_flag=0
 	if chisq_new<chisq:

@@ -85,16 +85,17 @@ then the code will look for the file `init/init.dat.source` instead of `init.dat
 
 ### MCMC
 
-`mcmc.py` is a python driver for MCMC using a simple Metropolis algorithm. For each set of trial parameters, it creates an `init.dat` file based on `init/init.dat.mcmc`. The output of `crustcool` is redirected to a file `tmp` which is then scanned for the chi-squared value.
-
 `mcee.py` is an MCMC driver which uses the [emcee](http://dan.iel.fm/emcee/current) python code. 
 
 `mcplot.py` plots the output of `mcee.py`. It uses the [triangle_plot](http://pypi.python.org/pypi/triangle_plot) plotting routines.
 
+`mcmc.py` is a python driver for MCMC using a simple Metropolis algorithm.
+
 
 ### Published cooling curves from this code
 
-* An et al. (2013) Fig. 1 (see `init.dat.1647`)
-* Scholz et al. (2012) Fig. 8 (`init.dat.1822`)
-* Scholz et al. 2014 submitted paper on 1822
-* An et al. (2012) Fig.3 (1998 and 2008 outbursts, see `init.dat.1627`)
+* [Scholz et al. (2014)](http://lanl.arxiv.org/abs/1401.6965) submitted paper on 1822
+* [Cackett et al. (2013)](http://arxiv.org/abs/1306.1776) MXB 1659-29
+* [An et al. (2013)](http://arxiv.org/abs/1212.0184) Fig. 1 (see `init.dat.1647`)
+* [Scholz et al. (2012)](http://lanl.arxiv.org/abs/1204.1034) Fig. 8 (`init.dat.1822`)
+* [An et al. (2012)](http://arxiv.org/abs/1208.1419) Fig.3 (1998 and 2008 outbursts, see `init.dat.1627`)
