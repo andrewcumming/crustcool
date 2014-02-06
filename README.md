@@ -4,7 +4,11 @@ This code follows the thermal evolution of a neutron star crust. It is designed 
 
 To compile, `make` should compile the cooling code `crustcool`. You will need to create the directory `o` for the object files, and a directory `gon_out` for output during the runs.
 
-The equation of state, heat capacity, conductivity etc. is calculated in eos.cc. The code also uses the [condegin13.f](http://www.ioffe.ru/astro/conduct/index.html) fortran routine by A. Potekhin to calculate thermal conductivity.
+#### Requirements
+
+* GNU Scientific Library [GSL](http://www.gnu.org/software/gsl/) 
+* [condegin13.f](http://www.ioffe.ru/astro/conduct/index.html) fortran routine by A. Potekhin to calculate thermal conductivity
+* For MCMC, [emcee](http://dan.iel.fm/emcee/current) and [triangle_plot](http://pypi.python.org/pypi/triangle_plot)
 
 ### Setting parameters 
 
