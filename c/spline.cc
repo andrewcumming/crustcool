@@ -38,7 +38,6 @@
 class Spline {
 public:
   double get(double x);
-  double getlin(double x);
   double get_x(int i);
   double get_y(int i);
   double startx;
@@ -98,37 +97,6 @@ double Spline::get(double x)
 }
 
 
-double Spline::getlin(double x)
-{
-  double u;
-  int i;
-
-  if (x <= this->xtab[0]) {
-    if (this->out_of_bounds_flag == 0) return 0.0;
-    else {
-      if (this->log_flag==0) return this->ytab[0];
-      else return pow(10.0,this->ytab[0]); 
-    }
-  }
-
-  if (x >= this->xtab[this->num-1]) {
-    if (this->out_of_bounds_flag == 0) return 0.0;
-    else {
-      if (this->log_flag==0) return this->ytab[this->num-1];
-      else return pow(10.0,this->ytab[this->num-1]); 
-    }
-  }
-
-  i=0;
-  while (this->xtab[i]<x) i++;
-  u=this->ytab[i-1]+(this->ytab[i]-this->ytab[i-1])*(x-this->xtab[i-1])/
-    (this->xtab[i]-this->xtab[i-1]);
-
-  if (this->log_flag==0) return u;
-  else return pow(10.0, u);
-}
-
-
 void Spline::minit(double *x, double *y, int n)
   // initialize from memory rather than a file
 {
@@ -146,8 +114,8 @@ void Spline::minit(double *x, double *y, int n)
 
   gsl_sort2(this->xtab,1,this->ytab,1,(size_t) n);
 	
-  acc = gsl_interp_accel_alloc ();
-  spline = gsl_spline_alloc (gsl_interp_cspline, n);
+  acc = gsl_interp_accel_alloc();
+  spline = gsl_spline_alloc (gsl_interp_linear, n);
   gsl_spline_init(spline,this->xtab,this->ytab,n);
 
   // default handling of out of bounds

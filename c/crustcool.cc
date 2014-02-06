@@ -62,7 +62,6 @@ struct globals {
 	int accreting;
 	int output;
 	int include_latent_heat, include_convection;
-	int running_from_command_line;
 	int hardwireQ;
 	double Qrho;
 	int use_piecewise;
@@ -86,7 +85,7 @@ struct globals {
 Ode_Int ODE;
 Eos EOS;
 Spline RHO;
-static Spline TEFF;
+Spline TEFF;
 Spline AASpline; 
 Spline ZZSpline;
 Spline YnSpline;
@@ -96,8 +95,6 @@ Spline YnSpline;
 
 int main(int argc, char *argv[])
 {
-	clock_t timer;
-	
 	// ----------------------------------------------------------------------
  	//   Set parameters
 
@@ -111,7 +108,6 @@ int main(int argc, char *argv[])
 	G.energy_slope=0.0;
 	G.force_precalc=0;
 	G.Qinner=-1.0;
-	G.running_from_command_line=1;	
 	G.outburst_duration = (1.0/24.0) * 1.0/(365.0);  // rapid heating for magnetar case	(1 hour)
   	EOS.init(1); 
   	EOS.X[1] = 1.0;   // we only have one species at each depth;
@@ -263,13 +259,13 @@ int main(int argc, char *argv[])
   	// precalculate CP, K, eps_nu as a function of T on the grid
 	// note that for K this is done in such a way that we do not need to recalculate
 	// if Qimp changes
+	clock_t timer;
 	start_timing(&timer);
   	precalculate_vars();
 	stop_timing(&timer,"precalculate_vars");
 
   	// initialize the integrator
   	ODE.init(G.N+1);
-  	ODE.verbose=0;   // print out each timestep if this is set to 1
   	ODE.stiff=1; ODE.tri=1;  // stiff integrator with tridiagonal solver
   
 	if (G.output) {
@@ -287,7 +283,7 @@ int main(int argc, char *argv[])
 	// calculate the cooling curve
 	calculate_cooling_curve();   // not outputting the heating stage,so start at t=0
 
-	// get chisq
+	// calculate chisq
 	double chisq = calculate_chisq(&ODE,&TEFF,G.g,G.ZZ);
 
 	// tidy up
@@ -310,47 +306,28 @@ int main(int argc, char *argv[])
 
 void calculate_cooling_curve(void) 
 {
-  	int nsteps=0;
-  	double timesofar=0.0,last_time_output=0.0;
-  	double dtstart=1e-6;  // start timestep in sec
-
-  	while (true) {	
-    	if (!G.running_from_command_line) {
-			printf("Time to evolve (s) (enter 0 to end and write out summary info)? "); 
-			scanf("%lg", &G.time_to_run);
-		} else {
-			if (timesofar>0.0) break;
-			printf("Running for time %lg seconds\n", G.time_to_run);
-		}
-    	if (G.time_to_run==0.0) break;
-		if (timesofar > 0.0) {   
-			// set boundary condition for this integration using the last integration
-			for (int i=1; i<=G.N+1; i++) ODE.set_bc(i, ODE.get_y(i,ODE.kount));
-			dtstart=1e-6*G.time_to_run;
-			if (EOS.B > 0.0) dtstart=1e3;
-		}	
-		G.accreting=0;
-    
-		// call the integrator
-		clock_t timer;
-		start_timing(&timer);
-		ODE.dxsav=1e3;   // so that we get output starting at early enough times
-		//ODE.go_scale(0.0, G.time_to_run, 1e4, derivs);
-		ODE.go(0.0, G.time_to_run, dtstart, 1e-6, derivs);
-		stop_timing(&timer,"ODE.go");
+	double timesofar=0.0,last_time_output=0.0;
+	
+	printf("Running for time %lg seconds\n", G.time_to_run);
+	
+	G.accreting=0;  // turn off accretion for the cooling phase
+	
+	clock_t timer;
+	start_timing(&timer);
+	ODE.dxsav=1e4;
+	ODE.go(0.0, G.time_to_run, ODE.dxsav, 1e-6, derivs);
+	stop_timing(&timer,"ODE.go");
+	
+	if (G.output) {
 		printf("Starting output\n");
-		// output 
-		if (G.output) {
-			start_timing(&timer);
-			for (int j=1; j<=ODE.kount; j++) output_result_for_step(j,G.fp,G.fp2,timesofar,&last_time_output);
-			fflush(G.fp); fflush(G.fp2);
-			stop_timing(&timer,"output");
-		}
-      timesofar+=G.time_to_run;
-      nsteps+=ODE.kount;
-      printf("number of steps = %d (total=%d) (time=%lg)\n", ODE.kount, nsteps, timesofar);
-
+		start_timing(&timer);
+		for (int j=1; j<=ODE.kount; j++) output_result_for_step(j,G.fp,G.fp2,timesofar,&last_time_output);
+		fflush(G.fp); fflush(G.fp2);
+		stop_timing(&timer,"output");
 	}
+	
+	timesofar+=G.time_to_run;
+    printf("number of steps = %d, time=%lg\n", ODE.kount, timesofar);	
 }
 
 
