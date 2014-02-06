@@ -1702,7 +1702,28 @@ double Eos::potek_cond(void)
 	double temp=this->T8*1e2/5930.0;
 	double rr=this->rho/(this->A[1]*15819.4*1822.9);
 	condegin_(&temp,&rr,&Bfield,&this->Z[1],&AA,&this->A[1],&Zimp, &s1,&s2,&s3,&k1,&k2,&k3);
+	this->Kperp = k2*2.778e15;
 	return k1*2.778e15;
+
+// This was my attempt at SF phonons:
+/*		double ksph =0.0;
+		if (EOS.Yn > 0.0 && G.include_sph) {
+			// now SF conductivity
+			double lsph = 0.001 * pow(EOS.rho/4e11,-1.0/3.0);  // mfp in cm
+
+			double vs = 1.05e-27/(sqrt(3.0)*1.67e-24*3e10);
+			vs*=pow(3.0*PI*PI*EOS.rho*EOS.Yn/1.67e-24,1.0/3.0);	
+			//printf("%lg %lg %lg %lg\n", EOS.T8, EOS.rho, EOS.Yn, vs);
+
+	//		double vs = 0.1 * pow(EOS.rho/4e11,1.0/3.0);
+			ksph = 1.5e22 * pow(EOS.T8,3.0) * pow(0.1/vs,2.0) * lsph;
+		}
+
+		//ksph=0.0;
+
+		*Kperp += ksph;
+		return kk + ksph;
+		*/
 }
 
 

@@ -9,12 +9,13 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include <time.h>
 #include "../h/nr.h"
 #include "../h/nrutil.h"
 #include "../h/odeint.h"
 #include "../h/eos.h"
 #include "../h/spline.h"
+#include "../h/timer.h"
+#include "../h/ns.h"
 
 #pragma mark ====== Declarations ======
 double dTdt(int i, double *T);
@@ -33,18 +34,10 @@ double crust_heating_rate(int i);
 double crust_heating(int i);
 double energy_deposited(int i);
 void output_result_for_step(int j, FILE *fp, FILE *fp2, double timesofar, double *last_time_output);
-void start_timing(clock_t *timer);
-void stop_timing(clock_t *timer, const char*string);
 void read_in_data(const char *fname);
 void calculate_cooling_curve(void);
 double calculate_chisq(void);
 void set_composition(void);
-void set_ns_parameters(double mass, double radius);
-void set_ns_redshift(double R);
-extern "C"{
-  void condegin_(double *temp,double *densi,double *B,double *Zion,double *CMI,double *CMI1,double *Zimp, double *RSIGMA,double *RTSIGMA,double *RHSIGMA,double *RKAPPA,double *RTKAPPA,double *RHKAPPA);
-   }
-double potek_cond(double *Kperp);
 void heatderivs(double t, double T[], double dTdt[]);
 void heatderivs2(double t, double T[], double dTdt[]);
 
@@ -103,20 +96,13 @@ Spline YnSpline;
 
 int main(int argc, char *argv[])
 {
-	double F, y, K, CP, Kh, Th, Ttop, Fb, mass;
 	clock_t timer;
 	
-	long idum=-32094034;
-
-	// initialize EOS routines
-  	EOS.init(1); 
-  	EOS.X[1] = 1.0;   // we only have one species at each depth;
-
 	// ----------------------------------------------------------------------
  	//   Set parameters
 
 	// first, some defaults	
-	mass=1.62;
+	double mass=1.62;
 	G.radius=11.2;
 	int ngrid=100;
 	G.include_latent_heat=0;
@@ -127,6 +113,8 @@ int main(int argc, char *argv[])
 	G.Qinner=-1.0;
 	G.running_from_command_line=1;	
 	G.outburst_duration = (1.0/24.0) * 1.0/(365.0);  // rapid heating for magnetar case	(1 hour)
+  	EOS.init(1); 
+  	EOS.X[1] = 1.0;   // we only have one species at each depth;
 	EOS.accr = 0;   // set crust composition
 	EOS.use_potek_eos = 0;
 	EOS.use_potek_cond = 1;
@@ -150,7 +138,6 @@ int main(int argc, char *argv[])
 	G.yt=1e12;
 	G.extra_Q=0.0;
 	G.extra_y=0.0;
-	// do we want output or not?
 	G.output=1;
 	
 	// now read from the file 'init.dat'
@@ -259,15 +246,14 @@ int main(int argc, char *argv[])
 	//	read_in_data("data/terz2");  // READ IN observed lightcurve
 	//	read_in_data("data/0748");  // READ IN observed lightcurve
 
-	set_ns_parameters(mass,G.radius);
+	set_ns_parameters(mass,G.radius,&G.g,&G.ZZ);
+	
 	G.outburst_duration /= G.ZZ;   // redshift the outburst duration (shorter time on the NS surface)
 
  	// set up the hydrostatic grid
 	set_up_grid(ngrid,"data/crust_model_shell");
 
 	// ----------------------------------------------------------------------------------
-
-	//make_TbTeff_relation(); 
 
 	// read in Tb-Teff relation
 	get_TbTeff_relation();
@@ -279,7 +265,6 @@ int main(int argc, char *argv[])
   	precalculate_vars();
 	stop_timing(&timer,"precalculate_vars");
 
-	
   	// initialize the integrator
   	ODE.init(G.N+1);
   	ODE.verbose=0;   // print out each timestep if this is set to 1
@@ -310,7 +295,6 @@ int main(int argc, char *argv[])
 	}
   	ODE.tidy(); 
 	EOS.tidy();
-	RHO.tidy();
   	free_vector(G.rho,0,G.N+2);
   	free_vector(G.CP,0,G.N+2);
   	free_vector(G.P,0,G.N+2);
@@ -498,18 +482,6 @@ void read_in_data(const char *fname)
 	
 	fclose(fp);	
 }
-}
-
-
-
-void start_timing(clock_t *time)
-{
-	*time=clock();
-}
-
-void stop_timing(clock_t *time, const char*string)
-{
-  	printf("Time taken for %s =%lg s\n", string, (double) (clock()-*time)/((double) CLOCKS_PER_SEC)); 	
 }
 
 
@@ -902,7 +874,8 @@ void calculate_vars(int i, double T, double P, double *CP, double *K, double *NU
 		//	*K=EOS.rho*EOS.K_cond(0.0)*G.g/P;	
 	//	} else {
 			double Kcond, Kcondperp;
-			Kcond = potek_cond(&Kcondperp);	
+			Kcond = EOS.potek_cond();
+			Kcondperp = EOS.Kperp;	
 			//Kcondperp=0.0;
 			if (EOS.B > 0.0) {
 			if (G.angle_mu >= 0.0) {
@@ -1023,7 +996,7 @@ void set_up_initial_temperature_profile_piecewise(char *fname)
 			}
 
 			double null=0.0;
-			double Kcond = potek_cond(&null);
+			double Kcond = EOS.potek_cond();
 
 			I+=sqrt(EOS.CP()/(Kcond*EOS.rho))*(G.P[i]-G.P[i-1])/G.g;
 			double tt = I*I*0.25/(24.0*3600.0);
@@ -1218,7 +1191,8 @@ void precalculate_vars(void)
 				EOS.Q=0.0;
 				double Kcond,Kcondperp;
 				//Kcond = EOS.K_cond(EOS.Chabrier_EF());
-				Kcond = potek_cond(&Kcondperp);   
+				Kcond = EOS.potek_cond();
+				Kcondperp = EOS.Kperp;   
 				//Kcond = 3.03e20*pow(EOS.T8,3)/(EOS.opac()*G.y[i]);
 				//Kcondperp=Kcond;
 				//if (Kcondperp < 1e-2*Kcond) Kcondperp=1e-2*Kcond;
@@ -1228,7 +1202,8 @@ void precalculate_vars(void)
 				//Kcond = EOS.K_cond(EOS.Chabrier_EF());
 				//Kcond = 3.03e20*pow(EOS.T8,3)/(EOS.opac()*G.y[i]);
 				//Kcondperp=Kcond;
-				Kcond = potek_cond(&Kcondperp);
+				Kcond = EOS.potek_cond();
+				Kcondperp = EOS.Kperp;
 				//if (Kcondperp < 1e-2*Kcond) Kcondperp=1e-2*Kcond;
 				G.K1_grid[i][j]=EOS.rho*Kcond/G.P[i];
 				G.K1perp_grid[i][j]=EOS.rho*Kcondperp/G.P[i];
@@ -1562,6 +1537,8 @@ void set_up_grid(int ngrid, const char *fname)
   	printf("Grid has %d points, delx=%lg, Pb=%lg, rhob=%lg, Pt=%lg, rhot=%lg\n", 
 			G.N, G.dx, G.P[G.N],G.rho[G.N],G.P[1],G.rho[1]);
 		printf("Total heat release is %lg MeV\n",Qtot);
+		
+		RHO.tidy();
 }
 
 
@@ -1584,68 +1561,6 @@ void set_composition(void)
 		//printf("%lg %lg %lg %lg\n", EOS.Yn, EOS.rho, EOS.A[1], EOS.Z[1]);
 	}
 }
-
-void set_ns_parameters(double mass, double radius)
-	// mass in solar masses; radius in km
-{
-	radius*=1e5;
-	G.ZZ=1.0/sqrt(1.0-2.0*6.67e-8*2e33*mass/(9e20*radius));
-	G.g=G.ZZ*6.67e-8*2e33*mass/(radius*radius);	
-	printf("NS parameters: M %lg M_sun, R %lg km, g14=%lg 1+z=%lg\n",
-		mass, radius/1e5, G.g/1e14, G.ZZ);
-}
-
-void set_ns_redshift(double R)
-// given gravity (G.g)  and radius in km
-// sets the NS redshift
-{
-	double y, x;
-	R*=1e5;
-	y = pow(R*G.g/9e20,2.0);
-	// x is  GM/Rc^2
-	x = y*(sqrt(1.0+y)-1.0);
-	G.mass = R*9e20*x/6.67e-8;
-	G.mass/=2e33;
-	G.ZZ=1.0/sqrt(1.0-2.0*x);	
-}
-
-
-
-//---------------------------------------------------------------------------------------
-// wrapper for Potekhin's conductivity routine
-double potek_cond(double *Kperp)
-  {
-      double s1,s2,s3,k1,k2,k3;
-      double Bfield=EOS.B/4.414e13, Zimp=sqrt(EOS.Q), AA=EOS.A[1]*(1.0-EOS.Yn);
-      double temp=EOS.T8*1e2/5930.0;
-      double rr=EOS.rho/(EOS.A[1]*15819.4*1822.9);
-      condegin_(&temp,&rr,&Bfield,&EOS.Z[1],&AA,&EOS.A[1],&Zimp, &s1,&s2,&s3,&k1,&k2,&k3);
-      //return k2*2.778e15;
-	double kk=k1*2.778e15;
-	*Kperp = k2*2.778e15;
-	//  k1, k2 and k3 are longitudinal, transverse and off-diagonal conductivities
-
-//	return kk;
-
-	double ksph =0.0;
-	if (EOS.Yn > 0.0 && G.include_sph) {
-		// now SF conductivity
-		double lsph = 0.001 * pow(EOS.rho/4e11,-1.0/3.0);  // mfp in cm
-		
-		double vs = 1.05e-27/(sqrt(3.0)*1.67e-24*3e10);
-		vs*=pow(3.0*PI*PI*EOS.rho*EOS.Yn/1.67e-24,1.0/3.0);	
-		//printf("%lg %lg %lg %lg\n", EOS.T8, EOS.rho, EOS.Yn, vs);
-					
-//		double vs = 0.1 * pow(EOS.rho/4e11,1.0/3.0);
-		ksph = 1.5e22 * pow(EOS.T8,3.0) * pow(0.1/vs,2.0) * lsph;
-	}
-	
-	//ksph=0.0;
-	
-	*Kperp += ksph;
-	return kk + ksph;
-
-  }
 
 
 
