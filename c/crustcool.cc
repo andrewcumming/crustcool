@@ -15,6 +15,7 @@
 #include "../h/eos.h"
 #include "../h/spline.h"
 #include "../h/timer.h"
+#include "../h/data.h"
 #include "../h/ns.h"
 
 #pragma mark ====== Declarations ======
@@ -41,6 +42,7 @@ void set_composition(void);
 void heatderivs(double t, double T[], double dTdt[]);
 void heatderivs2(double t, double T[], double dTdt[]);
 
+
 // global variables
 struct globals {
   	int N;  
@@ -58,8 +60,6 @@ struct globals {
 	double mdot;
 	double Tt, Fin, Tc;
 	int accreting;
-	double *obs_time, *obs_temp, *obs_err;
-	int obs_n;
 	int output;
 	int include_latent_heat, include_convection;
 	int running_from_command_line;
@@ -86,7 +86,7 @@ struct globals {
 Ode_Int ODE;
 Eos EOS;
 Spline RHO;
-Spline TEFF;
+static Spline TEFF;
 Spline AASpline; 
 Spline ZZSpline;
 Spline YnSpline;
@@ -288,7 +288,7 @@ int main(int argc, char *argv[])
 	calculate_cooling_curve();   // not outputting the heating stage,so start at t=0
 
 	// get chisq
-	double chisq = calculate_chisq();
+	double chisq = calculate_chisq(&ODE,&TEFF,G.g,G.ZZ);
 
 	// tidy up
 	if (G.output) {
@@ -353,138 +353,9 @@ void calculate_cooling_curve(void)
 	}
 }
 
-double calculate_chisq(void)	
-// uses the result of the cooling to calculate chi-squared
-{
-	// set up a spline which has the prediction for observed Teff vs time 
-	Spline TE;
-	double *yy = vector(1,ODE.kount);
-	double *xx = vector(1,ODE.kount);
-	for (int k=1; k<=ODE.kount; k++) { 
-		xx[k]=ODE.get_x(k)*G.ZZ/(3600.0*24.0);
-		yy[k]=1.38e-16*pow((TEFF.get(ODE.get_y(1,k))*(G.g/2.28e14))/5.67e-5,0.25)/(1.6e-12*G.ZZ);
-	}
-	TE.minit(xx,yy,ODE.kount);
-	free_vector(xx,1,ODE.kount);
-	free_vector(yy,1,ODE.kount);
-
-	// calculate chisq
-	double chisq=0.0;
-	for (int i=1; i<=G.obs_n; i++) {
-		chisq += pow((G.obs_temp[i] - TE.get(G.obs_time[i]))/G.obs_err[i],2.0);	
-		//printf("%lg %lg %lg\n", G.obs_time[i], G.obs_temp[i], TE.get(G.obs_time[i]));
-	}
-	TE.tidy();
-	printf("chisq = %lg\n", chisq);
-	printf("chisq_nu = %lg/(%d-3) = %lg\n", chisq, G.obs_n, chisq/(G.obs_n-3));
-	return chisq;
-
-}
 
 
 
-void read_in_data(const char *fname) 
-{
-	if (1) {   
-	
-	/*
-	// hardcode the data for 1731
-	double t0=51930.5;
-	G.obs_n=7;    // 7 data points for BC09
-	G.obs_time = vector(1,G.obs_n);
-	G.obs_temp = vector(1,G.obs_n);
-	G.obs_err = vector(1,G.obs_n);
-	
-	G.obs_time[1]=51995.1; G.obs_temp[1]=103.2; G.obs_err[1]=1.7;
-	G.obs_time[2]=52165.7; G.obs_temp[2]=88.9; G.obs_err[2]=1.3;
-	G.obs_time[3]=52681.6; G.obs_temp[3]=75.5; G.obs_err[3]=2.2;
-	G.obs_time[4]=52859.5; G.obs_temp[4]=73.3; G.obs_err[4]=2.3;
-	G.obs_time[5]=53430.5; G.obs_temp[5]=71.0; G.obs_err[5]=1.8;
-	G.obs_time[6]=53500.4; G.obs_temp[6]=66.0; G.obs_err[6]=4.5;
-	G.obs_time[7]=53525.4; G.obs_temp[7]=70.3; G.obs_err[7]=2.1;
-	G.obs_time[8]=54969.7; G.obs_temp[8]=63.1; G.obs_err[8]=2.1;
-	
-	for (int i=1; i<=G.obs_n; i++) {
-		G.obs_time[i]-=t0;
-	}
-	*/
-	
-	/*
-	// hardcode the data for 1659
-	double t0=52159.5;
-	G.obs_n=8;    // 7 data points in BC09
-	G.obs_time = vector(1,G.obs_n);
-	G.obs_temp = vector(1,G.obs_n);
-	G.obs_err = vector(1,G.obs_n);
-	
-	G.obs_time[1]=52197.8; G.obs_temp[1]= 121; G.obs_err[1]= 1;
-	G.obs_time[2]=52563.2; G.obs_temp[2]= 85; G.obs_err[2]= 1;
-	G.obs_time[3]=52712.2; G.obs_temp[3]= 77; G.obs_err[3]= 1;
-	G.obs_time[4]=52768.9; G.obs_temp[4]= 73; G.obs_err[4]= 1;
-	G.obs_time[5]=53560.0; G.obs_temp[5]= 58; G.obs_err[5]= 2;
-	G.obs_time[6]=53576.7; G.obs_temp[6]= 54; G.obs_err[6]= 3;
-	G.obs_time[7]=54583.8; G.obs_temp[7]= 56; G.obs_err[7]= 2;
-	G.obs_time[8]=56113; G.obs_temp[8]= 48.8; G.obs_err[8]= 1.6;
-	
-	for (int i=1; i<=G.obs_n; i++) {
-		G.obs_time[i]-=t0;
-	}
-	*/
-
-	// hardcode the data for XTEJ
-	double t0=0.0;
-	G.obs_n=13;
-	G.obs_time = vector(1,G.obs_n);
-	G.obs_temp = vector(1,G.obs_n);
-	G.obs_err = vector(1,G.obs_n);
-		
-	G.obs_time[1]=3.12; G.obs_temp[1]=165.387; G.obs_err[1]=3.776;
-	G.obs_time[2]=10.98; G.obs_temp[2]=161.689; G.obs_err[2]=2.710;
-	G.obs_time[3]=16.39; G.obs_temp[3]=156.146; G.obs_err[3]=1.392;
-	G.obs_time[4]=49.66; G.obs_temp[4]=150.495; G.obs_err[4]=1.218;
-	G.obs_time[5]=174.50; G.obs_temp[5]=138.791; G.obs_err[5]=4.009;
-	G.obs_time[6]=298.47; G.obs_temp[6]=138.366; G.obs_err[6]=1.892;
-	G.obs_time[7]=431.24; G.obs_temp[7]=131.826; G.obs_err[7]=2.817;
-	G.obs_time[8]=540.25; G.obs_temp[8]=127.959; G.obs_err[8]=1.578;
-	G.obs_time[9]=592.85; G.obs_temp[9]=134.298; G.obs_err[9]=2.251;
-	G.obs_time[10]=652.79; G.obs_temp[10]=128.455; G.obs_err[10]=2.100;
-	G.obs_time[11]=705.55; G.obs_temp[11]=127.682; G.obs_err[11]=1.848;
-	G.obs_time[12]=795.80; G.obs_temp[12]=127.785; G.obs_err[12]=1.657;
-	G.obs_time[13]=1159.01; G.obs_temp[13]=124.719; G.obs_err[13]=1.740;
-//	G.obs_time[14]=1905.96; G.obs_temp[14]=112.500; G.obs_err[14]=3.423;
-	// remove last data point to compare to Page & Reddy
-
-		
-	for (int i=1; i<=G.obs_n; i++) {
-		G.obs_time[i]-=t0;
-	}
-
-
-	
-	
-} else {	
-	
-	printf("Reading data from %s\n", fname);
-	
-	FILE *fp = fopen(fname,"r");
-	
-	double t0;
-	fscanf(fp, "%lg %d\n", &t0, &G.obs_n);
-	
-	G.obs_time = vector(1,G.obs_n);
-	G.obs_temp = vector(1,G.obs_n);
-	G.obs_err = vector(1,G.obs_n);
-		
-	for (int i=1; i<=G.obs_n; i++) {
-		double dummy;
-		fscanf(fp,"%lg %lg %lg %lg %lg\n",  &G.obs_time[i], &dummy, &dummy, &G.obs_temp[i], 
-					&G.obs_err[i]);
-		G.obs_time[i]-=t0;
-	}
-	
-	fclose(fp);	
-}
-}
 
 
 void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar,double *last_time_output) 

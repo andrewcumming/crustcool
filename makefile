@@ -19,7 +19,7 @@ CFLAGS = -O3 -pipe
 #CFLAGS = -lm -parallel -fast 
 
 # main code
-OBJS = $(LOCODIR)/crustcool.o $(ODIR)/root.o $(ODIR)/nr.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag12.o $(LOCODIR)/eos12.o $(LOCODIR)/timer.o $(LOCODIR)/ns.o
+OBJS = $(LOCODIR)/crustcool.o $(ODIR)/root.o $(ODIR)/nr.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag12.o $(LOCODIR)/eos12.o $(LOCODIR)/timer.o $(LOCODIR)/data.o $(LOCODIR)/ns.o
 OBJS2 = $(LOCODIR)/ocean.o $(ODIR)/root.o $(ODIR)/nr.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o
 OBJS3 = $(LOCODIR)/makegrid.o $(ODIR)/root.o $(ODIR)/nr.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag12.o $(LOCODIR)/eos12.o
 
@@ -51,6 +51,9 @@ $(ODIR)/root.o : $(CDIR)/root.c
 
 $(ODIR)/timer.o : $(CDIR)/timer.c
 		$(CC) -c $(CDIR)/timer.c -o $(ODIR)/timer.o $(CFLAGS)
+
+$(ODIR)/data.o : $(CDIR)/data.c
+		$(CC) -c $(CDIR)/data.c -o $(ODIR)/data.o $(CFLAGS)
 
 $(ODIR)/ns.o : $(CDIR)/ns.c
 		$(CC) -c $(CDIR)/ns.c -o $(ODIR)/ns.o $(CFLAGS)
