@@ -17,15 +17,10 @@ public:
   void tidy(void);
   void go(double x1, double x2, double xstep,
 	  double eps, void (*derivs)(double, double[],double[]));
-  void go_simple(double x1, double x2, int nstep,
-		 void (*derivs)(double, double[],double[]));
-  void go_scale(double x1, double x2, double step,
-		 void (*derivs)(double, double[],double[]));
   void set_bc(int n, double num);
   double get_x(int i);
   double get_y(int n, int i);
   double get_d(int n, int i);
-  double* xa(), *ya(int n);
   double *xp, **yp;
   int nok, nbad;
 
@@ -80,15 +75,6 @@ private:
 
 
 
-double* Ode_Int::xa(void)
-{
-  return this->xp;
-}
-
-double* Ode_Int::ya(int n)
-{
-  return this->yp[n];
-}
 
 void Ode_Int::tidy(void)
 {
@@ -151,19 +137,6 @@ void Ode_Int::go(double x1, double x2, double xstep,
 	 &this->nbad,derivs);
 }
 
-
-void Ode_Int::go_simple(double x1, double x2, int nstep,
-		 void (*derivs)(double, double[],double[]))
-{
-  rkdumb(this->ystart,this->nvar,x1,x2,nstep,derivs);
-  this->kount=nstep+1;
-}
-
-void Ode_Int::go_scale(double x1, double x2, double step, 
-		       void (*derivs)(double, double[],double[]))
-{
-  rkscale(this->ystart,this->nvar,x1,x2,step,derivs);
-}
 
 
 
