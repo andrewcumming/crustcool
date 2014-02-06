@@ -67,7 +67,7 @@ def get_chisq(x):
 def lnprob(x):
 	# minimum and maxiumum allowed values
 	# (assume a flat prior within this range)
-	xmin=numpy.array([0.0,-3.0,0.0,0.0,1.1,7.0])
+	xmin=numpy.array([0.0,-3.0,0.0,0.0,1.1,8.0])
 	xmax=numpy.array([100.0,3.0,100.0,3.0,2.5,16.0])
 	if (len((x<xmin).nonzero()[0])>0 or len((x>xmax).nonzero()[0])>0):
 		return -numpy.inf
