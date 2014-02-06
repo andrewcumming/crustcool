@@ -251,6 +251,8 @@ int main(int argc, char *argv[])
 	G.outburst_duration /= G.ZZ;   // redshift the outburst duration (shorter time on the NS surface)
 
  	// set up the hydrostatic grid
+	// the filename is a crust model which gives composition and heating
+	// it is *not* used if hardwireQ = 1 (i.e. if EOS.Q is specified in the init.dat file)
 	set_up_grid(ngrid,"data/crust_model_shell");
 
 	// ----------------------------------------------------------------------------------
@@ -551,9 +553,7 @@ void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar,double *
 
 
 
-
-// --------------------------------------------------------------------------
-// derivatives for the time-dependent code
+#pragma mark ====== Integration ======
 
 void derivs(double t, double T[], double dTdt[])
 // calculates the time derivatives for the whole grid
@@ -895,12 +895,7 @@ void calculate_vars(int i, double T, double P, double *CP, double *K, double *NU
  }
 
 
-// --------------------------------------------------------------------------
-
-
-
-// --------------------------------------------------------------------------
-// Routines for initial setup 
+#pragma mark ====== Setup temperature profile ======
 
 void set_up_initial_temperature_profile_piecewise(char *fname)
 {
@@ -1016,7 +1011,13 @@ void set_up_initial_temperature_profile_piecewise(char *fname)
 }
 
 
-
+void heatderivs2(double T, double E[], double dEdT[])
+// calculates the time derivatives for the whole grid
+{
+	EOS.T8 = T/1e8;
+	EOS.rho = EOS.find_rho();
+	dEdT[1] = EOS.CP();
+}
 
 
 void set_up_initial_temperature_profile(void)
@@ -1127,9 +1128,16 @@ void set_up_initial_temperature_profile(void)
 
 }
 
+void heatderivs(double E, double T[], double dTdE[])
+// calculates the time derivatives for the whole grid
+{
+	EOS.T8 = T[1]/1e8;
+	EOS.rho = EOS.find_rho();
+	dTdE[1] = 1e25/(EOS.rho*EOS.CP());
+}
 
 
-
+#pragma mark ====== Initial setup ======
 
 void precalculate_vars(void) 
 // calculate various quantities at each grid point as a function of temperature
@@ -1187,35 +1195,31 @@ void precalculate_vars(void)
 				// we calculate the thermal conductivity for Q=0 and Q=1, and later interpolate to the
 				// current value of Q. This means we can keep the performance of table lookup even when
 				// doing MCMC trials which vary Q.
+
 				double Q_store=EOS.Q;  // store Q temporarily
+
 				EOS.Q=0.0;
 				double Kcond,Kcondperp;
 				//Kcond = EOS.K_cond(EOS.Chabrier_EF());
+				//Kcondperp=Kcond;
 				Kcond = EOS.potek_cond();
 				Kcondperp = EOS.Kperp;   
-				//Kcond = 3.03e20*pow(EOS.T8,3)/(EOS.opac()*G.y[i]);
-				//Kcondperp=Kcond;
-				//if (Kcondperp < 1e-2*Kcond) Kcondperp=1e-2*Kcond;
 				G.K0_grid[i][j]=EOS.rho*Kcond/G.P[i];
 				G.K0perp_grid[i][j]=EOS.rho*Kcondperp/G.P[i];
+
 				EOS.Q=1.0;
 				//Kcond = EOS.K_cond(EOS.Chabrier_EF());
-				//Kcond = 3.03e20*pow(EOS.T8,3)/(EOS.opac()*G.y[i]);
 				//Kcondperp=Kcond;
 				Kcond = EOS.potek_cond();
 				Kcondperp = EOS.Kperp;
-				//if (Kcondperp < 1e-2*Kcond) Kcondperp=1e-2*Kcond;
 				G.K1_grid[i][j]=EOS.rho*Kcond/G.P[i];
 				G.K1perp_grid[i][j]=EOS.rho*Kcondperp/G.P[i];
+
 				EOS.Q=Q_store;  // restore to previous value
 
+				// conductivity due to radiation
 				double kappa=EOS.opac();
 				G.KAPPA_grid[i][j] = 3.03e20*pow(EOS.T8,3)/(EOS.kappa_rad*G.P[i]);
-				//G.KAPPA_grid[i][j] = 0.0;
-
-				// We include thermal conductivity only. The equivalent expression but putting in all sources
-				// of opacity would be
-				//3.03e20*pow(EOS.T8,3)/(EOS.opac()*G.y[i]);
 
 				if (G.output) 
 					fprintf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg %lg\n", EOS.T8, G.CP_grid[i][j], 
@@ -1259,7 +1263,6 @@ double energy_deposited(int i)
 	ener *= pow(G.rho[i]/1e10,G.energy_slope);
 	return ener;
 }
-
 
 
 double crust_heating(int i) 
@@ -1324,7 +1327,6 @@ double crust_heating_rate(int i)
 }
 
 
-
 void get_TbTeff_relation(void)
 // reads in the Flux-T relation from the data file output by makegrid.cc
 {
@@ -1336,7 +1338,6 @@ void get_TbTeff_relation(void)
 	// the file "out/grid" is made by makegrid.cc
 	// it contains  (column depth, T, flux)  in cgs
 	FILE *fp;
-//	if (G.use_my_envelope) fp = fopen("out/grid","r");
 	if (G.use_my_envelope) {
 		if (EOS.B == 1e15) fp = fopen("out/grid_1e15_nopotek","r");
 		else if (EOS.B == 1e14) fp = fopen("out/grid_1e14_potek","r");
@@ -1346,28 +1347,22 @@ void get_TbTeff_relation(void)
 			printf("Don't know which envelope model to use for this B!\n");
 			exit(1);
 		}
-	}
-	else {
-		//fp = fopen("out/grid","r");
+	} else {
 		if (G.gpe) fp = fopen("out/grid_He4","r");
 		else fp = fopen("out/grid_He9","r");
 	}
-	//FILE *fp = fopen("grid_sorty","r");
 	FILE *fp2;
 	if (G.output) fp2=fopen("gon_out/TbTeff", "w");
 	
 	double y,T,F,rho,dummy;
 	int count = 0;
 	while (!feof(fp)) {
-		
 		fscanf(fp, "%lg %lg %lg %lg %lg %lg\n", &y, &T, &F,&rho,&dummy,&dummy);
-		//printf("%lg %lg %lg\n", y, T, F);
 		if (fabs(y-log10(G.yt))<1e-3) {  // select out the points which correspond to the top column
 			count++;
 			temp[count] = pow(10.0,T);
 			// correct for gravity here:
 			flux[count] = pow(10.0,F); //* (G.g/2.28e14);
-			//printf("%lg %lg\n", T, F);
 			if (G.output) fprintf(fp2, "%d %lg %lg %lg %lg %lg\n", count,y,T,F,temp[count],flux[count]);
 		}
 	}
@@ -1375,8 +1370,7 @@ void get_TbTeff_relation(void)
 	fclose(fp);
 	if (G.output) fclose(fp2);
 	
-	// the following spline contains the flux as a function of temperature
-	// at column depth G.yt
+	// the following spline contains the flux as a function of temperature at column depth G.yt
 	TEFF.minit(temp,flux,count);
 	
 	free_vector(temp,1,npoints);
@@ -1515,7 +1509,7 @@ void set_up_grid(int ngrid, const char *fname)
 			double Z=26.0,A=56.0;   // 28Si
 			G.GammaT[i] = pow(Z*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*A*1.67e-24),1.0/3.0)/1.38e-16;
 		} else {
-		G.GammaT[i] = pow(EOS.Z[1]*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*EOS.A[1]*1.67e-24),1.0/3.0)/1.38e-16;
+			G.GammaT[i] = pow(EOS.Z[1]*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*EOS.A[1]*1.67e-24),1.0/3.0)/1.38e-16;
 		}
 		
     	G.rho[i] = pow(10.0,RHO.get(log10(G.P[i])));
@@ -1562,21 +1556,4 @@ void set_composition(void)
 	}
 }
 
-
-
-void heatderivs2(double T, double E[], double dEdT[])
-// calculates the time derivatives for the whole grid
-{
-	EOS.T8 = T/1e8;
-	EOS.rho = EOS.find_rho();
-	dEdT[1] = EOS.CP();
-}
-
-void heatderivs(double E, double T[], double dTdE[])
-// calculates the time derivatives for the whole grid
-{
-	EOS.T8 = T[1]/1e8;
-	EOS.rho = EOS.find_rho();
-	dTdE[1] = 1e25/(EOS.rho*EOS.CP());
-}
 
