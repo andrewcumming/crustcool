@@ -3086,14 +3086,14 @@ endif
 			readf, lun, time
 
 			; read in next batch of data
-			data=dblarr(15,ngrid)
+			data=dblarr(12,ngrid)
 			readf, lun, data
 			y=data(0,*)
 			T=data(1,*)
 			F=data(2,*)
 			rho = data(5,*)
-			beta=data(12,*)
-			epsnu=data(14,*)
+			beta=data(10,*)
+			epsnu=data(11,*)
 
 			if (time gt 0.0) then begin
 
@@ -3107,7 +3107,7 @@ endif
 			; plot upper panel
 			erase
 			plot, y, T, /xlog, /ylog, ytitle=textoidl('T (K)'),$
-					xtitle=textoidl('P (erg cm^{-3})'), yrange=[1e7,1e9],ystyle=1, $
+					xtitle=textoidl('P (erg cm^{-3})'), yrange=[1e6,1e9],ystyle=1, $
 					xrange=[1d19,7d32], xstyle=1
 ;				plot, rho, T, /xlog, /ylog, ytitle=textoidl('T (K)'),$
 ;						xtitle=textoidl('\rho (g cm^{-3})'), yrange=[1e7,1e10],ystyle=1, $
