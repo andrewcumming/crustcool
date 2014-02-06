@@ -1,79 +1,29 @@
-#include "../h/nr.h"
-#include "../h/nrutil.h"
-#include "math.h"
+// A wrapper for the GSL root finder
+//
 
-#define ITMAX 100
-#define EPS 3.0e-8
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_roots.h>
 
-#define float double
-
-
-float zbrent(float (*func)(float), float x1, float x2, float tol)
+double zbrent(double (*func)(double), double x1, double x2, double tol)
+// Follows example at https://www.gnu.org/software/gsl/manual/html_node/Root-Finding-Examples.html#Root-Finding-Examples
 {
-  int iter;
-  float a=x1,b=x2,c=x2,d,e,min1,min2;
-  float fa=(*func)(a),fb=(*func)(b),fc,p,q,r,s,tol1,xm;
-
-  if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0)){};
-    //    printf("Root must be bracketed in zbrent! (x1=%lg x2=%lg)\n",
-    //   x1,x2);
-  fc=fb;
-  for (iter=1;iter<=ITMAX;iter++) {
-    if ((fb > 0.0 && fc > 0.0) || (fb < 0.0 && fc < 0.0)) {
-      c=a;
-      fc=fa;
-      e=d=b-a;
-    }
-    if (fabs(fc) < fabs(fb)) {
-      a=b;
-      b=c;
-      c=a;
-      fa=fb;
-      fb=fc;
-      fc=fa;
-    }
-    tol1=2.0*EPS*fabs(b)+0.5*tol;
-    xm=0.5*(c-b);
-    if (fabs(xm) <= tol1 || fb == 0.0) return b;
-    if (fabs(e) >= tol1 && fabs(fa) > fabs(fb)) {
-      s=fb/fa;
-      if (a == c) {
-	p=2.0*xm*s;
-	q=1.0-s;
-      } else {
-	q=fa/fc;
-	r=fb/fc;
-	p=s*(2.0*xm*q*(q-r)-(b-a)*(r-1.0));
-	q=(q-1.0)*(r-1.0)*(s-1.0);
-      }
-      if (p > 0.0) q = -q;
-      p=fabs(p);
-      min1=3.0*xm*q-fabs(tol1*q);
-      min2=fabs(e*q);
-      if (2.0*p < (min1 < min2 ? min1 : min2)) {
-	e=d;
-	d=p/q;
-      } else {
-	d=xm;
-	e=d;
-      }
-    } else {
-      d=xm;
-      e=d;
-    }
-    a=b;
-    fa=fb;
-    if (fabs(d) > tol1)
-      b+=d;
-    else
-      b += SIGN(tol1,xm);
-    fb=(*func)(b);
-  }
-  printf("Maximum number of iterations exceeded in brent.");
-  return 0.0;
+	gsl_root_fsolver *s;
+	int iter = 0, max_iter = 100, status;
+	gsl_function F;
+	// in the next line, cast the function to take an extra void* argument
+	// as needed by GSL. 
+	F.function = (double (*)(double,void*)) func;
+	s = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
+	gsl_root_fsolver_set (s, &F, x1, x2);
+	
+	do {
+		iter++;
+		status = gsl_root_fsolver_iterate (s);
+		x1 = gsl_root_fsolver_x_lower (s);
+		x2 = gsl_root_fsolver_x_upper (s);
+		status = gsl_root_test_interval (x1, x2, 0.0, tol);
+	} while (status == GSL_CONTINUE && iter < max_iter);
+	
+	gsl_root_fsolver_free (s);
+	return gsl_root_fsolver_root(s);
 }
-
-#undef EPS
-#undef ITMAX
-
-#undef float
