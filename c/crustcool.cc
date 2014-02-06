@@ -337,66 +337,57 @@ void calculate_cooling_curve(void)
 
 void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar,double *last_time_output) 
 {
-	for (int i=1; i<=1; i++) calculate_vars(i,ODE.get_y(i,j),G.P[i],&G.CP[i],&G.K[i],&G.NU[i],&G.EPS[i]);
-	//	for (int i=1; i<=G.N+1; i++) calculate_vars(i,ODE.get_y(i,j),G.P[i],&G.CP[i],&G.K[i],&G.NU[i],&G.EPS[i]);
+	// get CP,K,eps,eps_nu at each point on the grid
+	for (int i=1; i<=G.N+1; i++) calculate_vars(i,ODE.get_y(i,j),G.P[i],&G.CP[i],&G.K[i],&G.NU[i],&G.EPS[i]);
+
+	// outer boundary
 	double T0;
 	outer_boundary(ODE.get_y(1,j),G.K[1],G.CP[1],G.NU[1],G.EPS[1],&T0,&G.K[0],&G.CP[0],&G.NU[0],&G.EPS[0]);
-	//for (int i=1; i<=G.N+1; i++) G.F[i] = calculate_heat_flux(i,ODE.get_y(i,j));
-	//G.F[i]=0.5*G.g*(G.K[i]+G.K[i-1])*(ODE.get_y(i,j)-ODE.get_y(i-1,j))/G.dx;
-	//G.F[1]=0.5*(G.K[0]+G.K[1])*(ODE.get_y(1,j)-T0)/G.dx;
+
+	// timestep
 	double dt;
 	if (j==1) dt=ODE.get_x(j); else dt=ODE.get_x(j)-ODE.get_x(j-1);
 
-
+	// heat fluxes on the grid
 	double *TT;
 	TT=vector(1,G.N+1);
-	for (int i=1; i<=1; i++) TT[i]=ODE.get_y(i,j);
-//	for (int i=1; i<=G.N+1; i++) TT[i]=ODE.get_y(i,j);
+	for (int i=1; i<=G.N+1; i++) TT[i]=ODE.get_y(i,j);
 	double FF = calculate_heat_flux(1,TT);
-	for (int i=1; i<=2; i++) G.F[i] = calculate_heat_flux(i,TT);
-//	for (int i=1; i<=G.N+1; i++) G.F[i] = calculate_heat_flux(i,TT);
-
-	//FF=G.F[1];
-
-	//G.F[2] = calculate_heat_flux(2,TT);
-
+	for (int i=1; i<=G.N+1; i++) G.F[i] = calculate_heat_flux(i,TT);
 	free_vector(TT,1,G.N+1);
 
+	// total neutrino luminosity
 	double Lnu=0.0;
 	for (int i=1; i<=G.N; i++) Lnu += G.NU[i]*G.dx*G.P[i]/G.g;
 	
-	if ((fabs(log10(fabs(timesofar+ODE.get_x(j))*G.ZZ)-log10(fabs(*last_time_output))) >= 0.01) || (fabs(timesofar)+ODE.get_x(j))*G.ZZ < 1e5) {
+	// Output if enough time has elapsed
+	if ((fabs(log10(fabs(timesofar+ODE.get_x(j))*G.ZZ)-log10(fabs(*last_time_output))) >= 0.01) || 
+			(fabs(timesofar)+ODE.get_x(j))*G.ZZ < 1e5) {
 	
-	// output time, fluxes and TEFF that are already redshifted
-	fprintf(fp2, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", (timesofar+ODE.get_x(j))*G.ZZ, 
+		// we output time, fluxes and TEFF that are already redshifted into the observer frame
+		// gon_out/prof
+		fprintf(fp2, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", (timesofar+ODE.get_x(j))*G.ZZ, 
 			pow((G.radius/11.2),2.0)*G.F[2]/(G.ZZ*G.ZZ), pow((G.radius/11.2),2.0)*FF/(G.ZZ*G.ZZ),
 			ODE.get_y(G.N-5,j), pow((G.g/2.28e14)*TEFF.get(ODE.get_y(1,j))/5.67e-5,0.25)/G.ZZ, 
 			ODE.get_y(1,j), pow((G.g/2.28e14)*TEFF.get(ODE.get_y(1,j))/5.67e-5,0.25),
 			pow((G.radius/11.2),2.0)*G.F[G.N+1]/(G.ZZ*G.ZZ),pow((G.radius/11.2),2.0)*G.F[G.N]/(G.ZZ*G.ZZ),
 			4.0*PI*pow(1e5*G.radius,2.0)*Lnu/(G.ZZ*G.ZZ));
-
-		if ((fabs(log10(fabs(timesofar+ODE.get_x(j))*G.ZZ)-log10(fabs(*last_time_output))) >= 1000.0) || (fabs(timesofar)+ODE.get_x(j))*G.ZZ < 1e9) {
-//			if (j % 1 == 0 || j==ODE.kount) {   // output every nth cycle
-		// temperature profile
-		fprintf(fp,"%lg\n",G.ZZ*(timesofar+ODE.get_x(j)));
-		double del,gamma;
-		for (int i=1; i<=G.N+1; i++) {      
-			EOS.P=G.P[i]; EOS.T8=1e-8*ODE.get_y(i,j); EOS.rho=G.rho[i];//EOS.find_rho();
-			if (i>1) del = (ODE.get_y(i+1,j)-ODE.get_y(i-1,j))/(2.0*G.dx*ODE.get_y(i,j));
-			else del=1.0;
-			gamma = G.GammaT[i]/(1e8*EOS.T8);
-			EOS.set_comp();
-			//if (G.ZZ*(timesofar+ODE.get_x(j)) > 0.0)
-				fprintf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", 
-				G.P[i], ODE.get_y(i,j), G.F[i], G.NU[i],
-				G.g*(G.F[i+1]-G.F[i])/(G.dx*G.P[i]), EOS.rho, EOS.CP()*EOS.rho, 
-				ODE.get_d(i,j),1e8*pow(EOS.P/2.521967e17,0.25), EOS.opac(), del, EOS.del_ad(),
-				2.521967e-15*pow(ODE.get_y(i,j),4)/G.P[i], gamma,EOS.eps_nu());
-					//G.ZZ*(timesofar+ODE.get_x(j)));	
+			
+		if ((fabs(log10(fabs(timesofar+ODE.get_x(j))*G.ZZ)-log10(fabs(*last_time_output))) >= 1000.0) ||
+			(fabs(timesofar)+ODE.get_x(j))*G.ZZ < 1e10) {
+			// temperature profile into gon_out/out
+			fprintf(fp,"%lg\n",G.ZZ*(timesofar+ODE.get_x(j)));
+			for (int i=1; i<=G.N+1; i++)
+				fprintf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", 
+					G.P[i], ODE.get_y(i,j), G.F[i], G.NU[i], G.g*(G.F[i+1]-G.F[i])/(G.dx*G.P[i]), G.rho[i], G.CP[i]*G.rho[i], 
+					ODE.get_d(i,j),1e8*pow(G.P[i]/2.521967e17,0.25), G.K[i], 2.521967e-15*pow(ODE.get_y(i,j),4)/G.P[i],
+					G.NU[i]);
  		}
-	}
 		*last_time_output=(timesofar+ODE.get_x(j))*G.ZZ;
+
 	}
+
+
 }
 
 
@@ -1009,14 +1000,13 @@ void precalculate_vars(void)
 	G.NU_grid = matrix(1,G.N+2,1,G.nbeta);	
 	G.EPS_grid = matrix(1,G.N+2,1,G.nbeta);	
 
+	FILE *fp = NULL;
 	char s[100];
 	if (EOS.B > 0.0) sprintf(s,"gon_out/precalc_results_%lg",log10(EOS.B));
 	else sprintf(s,"gon_out/precalc_results_0");
-
-	int read_grid=0;
-	FILE *fp;
-	fp=fopen(s,"r");
-	if (fp == NULL || G.force_precalc ==1) {
+	if (!G.force_precalc) fp=fopen(s,"r");
+	// if unsuccessful (or if precalc is set) we need to recalculate
+	if (fp == NULL) {
 		if (G.output) fp=fopen(s,"w");
 		printf("Precalculating quantities and writing to file %s...\n",s);
 
