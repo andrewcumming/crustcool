@@ -63,10 +63,6 @@ $(ODIR)/spline.o : $(CDIR)/spline.cc
 
 # clean up
 
-cleanall: 
-	rm -f $(ODIR)/*.o
-	rm -f $(LOCODIR)/*.o
-
 clean:
 	rm -f $(LOCODIR)/*.o
 

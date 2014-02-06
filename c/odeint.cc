@@ -88,7 +88,7 @@ void Ode_Int::tidy(void)
 
 void Ode_Int::init(int n)
 {
-  this->kmax=1000000;
+  this->kmax=10000;
   this->nvar=n+1;
   this->ignore=0;
   this->dxsav=0.0;
