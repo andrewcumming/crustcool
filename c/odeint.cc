@@ -153,7 +153,7 @@ void Ode_Int::odeint(double ystart[], int nvar, double x1, double x2,
   // see NR pp 721.
 {
   int nstp,i;
-  double xsav,x,hnext,hdid,h;
+  double xsav=0.0,x,hnext,hdid,h;
   double *yscal,*y,*dydx;
 
   yscal=vector(1,nvar);
@@ -542,8 +542,8 @@ void Ode_Int::trisimpr(float y[], float dydx[], float dfdx[], float **dfdy, int 
 	float xs, float htot, int nstep, float yout[],
 	void (*derivs)(float, float [], float []))
 {
-	int i,j,nn;
-	float d,h,x,*del,*ytemp;
+	int i,nn;
+	float h,x,*del,*ytemp;
 	float *r,*AA,*BB,*CC;
 
 	del=vector(1,n);
@@ -602,10 +602,10 @@ void Ode_Int::stifbs(float y[], float dydx[], int nv, float *xx, float htry, flo
 {
 	void jacobn(float x, float y[], float dfdx[], float **dfdy, int n);
 
-	int i,iq,k,kk,km;
+	int i,iq,k,kk,km=0;
 	static int first=1,kmax,kopt,nvold = -1;
 	static float epsold = -1.0,xnew;
-	float eps1,errmax,fact,h,red,scale,work,wrkmin,xest;
+	float eps1,errmax,fact,h,red=1.0,scale=1.0,work,wrkmin,xest;
 	float *dfdx,**dfdy,*err,*yerr,*ysav,*yseq;
 	static float a[IMAXX+1];
 	static float alf[KMAXX+1][KMAXX+1];
@@ -660,7 +660,8 @@ void Ode_Int::stifbs(float y[], float dydx[], int nv, float *xx, float htry, flo
 			if (this->tri==1) trisimpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq,derivs);
 			else if (this->tri==2) bansimpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq,derivs);
 			else simpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq,derivs);
-			xest=SQR(h/nseq[k]);
+			float sqrarg = (h/nseq[k]);
+			xest=(sqrarg == 0.0 ? 0.0 : sqrarg*sqrarg);
 			pzextr(k,xest,yseq,y,yerr,nv);
 			if (k != 1) {
 				errmax=TINY;
@@ -803,7 +804,7 @@ void Ode_Int::lubksb(float **a, int n, int *indx, float b[])
 
 void Ode_Int::ludcmp(float **a, int n, int *indx, float *d)
 {
-	int i,imax,j,k;
+	int i,imax=0,j,k;
 	float big,dum,sum,temp;
 	float *vv;
 

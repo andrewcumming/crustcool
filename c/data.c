@@ -38,7 +38,7 @@ void read_in_data(const char *fname)
 			}
 			*/
 
-			/*
+			
 			// hardcode the data for 1659
 			double t0=52159.5;
 			data.n=8;    // 7 data points in BC09
@@ -58,9 +58,9 @@ void read_in_data(const char *fname)
 			for (int i=1; i<=data.n; i++) {
 				data.t[i]-=t0;
 			}
-			*/
+			
 
-
+/*
 		// hardcode the data for XTEJ
 		double t0=0.0;
 		data.n=13;
@@ -84,6 +84,29 @@ void read_in_data(const char *fname)
 		// remove last data point to compare to Page & Reddy
 	
 		for (int i=1; i<=data.n; i++) data.t[i]-=t0;
+	*/
+	/*
+	
+		// hardcode the data for 0556
+		double t0=0.0;
+		data.n=9;
+		data.t = vector(1,data.n);
+		data.TT = vector(1,data.n);
+		data.Te = vector(1,data.n);
+		data.t[1]=5.5; data.TT[1]=309.0; data.Te[1]=7.0;
+		data.t[2]=16.1; data.TT[2]=308.0; data.Te[2]=3.0;
+		data.t[3]=23.3; data.TT[3]=296.0; data.Te[3]=3.0;
+		//data.t[4]=31.9; data.TT[4]=361.0; data.Te[4]=10.0;
+		data.t[4]=51.1; data.TT[4]=276.0; data.Te[4]=2.0;
+		//data.t[6]=85.4; data.TT[6]=317.0; data.Te[6]=5.0;
+		data.t[5]=104.5; data.TT[5]=250.3; data.Te[5]=0.9;
+		data.t[6]=134.9; data.TT[6]=241.4; data.Te[6]=0.9;
+		data.t[7]=150.9; data.TT[7]=239.0; data.Te[7]=2.0;
+		data.t[8]=291.8; data.TT[8]=207.0; data.Te[8]=2.0;
+		data.t[9]=497.1; data.TT[9]=182.9; data.Te[9]=1.0;
+	
+		for (int i=1; i<=data.n; i++) data.t[i]-=t0;
+	*/
 	
 	} else {	
 	
@@ -109,7 +132,7 @@ void read_in_data(const char *fname)
 
 
 
-double calculate_chisq(Ode_Int *ODE, Spline *TEFF, double g, double ZZ)	
+void calculate_chisq(Ode_Int *ODE, Spline *TEFF, double g, double ZZ)	
 // uses the result of the cooling to calculate chi-squared
 {
 	int nmodel = ODE->kount;
@@ -135,7 +158,7 @@ double calculate_chisq(Ode_Int *ODE, Spline *TEFF, double g, double ZZ)
 	TE.tidy();
 	printf("chisq = %lg\n", chisq);
 	printf("chisq_nu = %lg/(%d-3) = %lg\n", chisq, data.n, chisq/(data.n-3));
-	return chisq;
+	//return chisq;
 
 }
 

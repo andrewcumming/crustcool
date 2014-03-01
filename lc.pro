@@ -401,18 +401,18 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 		yr=[80,140]
 	endif
 	if (source eq '0556') then begin
-		xr=[1.0,50000.0]
-		yr=[50,300]
+		xr=[1.0,5000.0]
+		yr=[150,370]
 	endif
 
 
-	if (source eq 'XTEJ') then begin
-		xr=[1.0,10000.0]
-		yr=[50,180]
+	if (source eq 'xtej') then begin
+		xr=[1.0,6000.0]
+		yr=[100,185]
 	endif
-	if (source eq 'terz2' or source eq 'terz') then begin
-		xr=[10.0,3000.0]
-		yr=[40,140]
+	if (source eq 'terz3' or source eq 'terz2' or source eq 'terz') then begin
+		xr=[150.0,5000.0]
+		yr=[67,104]
 	endif
 
 	if (source eq 'XTEJ2') then begin
@@ -431,7 +431,7 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 
 		ploterror, t, temp, tempe, psym=1, /xlog, xtitle=textoidl('Time (d)'),$
 				ytitle=textoidl('T_{eff} (eV)'), charsize=1.4, xrange=xr,xstyle=1,$
-				yrange=yr, ystyle=1
+				yrange=yr, ystyle=1,/nohat
 
 
 		if not keyword_set(noplot) then begin
@@ -444,13 +444,22 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 		oplot, tt,FF,linestyle=0,col=250
 		endif
 	
-		if (source eq 'terz2' or source eq 'terz') then begin
+		if (source eq 'terz3' or source eq 'terz2' or source eq 'terz') then begin
 			readcol, 'gon_out/prof_terz', tt,Teff, format=('F,X,X,X,F')
 			tt/=(24*3600.0)
 			; the output is already redshifted
 			; but needs to be converted to eV
 			FF = 1.38d-16*Teff/(1.6d-12)
 			oplot, tt,FF,linestyle=0
+
+
+			readcol, 'gon_out/prof_terz_2', tt,Teff, format=('F,X,X,X,F')
+			tt/=(24*3600.0)
+			; the output is already redshifted
+			; but needs to be converted to eV
+			FF = 1.38d-16*Teff/(1.6d-12)
+			oplot, tt,FF,linestyle=0
+
 		endif
 
 
@@ -476,7 +485,7 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 		; the output is already redshifted
 		; but needs to be converted to eV
 		FF = 1.38d-16*Teff/(1.6d-12)
-		oplot, tt,FF,linestyle=1
+		;oplot, tt,FF,linestyle=1
 
 ;		readcol, 'gon_out/prof_'+source+'_C', tt,Teff, format=('F,X,X,X,F')
 ;		tt/=(24*3600.0)
@@ -487,14 +496,23 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 
 		endif
 
-		if (source eq '0556') then xyouts, 300,270,textoidl('MAXI J0556-332')
+		if (source eq '0556') then xyouts, 2,170,textoidl('MAXI J0556-332')
 		if (source eq '1731') then xyouts, 700,120,textoidl('KS 1731-260')
 		if (source eq '1659') then xyouts, 800,132,textoidl('MXB 1659-29')
 ;		if (source eq '1659') then xyouts, 200,152,textoidl('MXB 1659-29')
-		if (source eq 'XTEJ') then xyouts, 500,170,textoidl('XTE J1701-462')
+		if (source eq 'xtej') then begin
+			xyouts, 500,170,textoidl('XTE J1701-462')
+			oplot,[2900.0,2900.0],[10.0,1000.0],linestyle=1
+		endif
 		if (source eq 'XTEJ2') then xyouts, 10,170,textoidl('XTE J1709-267')
 		if (source eq '0748') then xyouts, 400,130,textoidl('EXO 0748-676')
-		if (source eq 'terz' || source eq 'terz2') then xyouts, 200,125,textoidl('IGR J17480-2446')
+		if (source eq 'terz' or source eq 'terz2' or source eq 'terz3') then xyouts, 200,125,textoidl('IGR J17480-2446')
+
+		if (source eq 'terz' or source eq 'terz2' or source eq 'terz3') then begin
+			oplot, [1.0,1e5],[73.6-1.6,73.6-1.6],linestyle=1
+			oplot, [1.0,1e5],[73.6+1.6,73.6+1.6],linestyle=1		
+		endif
+		
 
 ;		t=[2.0,3.5]
 ;		F=[alog10(140.0)-(t-2.0)/12.0]
@@ -1234,12 +1252,16 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 ;		!p.charthick=3
  ; 	endif
 	
-	yr=[5d32,1d36]
-	xr=[0.1,9000.0]
+	yr=[5d32,5d35]
+	xr=[1.0,9000.0]
+	if (strcmp(source,'0556',4)) then begin
+		yr=[1d34,5d35]
+		xr=[1.0,5000.0]
+	endif
 	if (strcmp(source,'2259',4)) then yr=[1d34,1d35]
 	if (strcmp(source,'fluxes1822',10)) then begin
-		yr=[1d31,2d35]
-		xr=[0.5,10000]
+		yr=[4d31,1d35]
+		xr=[0.5,3000]
 	endif
 	if (strcmp(source,'fluxes1547',10)) then yr=[1d33,1d36]
 	if (strcmp(source,'1659',4)) then yr=[1d31,1d36]
@@ -1280,14 +1302,15 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 	; F= flux at grid point 1
 	; F2= flux at grid point 2
 	; F3= flux computed using Teff-Tb relation
-	readcol, 'gon_out/prof', tm, F2, Fm,F3,Fin,Lnu,format=('F,F,F,X,F,X,X,X,D,D')	
+	readcol, 'gon_out/prof', tm, F2, Fm,F3,Fin,Lnu,format=('F,F,D,X,F,X,X,X,D,D')	
 	tm/=(24.0*3600.0)
 
 	Fm*=4.0*!dpi*1.12d6^2
 	F2*=4.0*!dpi*1.12d6^2
 	Fin*=4.0*!dpi*1.12d6^2
 	
-	if keyword_set(Lscale) then Fm=Fm*Lscale+Lmin
+	;if keyword_set(Lscale) then Fm=Fm*Lscale+Lmin
+	if keyword_set(Lscale) then Fm=Fm*Lscale+Lmin*(1.0-Lscale)
 	
 ;		plot, t, F, /xlog, /ylog, xtitle=textoidl('Time (d)'), $
 ;				ytitle=textoidl('Luminosity (erg s^{-2})'), linestyle=0, charsize=1.5, $
@@ -1684,10 +1707,17 @@ if (0) then begin
 endif
 	
 if (strcmp(source,'fluxes1822',10)) then begin		
-	lcsum2,'1822_new_B', 2  ; 2e9 to 3e10  E25=2.3  Q=1   B=6e13   Tc=2e7
-	lcplot, '1822_new_C',0,Lscale=0.15,Lmin=PYL(1.5d7,1d14) 
+;	lcsum2,'1822_new_B', 2  ; 2e9 to 3e10  E25=2.3  Q=1   B=6e13   Tc=2e7
+;	lcplot, '1822_new_C',0,Lscale=0.15,Lmin=PYL(1.5d7,1d14) 
+	lcplot, '1822_new_G',1,Lscale=0.15,Lmin=PYL(4d7,1d14) 
+;	lcplot, '1822_new_F',0,Lscale=0.15,Lmin=PYL(9d7,1d14) 
 	
+	lcsum2,'1822_new_D', 0  ; 2e9 to 3e10  E25=2.3  Q=1   B=6e13   Tc=2e7
+	lcsum2,'1822_new_E', 2  ; 2e9 to 3e10  E25=2.3  Q=1   B=6e13   Tc=2e7
 		
+		
+	arrow,60,6.8d32,90,6.8d32,/data
+	xyouts,27,6.2d32,'ROSAT',charsize=0.9
 ;	lcsum2,'temp',0
 	;	lcplot, '1822_A', 1  ; 2e9 to 3e10  E25=2.3  Q=1   B=6e13   Tc=2e7
 ;	lcplot, '1822_B', 0	   ; 2e9 to 3e10  E25=2.3  Q=10   B=6e13   Tc=2e7
@@ -1785,6 +1815,10 @@ endif
 if (strcmp(source,'2259',4)) then begin
 	lcplot, '2259_step', 0  
 endif
+
+if (strcmp(source,'0556',4)) then begin
+	lcplot, '0556_A', 0  
+endif
 if (strcmp(source,'1810',4)) then begin
 	lcplot, '1810_step', 0  
 	lcplot, '1810_step_nosph', 2
@@ -1824,6 +1858,19 @@ endif
 	
 	
 	if not keyword_set(nodata) then begin
+		
+		if (strcmp(source,'0556',4)) then begin
+			
+				readcol, 'data/0556', t, F, dF,Fp,dFp, format=('D,D,D,X,X,D,D')
+				fac = 1e-13 * 4.0*!dpi*(3.086d21*42.7)^2 
+				dF*=fac
+				F2=fac*(F-Fp)
+				F=fac*F
+				oploterror, t, F, dF, psym=1, /nohat, symsize=1
+				;oploterror, t, F2, dF, psym=1, /nohat, symsize=1,col=120,errcol=120
+				dd=42.7
+		endif
+		
 
 		if (strcmp(source,'1647',4)) then begin
 		;	readcol, 'data/1647', t0, format=('D')
@@ -1878,7 +1925,7 @@ endif
 			dF*=4.0*!dpi*(3.086d21*dd)^2
 			oploterror, t, F, dF, psym=1,/nohat;, col=250, errcol=250
 				
-			if (strcmp(source,'fluxes1822',10)) then begin
+			if (strcmp(source,'fluxes1822',10) and not strcmp(source,'fluxes1822bolo',14)) then begin
 				readcol, 'data/'+source, t2, F2, dF2,flag, format=('D,X,D,D,X,I'),skipline=1		
 				t2-=t0[0]
 				ind = where(flag eq 1)			

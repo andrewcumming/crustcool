@@ -110,7 +110,7 @@ double Eos::pe(void)
   // Calculates the (cgs) electron gas pressure as given by the
   // semi-analytic formula of Paczynski (1983) ApJ 267 315.
 {
-  double rY, pednr, pedr, pend, ped, ped1,ped2;
+	double rY, pednr, pedr, pend, ped;
   rY=this->rho*Ye();
 	double B12=this->B/1e12;
 	//B12=0.0;
@@ -596,11 +596,12 @@ double Eos::CV(void)
 	
 	//cvneut = this->Yn*0.5*PI*PI*1.38e-16*1.38e-16*this->T8*1e8/(1.67e-24*this->Chabrier_EF()*1.6e-9);	
 	
-	 double k, EFn;
+	 double EFn;
     // Assume the neutrons are non-relativistic
      EFn=1.42*pow(1e-12*rho*Yn,2.0/3.0);
     // but we use a fit for EFn which includes interactions
     // comes from Mackie and Baym
+	//double k;
     //k=0.207*pow(1e-12*this->rho*this->Yn, 1.0/3.0);
     //EFn=1.730*k+25.05*k*k-30.47*k*k*k+17.42*k*k*k*k;  // in MeV
 //    P+=0.4*EFn*1.6e-6*this->rho*this->Yn/1.66e-24;
@@ -629,13 +630,14 @@ double Eos::CV(void)
 	}
 
 	if (this->rho>this->rho_core) {
-			 double k, EFn;
+			 double EFn;
 		
 		    // Assume the neutrons are non-relativistic
 		     EFn=1.42*pow(1e-12*rho*Yn,2.0/3.0);
 		    // but we use a fit for EFn which includes interactions
 		    // comes from Mackie and Baym
-		    //k=0.207*pow(1e-12*this->rho*this->Yn, 1.0/3.0);
+		    //double k;
+		//k=0.207*pow(1e-12*this->rho*this->Yn, 1.0/3.0);
 		    //EFn=1.730*k+25.05*k*k-30.47*k*k*k+17.42*k*k*k*k;  // in MeV
 		//    P+=0.4*EFn*1.6e-6*this->rho*this->Yn/1.66e-24;
 			cvneut=0.5*3.1415*3.1415*8.3144e7*this->Yn * 1.38e-16*1e8*this->T8/(EFn*1.6e-6);
@@ -1016,7 +1018,7 @@ double Eos::TC(void)
 double Eos::opac(void)
   // Calculates the opacity
 {
-  double kappa, ef, eta, TP;
+  double kappa, ef, eta;
   int i;
 
   // This is the fitting formula for the electron scattering
@@ -1116,7 +1118,7 @@ double Eos::opac(void)
 
   // add correction for frequencies < plasma frequency
   // (not sure where this came from ??) 
- //  TP=3.3e-3*sqrt(this->rho*this->Ye());  // plasma temperature
+ //  double TP=3.3e-3*sqrt(this->rho*this->Ye());  // plasma temperature
  // kappa_rad*=exp(TP/this->T8);
  // double up=TP/this->T8;
  // kappa_rad*=(1-2.448*pow(0.1*up,2.0)+16.40*pow(0.1*up,6.0));
@@ -1143,7 +1145,7 @@ double Eos::gff(double Z1, double eta)
   // formula described in the Schatz et al steady state paper
   // Agrees to 10% with Itoh et al. 1991
 {
-  double gaunt, x, rY, T8_32, gam, ef;
+  double gaunt, x, rY, T8_32, gam;
 
   rY=this->rho*Ye();
   T8_32=pow(this->T8, 1.5);
@@ -1189,7 +1191,7 @@ double Eos::Fep(int flag)
   // (Baiko & Yakovlev 1995,1996)
   // if flag=0 electrical conductivity; flag>0 thermal conductivity
 {
-  double R0, R1, R2, G0, G2, t, u2, u1, s, F, K0,K1;
+  double R0, R1, R2, G0, G2, t, u2, u1, s, F, K0;
   double alpha, alpha0, a0, a2, x, beta, AA, ZZ;
   double P0,g, K2,P2, c1, c2;
 
@@ -1517,8 +1519,8 @@ double Eos::K_cond(double ef)
   // electron-electron collisions
   // ef is the Fermi energy in keV
 {
-  double x, lam, y, y3, rY, x2, K;
-  double gam, f_c, theta, beta, corr;
+  double x, lam, y, rY, x2, K;
+  double gam, f_c, beta;
 
   // set up parameters
   rY=this->rho*this->Ye();
@@ -1680,7 +1682,7 @@ void Eos::potek_eos(double *P_out, double *cv_out_e, double *cv_out_i)
 	double CMI = this->A[1];
 	double RR = this->rho;
 	double TT = this->T8*1e8/3.1577e5;
-	double BB = this->B/2.3505e9;
+	//double BB = this->B/2.3505e9;
 	double GAMAG = 0.0;
 	double DENS, GAMI, CCHI, TPT, LIQSOL=1, PnkT, UNkT,SNk,CCVI,CCVE,CHIR,CHIT;
 //	if (TT<0.0) TT=100.0;
@@ -1697,7 +1699,8 @@ double Eos::potek_cond(void)
 // returns the thermal conductivity in cgs from Potekhin's fortran code
 {
 	double s1,s2,s3,k1,k2,k3;
-	double null=0.0, Zimp=sqrt(this->Q), AA=this->A[1]*(1.0-this->Yn);
+	//double null=0.0;
+	double Zimp=sqrt(this->Q), AA=this->A[1]*(1.0-this->Yn);
 	double Bfield=this->B/4.414e13;
 	double temp=this->T8*1e2/5930.0;
 	double rr=this->rho/(this->A[1]*15819.4*1822.9);
@@ -1733,7 +1736,7 @@ double Eos::potek_cond(void)
 double Eos::econd(void)
   // calculates the electrical conductivity
 {
-  double x1, x2, sig, x, lambda, nu, theta, beta;
+  double x1, x2, sig, x, lambda, nu, beta;
 
   if (this->gamma() < this->gamma_melt || this->Q == 900.0) { // if Q=900 treat as liquid
     

@@ -100,14 +100,11 @@ double Spline::get(double x)
 void Spline::minit(double *x, double *y, int n)
   // initialize from memory rather than a file
 {
-  double d1,d2;
-  int i;
-  
   this->num=n;
   this->xtab=vector(0,n);
   this->ytab=vector(0,n); 
 
-  for(i=0; i<n; i++) {  // copy x and y arrays
+  for(int i=0; i<n; i++) {  // copy x and y arrays
     this->xtab[i]=x[i+1];
     this->ytab[i]=y[i+1];
   }

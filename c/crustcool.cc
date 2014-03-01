@@ -37,7 +37,7 @@ double energy_deposited(int i);
 void output_result_for_step(int j, FILE *fp, FILE *fp2, double timesofar, double *last_time_output);
 void read_in_data(const char *fname);
 void calculate_cooling_curve(void);
-double calculate_chisq(void);
+void calculate_chisq(void);
 void set_composition(void);
 void heatderivs(double t, double T[], double dTdt[]);
 void heatderivs2(double t, double T[], double dTdt[]);
@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
 	double x;				
 	int commented=0;
 	while (!feof(fp)) {   // we read the file line by line
-		char *e=fgets(s1,200,fp);		
+		(void) fgets(s1,200,fp);		
 		// ignoring lines that begin with \n (blank) or with # (comments)
 		// or with $ (temperature profile)
 		if (!strncmp(s1,"##",2)) commented = 1-commented;
@@ -207,6 +207,7 @@ int main(int argc, char *argv[])
 	fclose(fp);
 
 	if (G.yt < 10.0) G.yt=pow(10.0,G.yt);
+	if (G.extra_y < 16.0) G.extra_y=pow(10.0,G.extra_y);
 
 	if (G.Qinner == -1.0) G.Qinner=EOS.Q;
 	if (G.energy_deposited_inner == -1.0) G.energy_deposited_inner = G.energy_deposited_outer;
@@ -284,7 +285,7 @@ int main(int argc, char *argv[])
 	calculate_cooling_curve();   // not outputting the heating stage,so start at t=0
 
 	// calculate chisq
-	double chisq = calculate_chisq(&ODE,&TEFF,G.g,G.ZZ);
+	calculate_chisq(&ODE,&TEFF,G.g,G.ZZ);
 
 	// tidy up
 	if (G.output) {
@@ -366,12 +367,12 @@ void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar,double *
 	
 		// we output time, fluxes and TEFF that are already redshifted into the observer frame
 		// gon_out/prof
-		fprintf(fp2, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", (timesofar+ODE.get_x(j))*G.ZZ, 
+		fprintf(fp2, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", (timesofar+ODE.get_x(j))*G.ZZ, 
 			pow((G.radius/11.2),2.0)*G.F[2]/(G.ZZ*G.ZZ), pow((G.radius/11.2),2.0)*FF/(G.ZZ*G.ZZ),
 			ODE.get_y(G.N-5,j), pow((G.g/2.28e14)*TEFF.get(ODE.get_y(1,j))/5.67e-5,0.25)/G.ZZ, 
 			ODE.get_y(1,j), pow((G.g/2.28e14)*TEFF.get(ODE.get_y(1,j))/5.67e-5,0.25),
 			pow((G.radius/11.2),2.0)*G.F[G.N+1]/(G.ZZ*G.ZZ),pow((G.radius/11.2),2.0)*G.F[G.N]/(G.ZZ*G.ZZ),
-			4.0*PI*pow(1e5*G.radius,2.0)*Lnu/(G.ZZ*G.ZZ));
+			4.0*PI*pow(1e5*G.radius,2.0)*Lnu/(G.ZZ*G.ZZ), dt);
 			
 		if ((fabs(log10(fabs(timesofar+ODE.get_x(j))*G.ZZ)-log10(fabs(*last_time_output))) >= 1000.0) ||
 			(fabs(timesofar)+ODE.get_x(j))*G.ZZ < 1e10) {
@@ -505,10 +506,9 @@ double calculate_heat_flux(int i, double *T)
 			// now correct for B ... 
 			if (G.angle_mu >= 0.0) {
 				// use the enhancement along the field direction
-				double chi1,chi2;
 				double B12=EOS.B*1e-12;
-				chi1 = 1.0 + 0.0492*pow(B12,0.292)/pow(T9,0.24);
-				//chi2 = sqrt(1.0 + 0.1076*B12*pow(0.03+T9,-0.559))/
+				double chi1 = 1.0 + 0.0492*pow(B12,0.292)/pow(T9,0.24);
+				//double chi2 = sqrt(1.0 + 0.1076*B12*pow(0.03+T9,-0.559))/
 				//			pow(1.0+0.819*B12/(0.03+T9),0.6463);
 				double fcond = 4.0*G.angle_mu*G.angle_mu/(1.0+3.0*G.angle_mu*G.angle_mu);		
 				flux *= fcond*pow(chi1,4.0);//+(1.0-fcond)*pow(chi2,4.0);
@@ -643,11 +643,10 @@ void calculate_vars(int i, double T, double P, double *CP, double *K, double *NU
 		double interpfac=(beta-(G.betamin + (j-1)*G.deltabeta))/G.deltabeta;
 		// interpolate the thermal conductivity to the current
 		// value of impurity parameter Q
-		double K0,K1,K0perp,K1perp;
-		K0=G.K0_grid[i][j] + (G.K0_grid[i][j+1]-G.K0_grid[i][j])*interpfac;
-		K1=G.K1_grid[i][j] + (G.K1_grid[i][j+1]-G.K1_grid[i][j])*interpfac;
-		K0perp=G.K0perp_grid[i][j] + (G.K0perp_grid[i][j+1]-G.K0perp_grid[i][j])*interpfac;
-		K1perp=G.K1perp_grid[i][j] + (G.K1perp_grid[i][j+1]-G.K1perp_grid[i][j])*interpfac;
+		double K0=G.K0_grid[i][j] + (G.K0_grid[i][j+1]-G.K0_grid[i][j])*interpfac;
+		double K1=G.K1_grid[i][j] + (G.K1_grid[i][j+1]-G.K1_grid[i][j])*interpfac;
+		//double K0perp=G.K0perp_grid[i][j] + (G.K0perp_grid[i][j+1]-G.K0perp_grid[i][j])*interpfac;
+		//double K1perp=G.K1perp_grid[i][j] + (G.K1perp_grid[i][j+1]-G.K1perp_grid[i][j])*interpfac;
 		//K0perp=0.0; K1perp=0.0;
 
 		// use something like this next line to hardwire Q values
@@ -751,7 +750,7 @@ void set_up_initial_temperature_profile_piecewise(char *fname)
 	while (!feof(fp)) {		
 		double rho, T;
 		// new lines: read from lines marked ">" in init.dat
-		char *e=fgets(s1,200,fp);		
+		(void) fgets(s1,200,fp);		
 		if (!strncmp(s1,"##",2)) commented = 1-commented;
 		if (!strncmp(s1,">",1) && commented==0) {
 			sscanf(s1,">%lg\t%lg\n",&rho,&T);
@@ -829,7 +828,6 @@ void set_up_initial_temperature_profile_piecewise(char *fname)
 				ODE.set_bc(i,TTC);
 			}
 
-			double null=0.0;
 			double Kcond = EOS.potek_cond();
 
 			I+=sqrt(EOS.CP()/(Kcond*EOS.rho))*(G.P[i]-G.P[i-1])/G.g;
@@ -903,7 +901,7 @@ void set_up_initial_temperature_profile(void)
 	}
 
 	// set initial condition and write out some info
-	FILE *fp;
+	FILE *fp=NULL;
 	if (G.output) fp = fopen("gon_out/initial_condition","w");
 	double I=0.0;   // I is the integral used to get the thermal time
 	double E=0.0;   // total energy deposited
@@ -1007,7 +1005,8 @@ void precalculate_vars(void)
 	if (!G.force_precalc) fp=fopen(s,"r");
 	// if unsuccessful (or if precalc is set) we need to recalculate
 	if (fp == NULL) {
-		if (G.output) fp=fopen(s,"w");
+		if (G.output)
+			fp=fopen(s,"w");
 		printf("Precalculating quantities and writing to file %s...\n",s);
 
 		for (int i=1; i<=G.N+1; i++) {
@@ -1056,7 +1055,7 @@ void precalculate_vars(void)
 				EOS.Q=Q_store;  // restore to previous value
 
 				// conductivity due to radiation
-				double kappa=EOS.opac();
+				(void) EOS.opac();  // call to kappa sets the variable kappa_rad
 				G.KAPPA_grid[i][j] = 3.03e20*pow(EOS.T8,3)/(EOS.kappa_rad*G.P[i]);
 
 				if (G.output) 
@@ -1068,6 +1067,7 @@ void precalculate_vars(void)
 
 			}	
 		}
+		if (G.output) fclose(fp);
 
 	} else {
 		
@@ -1086,10 +1086,10 @@ void precalculate_vars(void)
 				G.EPS_grid[i][j]*=energy_deposited(i);
 			}
 		}
+		fclose(fp);
 			
 	}
 	
-	fclose(fp);
 }
 
 
@@ -1152,12 +1152,31 @@ double crust_heating_rate(int i)
 
 	// Extra heat source in the ocean
 	if (G.extra_heating) {	
+		// Put all of the extra heat into one grid point
+		//if (G.P[i]*exp(-0.5*G.dx) <G.extra_y*2.28e14 && G.P[i]*exp(0.5*G.dx)>G.extra_y*2.28e14)
+		//		eps+=8.8e4*G.extra_Q*9.64e17/(P*G.dx);
 	
-		if (G.P[i]*exp(-0.5*G.dx) <G.extra_y*2.28e14 && G.P[i]*exp(0.5*G.dx)>G.extra_y*2.28e14)
-				eps+=8.8e4*G.extra_Q*9.64e17/(P*G.dx);
-	
-//	 && P >=0.9*G.extra_y*2.28e14 && P<=2.0*G.extra_y*2.28e14) eps+=8.8e4*G.extra_Q*9.64e17/(P*G.dx);
-//	if (G.extra_heating && P >=0.5*G.extra_y*2.28e14 && P<=2.0*G.extra_y*2.28e14) eps+=8.8e4*G.extra_Q*9.64e17/(P*log(3.0/0.333));
+		// More distributed heating
+		double extra_y1 = G.extra_y/3.0;	
+		double extra_y2 = G.extra_y*3.0;
+		double eps_extra=0.0;
+		double P1 = G.P[i]*exp(-0.5*G.dx);
+		double P2 = G.P[i]*exp(0.5*G.dx);
+		double geff=2.28e14;
+		
+//		if (P >= extra_y1*2.28e14 && P < extra_y2*2.28e14) eps_extra=8.8e4*G.extra_Q*9.64e17/(P*log(extra_y2/extra_y1));
+
+		if (P1 > extra_y1*geff && P2 < extra_y2*geff)   // we are within the heating zone
+			eps_extra=8.8e4*G.extra_Q*9.64e17/(P*log(extra_y2/extra_y1));
+		if (P1 < extra_y1*geff && P2 < extra_y2*geff && extra_y1*geff<P2) {   // left hand edge of heated region
+			eps_extra=8.8e4*G.extra_Q*9.64e17/(P*log(extra_y2/extra_y1));
+			eps_extra *= log(P2/(extra_y1*geff))/G.dx;
+		}
+		if (P1 > extra_y1*geff && P2 > extra_y2*geff && extra_y2*geff>P1) {  // right hand edge of heated region
+			eps_extra=8.8e4*G.extra_Q*9.64e17/(P*log(extra_y2/extra_y1));
+			eps_extra *= log(extra_y2*geff/P1)/G.dx;
+		}
+		eps+=eps_extra;
 	}
 	
 	
@@ -1189,7 +1208,7 @@ void get_TbTeff_relation(void)
 		if (G.gpe) fp = fopen("out/grid_He4","r");
 		else fp = fopen("out/grid_He9","r");
 	}
-	FILE *fp2;
+	FILE *fp2=NULL;
 	if (G.output) fp2=fopen("gon_out/TbTeff", "w");
 	
 	double y,T,F,rho,dummy;
@@ -1314,7 +1333,7 @@ void set_up_grid(int ngrid, const char *fname)
 
   	G.dx=log(G.Pb/G.Pt)/(G.N-1);   // the grid is equally spaced in log column
   
-	FILE *fp;
+	FILE *fp=NULL;
 	if (G.output) fp = fopen("gon_out/grid_profile","w");
 
 	double Qtot=0.0;
