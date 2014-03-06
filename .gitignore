@@ -14,3 +14,6 @@ init/*
 project.tmproj
 ps/*
 mcmc/*
+mcgrid*
+c/odeint_gsl.cc
+h/odeint_gsl.h

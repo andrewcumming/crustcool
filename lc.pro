@@ -663,7 +663,6 @@ pro lcsum, namestring, ls, Rvec=Rvec, muup=muup, Lscale=Lscale
 	if keyword_set(muup) then nend=muup*nzones
 			
 	for i=nstart,nend do begin
-		
 		name = 'gon_out/prof_'+namestring+'_mu'+strtrim(string(1.0*i/nzones,format='(f3.1)'))
 		print, 'Reading file ',name
 		readcol, name, tm,Fm,format=('D,X,D'),/silent	
@@ -1260,7 +1259,7 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 	endif
 	if (strcmp(source,'2259',4)) then yr=[1d34,1d35]
 	if (strcmp(source,'fluxes1822',10)) then begin
-		yr=[4d31,1d35]
+		yr=[2d31,3d35]
 		xr=[0.5,3000]
 	endif
 	if (strcmp(source,'fluxes1547',10)) then yr=[1d33,1d36]
@@ -1291,7 +1290,10 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 		xr=[1.0,6000.0]
 	endif
 	if (strcmp(source,'1900',4)) then yr=[1d34,1d38]
-	if (strcmp(source,'SGR1900',7)) then yr=[1d34,2d37]
+	if (strcmp(source,'SGR1900',7)) then begin
+		 yr=[1d34,1d38]
+		xr=[0.1,10000.0]
+	endif
 
 	if (strcmp(source,'1731',4)) then yr=[1d32,3d35]
 
@@ -1709,15 +1711,19 @@ endif
 if (strcmp(source,'fluxes1822',10)) then begin		
 ;	lcsum2,'1822_new_B', 2  ; 2e9 to 3e10  E25=2.3  Q=1   B=6e13   Tc=2e7
 ;	lcplot, '1822_new_C',0,Lscale=0.15,Lmin=PYL(1.5d7,1d14) 
-	lcplot, '1822_new_G',1,Lscale=0.15,Lmin=PYL(4d7,1d14) 
+;	lcplot, '1822_new_G',1,Lscale=0.15,Lmin=PYL(4d7,1d14) 
 ;	lcplot, '1822_new_F',0,Lscale=0.15,Lmin=PYL(9d7,1d14) 
 	
-	lcsum2,'1822_new_D', 0  ; 2e9 to 3e10  E25=2.3  Q=1   B=6e13   Tc=2e7
-	lcsum2,'1822_new_E', 2  ; 2e9 to 3e10  E25=2.3  Q=1   B=6e13   Tc=2e7
+;	lcsum2,'1822_new_D', 2  ; 2e9 to 3e10  E25=2.3  Q=1   B=6e13   Tc=2e7
+;	lcsum2,'1822_new_E', 2  ; 2e9 to 3e10  E25=2.3  Q=1   B=6e13   Tc=2e7
 		
 		
-	arrow,60,6.8d32,90,6.8d32,/data
-	xyouts,27,6.2d32,'ROSAT',charsize=0.9
+;	arrow,60,6.8d32,90,6.8d32,/data
+;	xyouts,27,6.2d32,'ROSAT',charsize=0.9
+	arrow,60,6.8d32/20.0,90,6.8d32/20.0,/data
+	xyouts,27,6.2d32/20.0,'ROSAT',charsize=0.9
+
+
 ;	lcsum2,'temp',0
 	;	lcplot, '1822_A', 1  ; 2e9 to 3e10  E25=2.3  Q=1   B=6e13   Tc=2e7
 ;	lcplot, '1822_B', 0	   ; 2e9 to 3e10  E25=2.3  Q=10   B=6e13   Tc=2e7
@@ -1916,16 +1922,18 @@ endif
 		
 		if (strcmp(source,'fluxes',6)) then begin
 			readcol, 'data/'+source, t0, format=('D')
-			readcol, 'data/'+source, t, F, dF,format=('D,X,D,D'),skipline=1		
+			readcol, 'data/'+source, t, F, dF,dF2,format=('D,X,D,D,D'),skipline=1		
 			t-=t0[0]
 			dd=8.0
 			if (strcmp(source,'fluxes1822',10)) then dd=1.6
 			if (strcmp(source,'fluxes1547',10)) then dd=3.9
 			F*=4.0*!dpi*(3.086d21*dd)^2
 			dF*=4.0*!dpi*(3.086d21*dd)^2
-			oploterror, t, F, dF, psym=1,/nohat;, col=250, errcol=250
+			oploterror, t, F, dF, psym=1,/nohat, /lobar;, col=250, errcol=250
+			oploterror, t, F, dF2, psym=1,/nohat, /hibar;, col=250, errcol=250
+
 				
-			if (strcmp(source,'fluxes1822',10) and not strcmp(source,'fluxes1822bolo',14)) then begin
+			if (0)then begin ;(strcmp(source,'fluxes1822',10) and not strcmp(source,'fluxes1822bolo',14)) then begin
 				readcol, 'data/'+source, t2, F2, dF2,flag, format=('D,X,D,D,X,I'),skipline=1		
 				t2-=t0[0]
 				ind = where(flag eq 1)			
@@ -2765,18 +2773,18 @@ pro initial,ps=ps
 	readcol, 'gon_out/initial_condition', zone2, y2, T2, rho2, CV2, K2, tt2,$
 						format=('I,D,D,D,D,D,X,X,D')
 
-				y2*=2.28d14
+			;	y2*=2.28d14
 
 
-			rho=y/2.28d14
-			rho2=y/2.28d14
+			;rho=y/2.28d14
+			;rho2=y/2.28d14
 
 	!p.multi=[0,2,2,0,0]
-	plot, rho, T,/xlog,/ylog, ytitle=textoidl('T (K)'),xtitle=textoidl('Column depth (g cm^{-2})')
+	plot, rho, T,/xlog,/ylog, ytitle=textoidl('T (K)'),xtitle=textoidl('Column depth (g cm^{-2})'),xrange=[1d11,1d14]
 	oplot,rho2,T2,linestyle=1
 	oplot, rho,TC+1e5, linestyle=2
 
-	plot, rho, CV,/xlog,/ylog, ytitle=textoidl('C_V'),xtitle=textoidl('Column depth (g cm^{-2})'), yrange=[1d5,5d7]
+	plot, rho, CV,/xlog,/ylog, ytitle=textoidl('C_V'),xtitle=textoidl('Column depth (g cm^{-2})'), yrange=[1d3,5d7],xrange=[1d11,1d14]
 ;	oplot,rho2,CV2,linestyle=1
 	oplot,rho,cve,linestyle=2
 ;	oplot,rho,cve*(rho/1e9)^0.3333*1e9/T,linestyle=2

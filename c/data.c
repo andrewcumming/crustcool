@@ -38,7 +38,7 @@ void read_in_data(const char *fname)
 			}
 			*/
 
-			
+		/*	
 			// hardcode the data for 1659
 			double t0=52159.5;
 			data.n=8;    // 7 data points in BC09
@@ -58,7 +58,7 @@ void read_in_data(const char *fname)
 			for (int i=1; i<=data.n; i++) {
 				data.t[i]-=t0;
 			}
-			
+			*/
 
 /*
 		// hardcode the data for XTEJ
@@ -85,7 +85,7 @@ void read_in_data(const char *fname)
 	
 		for (int i=1; i<=data.n; i++) data.t[i]-=t0;
 	*/
-	/*
+	
 	
 		// hardcode the data for 0556
 		double t0=0.0;
@@ -106,7 +106,7 @@ void read_in_data(const char *fname)
 		data.t[9]=497.1; data.TT[9]=182.9; data.Te[9]=1.0;
 	
 		for (int i=1; i<=data.n; i++) data.t[i]-=t0;
-	*/
+	
 	
 	} else {	
 	

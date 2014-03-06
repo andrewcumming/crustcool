@@ -14,8 +14,8 @@ import datetime
 
 def set_params(x,name):
 	data="""output	0
-mass	1.2
-radius	13.0
+mass	1.8
+radius	10.0
 Bfield 	0
 mdot	1.0
 precalc	1
@@ -45,8 +45,8 @@ extra_y	13.0
 #		'Qimp':10.0**x[1],
 #		'Tt':x[2]*1e8,
 #		'mdot':x[3],
-#		'mass':x[4],
-#		'radius':x[5]
+#		'mass':x[2],
+#		'radius':x[3],
 		'extra_Q':x[0],
 		'extra_y':x[1]
 	}
@@ -75,32 +75,35 @@ def lnprob(x):
 	# (assume a flat prior within this range)
 	#xmin=numpy.array([0.0,-3.0,0.0,0.0,1.1,8.0])
 	#xmax=numpy.array([100.0,3.0,100.0,3.0,2.5,16.0])
+	#xmin=numpy.array([0.0,11.0,1.1,8.0])
+	#xmax=numpy.array([10.0,15.0,2.5,16.0])
 	xmin=numpy.array([0.0,11.0])
 	xmax=numpy.array([10.0,15.0])
 	if (len((x<xmin).nonzero()[0])>0 or len((x>xmax).nonzero()[0])>0):
 		return -numpy.inf
 	chisq=get_chisq(x)
-	#print x[0],x[1],chisq
+	print x[0],x[1],chisq
 	return -chisq/2.0
 
 
-nwalkers, ndim = 100, 2
+nwalkers, ndim = 10, 2
 
 # parameters are   x = [Tc7, Qimp, Tb8, mdot, M, R, kncrit]
-p0 = emcee.utils.sample_ball([3.0,13.0],[1.0,1.0],nwalkers)
+p0 = emcee.utils.sample_ball([3.0,13.0],[0.5,0.5],nwalkers)
+#p0 = emcee.utils.sample_ball([3.0,13.0,1.4,10.0],[0.5,0.5,0.1,1.0],nwalkers)
 #p0 = emcee.utils.sample_ball([20.0,1.0,1.5,2.0,1.2,13.0],[0.3,0.1,0.3,0.2,0.01,0.5],nwalkers)
 
 sampler=emcee.EnsembleSampler(nwalkers,ndim,lnprob,threads=15)
 
 print 'Starting run at ', str(datetime.datetime.now())
 start_time = time.time()
-sampler.run_mcmc(p0, 100)
+sampler.run_mcmc(p0, 200)
 print 'time to run = ',time.time() - start_time,'seconds'
 print("Mean acceptance fraction: {0:.3f}"
                 .format(numpy.mean(sampler.acceptance_fraction)))
 
-# throw away the first nburn steps as burn-in
-nburn = 20
+# throw away the first burn steps as burn-in
+nburn = 50
 samples=sampler.chain[:,nburn:,:].reshape((-1,ndim))
 fig = triangle.corner(samples)
 #		fig = triangle.corner(samples,labels=[r"$T_{c,7}$", r"$Q_{imp}$", r"$T_{b,8}$",
