@@ -16,10 +16,10 @@ void read_in_data(const char *fname)
 
 
 
-			/*
+			
 			// hardcode the data for 1731
 			double t0=51930.5;
-			data.n=7;    // 7 data points for BC09
+			data.n=9;    // 7 data points for BC09
 			data.t = vector(1,data.n);
 			data.TT = vector(1,data.n);
 			data.Te = vector(1,data.n);
@@ -33,10 +33,14 @@ void read_in_data(const char *fname)
 			data.t[7]=53525.4; data.TT[7]=70.3; data.Te[7]=2.1;
 			data.t[8]=54969.7; data.TT[8]=63.1; data.Te[8]=2.1;
 
+			data.t[9]=t0+5230.0; data.TT[9]=54.0; data.Te[9]=2.1;
+//			data.t[9]=t0+5230.0; data.TT[9]=63.1; data.Te[9]=2.1;
+
+
 			for (int i=1; i<=data.n; i++) {
 				data.t[i]-=t0;
 			}
-			*/
+		
 
 		/*	
 			// hardcode the data for 1659
@@ -86,7 +90,7 @@ void read_in_data(const char *fname)
 		for (int i=1; i<=data.n; i++) data.t[i]-=t0;
 	*/
 	
-	
+	/*
 		// hardcode the data for 0556
 		double t0=0.0;
 		data.n=9;
@@ -106,7 +110,7 @@ void read_in_data(const char *fname)
 		data.t[9]=497.1; data.TT[9]=182.9; data.Te[9]=1.0;
 	
 		for (int i=1; i<=data.n; i++) data.t[i]-=t0;
-	
+	*/
 	
 	} else {	
 	

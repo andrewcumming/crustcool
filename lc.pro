@@ -395,6 +395,8 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 	if (source eq '1659' or source eq '1731') then begin
 		xr=[1.0,10000.0]
 		yr=[40,140]
+		xr=[30.0,10000.0]
+		yr=[40,110]
 	endif
 	if (source eq '0748') then begin
 		xr=[10.0,100000.0]
@@ -469,6 +471,47 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 	;	FF = 1.38d-16*Teff/(1.6d-12)
 	;	oplot, tt,FF,linestyle=0
 
+	if (source eq '1731') then begin
+
+		readcol, 'gon_out/prof_1731_chandra1', tt,Teff, format=('F,X,X,X,F')
+		tt/=(24*3600.0)
+		FF = 1.38d-16*Teff/(1.6d-12)
+		oplot, tt,FF,linestyle=0
+		
+		openw, lun,'lc_1731_chandra1.dat', /get_lun
+		for i=0,n_elements(tt)-1 do begin
+			if tt[i] gt 0.0 then printf, lun, tt[i], FF[i], format='(g,g)'
+		endfor
+		free_lun, lun
+		
+		readcol, 'gon_out/prof_1731_chandra2', tt,Teff, format=('F,X,X,X,F')
+		tt/=(24*3600.0)
+		FF = 1.38d-16*Teff/(1.6d-12)
+		oplot, tt,FF,linestyle=1
+
+		openw, lun,'lc_1731_chandra2.dat', /get_lun
+		for i=0,n_elements(tt)-1 do begin
+			if tt[i] gt 0.0 then printf, lun, tt[i], FF[i], format='(g,g)'
+		endfor
+		free_lun, lun
+
+		readcol, 'gon_out/prof_1731_chandra3', tt,Teff, format=('F,X,X,X,F')
+		tt/=(24*3600.0)
+		FF = 1.38d-16*Teff/(1.6d-12)
+		oplot, tt,FF,linestyle=4
+
+		openw, lun,'lc_1731_chandra3.dat', /get_lun
+		for i=0,n_elements(tt)-1 do begin
+			if tt[i] gt 0.0 then printf, lun, tt[i], FF[i], format='(g,g)'
+		endfor
+		free_lun, lun
+
+
+		oplot, [5230.0,5230.0],[10.0,1000.0],linestyle=2
+
+	endif
+
+
 
 
 		if (source eq '1659' or source eq '1731' or source eq 'XTEJ' or source eq '0748' or source eq '0556') and not keyword_set(noextras) then  begin
@@ -478,7 +521,7 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 		; the output is already redshifted
 		; but needs to be converted to eV
 		FF = 1.38d-16*Teff/(1.6d-12)
-		oplot, tt,FF,linestyle=0
+		;oplot, tt,FF,linestyle=0
 		; plot lightcurve from simulation
 		readcol, 'gon_out/prof_'+source+'_B', tt,Teff, format=('F,X,X,X,F')
 		tt/=(24*3600.0)
@@ -569,7 +612,7 @@ pro lcplot, namestring, ls, tscal=tscal, linecol=linecol,Lscale=Lscale,Lmin=Lmin
 	endelse
 	print, 'Plotted ', namestring
 	
-	openw, lun, '1.dat', /get_lun
+	openw, lun,'lc'+namestring+'.dat', /get_lun
 	for i=0,n_elements(tm)-1 do printf, lun, tm[i], Fm[i], format='(g,g)'
 	free_lun, lun
 	
@@ -1230,7 +1273,7 @@ end
 
 
 pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, overplot=overplot, lcol=lcol,$
-			cs=cs, all=all, Lscale=Lscale, Lmin=Lmin
+			cs=cs, all=all, Lscale=Lscale, Lmin=Lmin,zoom=zoom
 	
 ;	!p.multi=[0,1,3,0,0]
 ;	!p.charsize=2.5
@@ -1259,8 +1302,12 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 	endif
 	if (strcmp(source,'2259',4)) then yr=[1d34,1d35]
 	if (strcmp(source,'fluxes1822',10)) then begin
-		yr=[2d31,3d35]
+		yr=[3d30,1.5d35]
 		xr=[0.5,3000]
+		if keyword_set(zoom) then begin
+			yr=[3d30,2d33]
+			xr=[100.0,3000]
+		endif
 	endif
 	if (strcmp(source,'fluxes1547',10)) then yr=[1d33,1d36]
 	if (strcmp(source,'1659',4)) then yr=[1d31,1d36]
@@ -1717,6 +1764,8 @@ if (strcmp(source,'fluxes1822',10)) then begin
 ;	lcsum2,'1822_new_D', 2  ; 2e9 to 3e10  E25=2.3  Q=1   B=6e13   Tc=2e7
 ;	lcsum2,'1822_new_E', 2  ; 2e9 to 3e10  E25=2.3  Q=1   B=6e13   Tc=2e7
 		
+	lcplot, '1822_chandra1',0,Lscale=0.15,Lmin=PYL(1d7,1d14) 
+	lcplot, '1822_chandra2',1,Lscale=0.15,Lmin=PYL(2d7,1d14) 
 		
 ;	arrow,60,6.8d32,90,6.8d32,/data
 ;	xyouts,27,6.2d32,'ROSAT',charsize=0.9
