@@ -74,6 +74,7 @@ struct globals {
 	double energy_deposited_inner;
 	double energy_slope;
 	double outburst_duration;
+	double deep_heating_factor;
 	int instant_heat;
 	double surfF, surfy;
 	double angle_mu;
@@ -135,6 +136,7 @@ int main(int argc, char *argv[])
 	G.extra_Q=0.0;
 	G.extra_y=0.0;
 	G.output=1;
+	G.deep_heating_factor=1.0;
 	
 	// now read from the file 'init.dat'
 	char fname[200];
@@ -196,6 +198,7 @@ int main(int argc, char *argv[])
 			if (!strncmp(s,"convection",10)) G.include_convection=(int) x;			
 			if (!strncmp(s,"cooling_bc",10)) G.force_cooling_bc=(int) x;
 			if (!strncmp(s,"extra_heating",13)) G.extra_heating=(int) x;
+			if (!strncmp(s,"deep_heating_factor",19)) G.deep_heating_factor=x;
 			if (!strncmp(s,"energy_slope",12)) G.energy_slope=x;
 			if (!strncmp(s,"potek_eos",9)) EOS.use_potek_eos=(int) x;
 			if (!strncmp(s,"envelope",8)) G.use_my_envelope=(int) x;
@@ -1145,9 +1148,9 @@ double crust_heating_rate(int i)
 {
 	double eps=0.0, P = G.P[i];
 	// simple "smeared out" heating function, 1.2MeV in inner crust, 0.2MeV in outer crust
-	if (P >= 1e16*2.28e14 && P <= 1e17*2.28e14) eps=8.8e4*1.7*9.64e17/(P*log(1e17/1e16));
+	if (P >= 1e16*2.28e14 && P <= 1e17*2.28e14) eps=8.8e4*G.deep_heating_factor*1.7*9.64e17/(P*log(1e17/1e16));
 // 	if (y >= 1e12 && y < 1e15) eps=G.mdot*8.8e4*0.15*9.64e17/(y*log(1e15/1e12));
- 	if (P >= 3e12*2.28e14 && P < 3e15*2.28e14) eps=8.8e4*0.2*9.64e17/(P*log(3e15/3e12));
+ 	if (P >= 3e12*2.28e14 && P < 3e15*2.28e14) eps=8.8e4*G.deep_heating_factor*0.2*9.64e17/(P*log(3e15/3e12));
 //if (y >= 6e15 && y <= 3e18) eps=G.mdot*8.8e4*1.2*9.64e17/(y*log(3e18/6e15));
 
 	// Extra heat source in the ocean

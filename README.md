@@ -29,6 +29,8 @@ The file `init.dat` sets up the run. The parameters are
 	extra_heating	if set, turn on extra heating in the NS ocean during accretion.
 	extra_Q		strength of extra heating in MeV
 	extra_y		depth of extra heating in g/cm^2
+	deep_heating_factor	factor by which to multiply the deep heating strength (useful to be able to control
+				deep heating and shallow heating independently; equivalent to changing mdot for deep heating only)
 
 	Edep	energy deposited (used for magnetar heating)
 	Einner	(optional) a different value of energy deposited for the inner crust

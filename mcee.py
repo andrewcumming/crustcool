@@ -14,8 +14,8 @@ import datetime
 
 def set_params(x,name):
 	data="""output	0
-mass	1.6
-radius	11.2
+mass	1.2
+radius	13.0
 Bfield 	0
 mdot	0.1
 precalc	1
@@ -87,7 +87,7 @@ def lnprob(x):
 
 
 nwalkers, ndim = 100, 3
-dir = '8'
+dir = '9'
 if os.path.exists('mcmc/'+dir):
 	print 'The output directory mcmc/'+dir+' already exists!'
 	exit()
