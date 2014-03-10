@@ -26,21 +26,21 @@ void calculate_vars(int i, double T, double y, double *CP, double *K, double *NU
 void outer_boundary(double T1, double K1, double CP1, double NU1, double EPS1, double *T0, double *K0, double *CP0, double *NU0, double *EPS0);
 void inner_boundary(double TN, double KN, double CPN, double NUN, double EPSN, double *TN1, double *KN1, double *CPN1, double *NUN1, double *EPSN1);
 double calculate_heat_flux(int i, double *T);
-void set_up_initial_temperature_profile_by_heating(void);
+void set_up_initial_temperature_profile(void);
 void set_up_initial_temperature_profile_piecewise(char *fname);
 void precalculate_vars(void);
-void set_up_grid(const char*fname);
+void set_up_grid(int ngrid,const char*fname);
 void get_TbTeff_relation(void);
 double crust_heating(int i);
 double energy_deposited(int i);
 void output_result_for_step(int j, FILE *fp, FILE *fp2, double timesofar, double *last_time_output);
 void read_in_data(const char *fname);
-void calculate_cooling_curve(char *fname);
+void calculate_cooling_curve(void);
 void calculate_chisq(void);
 void set_composition(void);
 void heatderivs(double t, double T[], double dTdt[]);
 void heatderivs2(double t, double T[], double dTdt[]);
-void parse_parameters(char *fname);
+
 
 // global variables
 struct globals {
@@ -74,50 +74,166 @@ Spline TEFF;
 Spline AASpline; 
 Spline ZZSpline;
 Spline YnSpline;
-clock_t timer;
+
 
 #pragma mark =========== Code ============
 
 int main(int argc, char *argv[])
 {
+	// ----------------------------------------------------------------------
+ 	//   Set parameters
 
-	// ------------------------------ Parameters ---------------------------------
-
-	// determine the filename for the 'init.dat' parameter file
+	// first, some defaults	
+	double mass=1.62;
+	G.radius=11.2;
+	int ngrid=100;
+	G.nuflag = 1;
+	G.energy_slope=0.0;
+	G.force_precalc=0;
+	G.Qinner=-1.0;
+	G.outburst_duration = (1.0/24.0) * 1.0/(365.0);  // rapid heating for magnetar case	(1 hour)
+  	EOS.init(1); 
+  	EOS.X[1] = 1.0;   // we only have one species at each depth;
+	EOS.accr = 0;   // set crust composition
+	EOS.use_potek_eos = 0;
+	EOS.use_potek_cond = 1;
+	EOS.B=0; //2.2e14;   // magnetic field in the crust   (set B>0 for magnetar case)
+	EOS.gap = 1;    // 0 = no gap, normal neutrons
+	EOS.kncrit = 0.0;  // neutrons are normal for kn<kncrit (to use this set gap=4)
+	G.mdot=0.1;
+	G.energy_deposited_outer=1.0;
+	G.energy_deposited_inner=-1.0;
+	G.rhob=1e14; 
+	G.rhot=1e6;
+	G.use_piecewise=0;
+	G.Qrho=1e12;
+	G.instant_heat = 0;
+	G.angle_mu=-1.0;
+	G.gpe=0;
+	G.force_cooling_bc=0;
+	G.extra_heating=0;
+	G.use_my_envelope=0;
+	G.yt=1e12;
+	G.extra_Q=0.0;
+	G.extra_y=0.0;
+	G.output=1;
+	G.deep_heating_factor=1.0;
+	
+	// now read from the file 'init.dat'
 	char fname[200];
 	char fnamedefault[10]="init.dat";
-	switch(argc) {
-		case 3:
-			strcat(fname,"/tmp/init.dat.");
-			strcat(fname,argv[1]);
-			break;
-		case 2:
+	if (argc > 2) {
+		strcat(fname,"/tmp/init.dat.");
+		strcat(fname,argv[1]);
+	} else {
+		if (argc >1) {
 			strcat(fname,"init/init.dat.");
 			strcat(fname,argv[1]);
-			break;
-		default:
-			strcat(fname,fnamedefault);
-	}
-			
-	// get input parameters
-	parse_parameters(fname);
-
-	{ // Read in observed lightcurve
-		char fobsname[40]="data/";
-		if (argc >1) {
-			strcat(fobsname,argv[1]);
-			read_in_data(fobsname);
 		} else {
-			read_in_data("data/1659");
-		}	
-	}	
+			strcat(fname,fnamedefault);
+		}
+	}
+	printf("============================================\n");
+	printf("Reading input data from %s\n",fname);
+	FILE *fp = fopen(fname,"r");
+	char s1[100];
+	char s[100];
+	double x;				
+	int commented=0;
+	while (!feof(fp)) {   // we read the file line by line
+		(void) fgets(s1,200,fp);		
+		// ignoring lines that begin with \n (blank) or with # (comments)
+		// or with $ (temperature profile)
+		if (!strncmp(s1,"##",2)) commented = 1-commented;
+		if (strncmp(s1,"#",1) && strncmp(s1,"\n",1) && strncmp(s1,">",1) && commented==0) {
+			sscanf(s1,"%s\t%lg\n",s,&x);
+			if (!strncmp(s,"Bfield",6)) EOS.B=x;
+			if (!strncmp(s,"Tc",2)) G.Tc=x;
+			if (!strncmp(s,"Tt",2)) G.Tt=x;
+			if (!strncmp(s,"SFgap",5)) EOS.gap=(int) x;
+			if (!strncmp(s,"ngrid",5)) ngrid=(int) x;
+			if (!strncmp(s,"kncrit",6)) EOS.kncrit=x;
+			if (!strncmp(s,"mdot",4)) G.mdot=x;
+			if (!strncmp(s,"mass",4)) mass=x;
+			if (!strncmp(s,"gpe",3)) G.gpe=(int) x;
+			if (!strncmp(s,"radius",6)) G.radius=x;
+			if (!strncmp(s,"Edep",4)) G.energy_deposited_outer=x;
+			if (!strncmp(s,"ytop",4)) G.yt=x;
+			if (!strncmp(s,"Einner",6)) G.energy_deposited_inner=x;
+			if (!strncmp(s,"Qimp",4)) EOS.Q=x;
+			if (!strncmp(s,"Qrho",4)) G.Qrho=x;
+			if (!strncmp(s,"rhob",4)) G.rhob=x;
+			if (!strncmp(s,"rhot",4)) G.rhot=x;
+			if (!strncmp(s,"precalc",7)) G.force_precalc=(int) x;
+			if (!strncmp(s,"instant",7)) G.instant_heat=(int) x;
+			if (!strncmp(s,"Qinner",6)) G.Qinner=x;
+			if (!strncmp(s,"output",6)) G.output=x;
+			if (!strncmp(s,"timetorun",9)) G.time_to_run=24.0*3600.0*x;			
+			if (!strncmp(s,"toutburst",9)) G.outburst_duration=x;
+			if (!strncmp(s,"piecewise",9)) G.use_piecewise=(int) x;
+			if (!strncmp(s,"neutrinos",9)) G.nuflag=(int) x;
+			if (!strncmp(s,"accreted",8)) EOS.accr=(int) x;
+			if (!strncmp(s,"angle_mu",8)) G.angle_mu=x;
+			if (!strncmp(s,"cooling_bc",10)) G.force_cooling_bc=(int) x;
+			if (!strncmp(s,"extra_heating",13)) G.extra_heating=(int) x;
+			if (!strncmp(s,"deep_heating_factor",19)) G.deep_heating_factor=x;
+			if (!strncmp(s,"energy_slope",12)) G.energy_slope=x;
+			if (!strncmp(s,"potek_eos",9)) EOS.use_potek_eos=(int) x;
+			if (!strncmp(s,"envelope",8)) G.use_my_envelope=(int) x;
+			if (!strncmp(s,"extra_Q",7)) G.extra_Q=x;
+			if (!strncmp(s,"extra_y",7)) G.extra_y=x;
+		}
+	}
 
-	// ------------------------------ Set up ------------------------------------
+	fclose(fp);
+
+	if (G.yt < 10.0) G.yt=pow(10.0,G.yt);
+	if (G.extra_y < 16.0) G.extra_y=pow(10.0,G.extra_y);
+
+	if (G.Qinner == -1.0) G.Qinner=EOS.Q;
+	if (G.energy_deposited_inner == -1.0) G.energy_deposited_inner = G.energy_deposited_outer;
+	
+	if (EOS.Q>=0.0) {   	// the Q values are assigned directly in 'calculate_vars'
+		G.hardwireQ=1;
+		printf("Using supplied Qimp values and HZ composition and heating.\n");
+	} else {
+		G.hardwireQ=0;
+		printf("Using Qimp, composition, and heating from the crust model.\n");
+	}
+
+	// Include dipole angular dependence in B
+	// The B provided is the polar magnetic field strength
+	if (G.angle_mu >= 0.0) EOS.B*=sqrt(0.75*G.angle_mu*G.angle_mu+0.25);
+	printf("Magnetic field set to B=%lg\n", EOS.B);
+		
+		{
+			char fname[40]="data/";
+			if (argc >1) {
+				strcat(fname,argv[1]);
+				read_in_data(fname);
+			} else {
+//				read_in_data("data/XTEJ");
+//				read_in_data("data/1731");
+				read_in_data("data/1659");
+			}	
+		}	
+//		read_in_data("data/1731");  // READ IN observed lightcurve
+	//	read_in_data("data/1659");  // READ IN observed lightcurve
+	//	read_in_data("data/XTEJ");  // READ IN observed lightcurve
+	//	read_in_data("data/terz");  // READ IN observed lightcurve
+	//	read_in_data("data/terz2");  // READ IN observed lightcurve
+	//	read_in_data("data/0748");  // READ IN observed lightcurve
+
+	set_ns_parameters(mass,G.radius,&G.g,&G.ZZ);
+	
+	G.outburst_duration /= G.ZZ;   // redshift the outburst duration (shorter time on the NS surface)
 
  	// set up the hydrostatic grid
 	// the filename is a crust model which gives composition and heating
 	// it is *not* used if hardwireQ = 1 (i.e. if EOS.Q is specified in the init.dat file)
-	set_up_grid("data/crust_model_shell");
+	set_up_grid(ngrid,"data/crust_model_shell");
+
+	// ----------------------------------------------------------------------------------
 
 	// read in Tb-Teff relation
 	get_TbTeff_relation();
@@ -125,6 +241,7 @@ int main(int argc, char *argv[])
   	// precalculate CP, K, eps_nu as a function of T on the grid
 	// note that for K this is done in such a way that we do not need to recalculate
 	// if Qimp changes
+	clock_t timer;
 	start_timing(&timer);
   	precalculate_vars();
 	stop_timing(&timer,"precalculate_vars");
@@ -138,16 +255,18 @@ int main(int argc, char *argv[])
   		G.fp2=fopen("gon_out/prof","w");
   		fprintf(G.fp,"%d %lg\n",G.N+1,G.g);
 	}
-	
-	// ---------------------------- Integrate ----------------------------------
+
+	//G.output = 0;
+ 	// set up the initial temperature profile
+  	if (G.use_piecewise) set_up_initial_temperature_profile_piecewise(fname);
+	else set_up_initial_temperature_profile();
+	//G.output = 1;
 
 	// calculate the cooling curve
-	calculate_cooling_curve(fname);
+	calculate_cooling_curve();   // not outputting the heating stage,so start at t=0
 
 	// calculate chisq
 	calculate_chisq(&ODE,&TEFF,G.g,G.ZZ);
-
-	// ----------------------------------------------------------------------------------
 
 	// tidy up
 	if (G.output) {
@@ -167,23 +286,20 @@ int main(int argc, char *argv[])
 
 
 
-void calculate_cooling_curve(char *fname) 
+void calculate_cooling_curve(void) 
 {
 	double timesofar=0.0,last_time_output=0.0;
-
- 	// set up the initial temperature profile
-  	if (G.use_piecewise) set_up_initial_temperature_profile_piecewise(fname);
-	else set_up_initial_temperature_profile_by_heating();
-
-	//	now cool
+	
 	printf("Running for time %lg seconds\n", G.time_to_run);
+	
 	G.accreting=0;  // turn off accretion for the cooling phase
+	
+	clock_t timer;
 	start_timing(&timer);
 	ODE.dxsav=1e4;
 	ODE.go(0.0, G.time_to_run, ODE.dxsav, 1e-6, derivs);
 	stop_timing(&timer,"ODE.go");
-
-	// output results
+	
 	if (G.output) {
 		printf("Starting output\n");
 		start_timing(&timer);
@@ -255,6 +371,7 @@ void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar,double *
 
 
 }
+
 
 
 #pragma mark ====== Integration ======
@@ -476,43 +593,29 @@ void set_up_initial_temperature_profile_piecewise(char *fname)
 	double *rhovec, *Tvec;
 	rhovec=vector(1,100);
 	Tvec=vector(1,100);
+	int i=1;
 	int commented=0;
-	rhovec[1] = G.rho[1];
-	Tvec[1] = G.Tc;
-	int i=2;
 	while (!feof(fp)) {		
-		double rho, T,T2=0.0;
+		double rho, T;
 		// new lines: read from lines marked ">" in init.dat
 		(void) fgets(s1,200,fp);		
 		if (!strncmp(s1,"##",2)) commented = 1-commented;
 		if (!strncmp(s1,">",1) && commented==0) {
-			int nvar = sscanf(s1,">%lg\t%lg\t%lg\n",&rho,&T,&T2);
+			sscanf(s1,">%lg\t%lg\n",&rho,&T);
 			// old: direct read from Tinit.dat
 			//		fscanf(fp,"%lg %lg\n",&rho,&T);
-			if (T < 0.0) T=G.Tc;
-			if (T2 < 0.0) T2=G.Tc;
-			if (rho < 0.0) rho = G.rho[G.N];
-			if (rho == 0.0) {
-				Tvec[1] = T;
-			} else {
+			if (rho>=-1.0) {
+				if (rho == 0.0) rho=G.rho[1];
+				if (rho == -1.0) rho=G.rho[G.N];
 				rhovec[i] = rho;
+				if (T < 0.0) T=G.Tc;
 				Tvec[i] = T;
+				//printf("%lg %lg\n",rhovec[i],Tvec[i]);
 				i++;
-				if (nvar == 3) {
-					rhovec[i] = rho*1.01;
-					Tvec[i] = T2;
-					i++;
-				}
-			}			
+			}
 		}
 	}
 	fclose(fp);
-	if (rhovec[i-1] != G.rho[G.N]) {  // if we didn't specify it in the file,
-									// set the temperature of the base to the core temperature
-		rhovec[i] = G.rho[G.N];
-		Tvec[i] = G.Tc;
-		i++;
-	}
 	int nvec=i-1;
 
 	if (nvec == 0) {
@@ -608,7 +711,7 @@ void heatderivs(double E, double T[], double dTdE[])
 }
 
 
-void set_up_initial_temperature_profile_by_heating(void)
+void set_up_initial_temperature_profile(void)
 // initialize the temperature profile on the grid
 {
 	
@@ -624,6 +727,7 @@ void set_up_initial_temperature_profile_by_heating(void)
 		// does not get to steady state
 		ODE.set_bc(i,Ti);
 	}
+	clock_t timer;
 	start_timing(&timer);
 
 	if (1) {
@@ -974,11 +1078,11 @@ void get_TbTeff_relation(void)
 
 
 
-void set_up_grid(const char *fname)
+void set_up_grid(int ngrid, const char *fname)
 // allocates storage for the grid and also computes the density
 // and composition at each grid point
 {
-	// number of grid points G.N has already been set
+  	G.N=ngrid;   // number of grid points
 	G.Pb=6.5e32; // pressure at the crust/core boundary
 	G.Pt=G.yt*2.28e14;   // pressure at the top   // note I need to use 2.28 here to get the correct match to the envelope
 
@@ -1136,124 +1240,3 @@ void set_composition(void)
 		//printf("%lg %lg %lg %lg\n", EOS.Yn, EOS.rho, EOS.A[1], EOS.Z[1]);
 	}
 }
-
-void parse_parameters(char *fname) {
-
-	// ----------------------------------------------------------------------
- 	//   Set parameters
-
-	// first, some defaults, including default EOS settings
-	double mass=1.62;
-	G.radius=11.2;
-	G.N=100;
-	G.nuflag = 1;
-	G.energy_slope=0.0;
-	G.force_precalc=0;
-	G.Qinner=-1.0;
-	G.outburst_duration = (1.0/24.0) * 1.0/(365.0);  // rapid heating for magnetar case	(1 hour)
-  	EOS.init(1); 
-  	EOS.X[1] = 1.0;   // we only have one species at each depth;
-	EOS.accr = 0;   // set crust composition
-	EOS.use_potek_eos = 0;
-	EOS.use_potek_cond = 1;
-	EOS.B=0;   // magnetic field in the crust   (set B>0 for magnetar case)
-	EOS.gap = 1;    // 0 = no gap, normal neutrons
-	EOS.kncrit = 0.0;  // neutrons are normal for kn<kncrit (to use this set gap=4)
-	G.mdot=0.1;
-	G.energy_deposited_outer=1.0;
-	G.energy_deposited_inner=-1.0;
-	G.rhob=1e14; 
-	G.rhot=1e6;
-	G.use_piecewise=0;
-	G.Qrho=1e12;
-	G.instant_heat = 0;
-	G.angle_mu=-1.0;
-	G.gpe=0;
-	G.force_cooling_bc=0;
-	G.extra_heating=0;
-	G.use_my_envelope=0;
-	G.yt=1e12;
-	G.extra_Q=0.0;
-	G.extra_y=0.0;
-	G.output=1;
-	G.deep_heating_factor=1.0;
-	
-	printf("============================================\n");
-	printf("Reading input data from %s\n",fname);
-	FILE *fp = fopen(fname,"r");
-	char s1[100];
-	char s[100];
-	double x;				
-	int commented=0;
-	while (!feof(fp)) {   // we read the file line by line
-		(void) fgets(s1,200,fp);		
-		// ignoring lines that begin with \n (blank) or with # (comments)
-		// or with $ (temperature profile)
-		if (!strncmp(s1,"##",2)) commented = 1-commented;
-		if (strncmp(s1,"#",1) && strncmp(s1,"\n",1) && strncmp(s1,">",1) && commented==0) {
-			sscanf(s1,"%s\t%lg\n",s,&x);
-			if (!strncmp(s,"Bfield",6)) EOS.B=x;
-			if (!strncmp(s,"Tc",2)) G.Tc=x;
-			if (!strncmp(s,"Tt",2)) G.Tt=x;
-			if (!strncmp(s,"SFgap",5)) EOS.gap=(int) x;
-			if (!strncmp(s,"ngrid",5)) G.N=(int) x;
-			if (!strncmp(s,"kncrit",6)) EOS.kncrit=x;
-			if (!strncmp(s,"mdot",4)) G.mdot=x;
-			if (!strncmp(s,"mass",4)) mass=x;
-			if (!strncmp(s,"gpe",3)) G.gpe=(int) x;
-			if (!strncmp(s,"radius",6)) G.radius=x;
-			if (!strncmp(s,"Edep",4)) G.energy_deposited_outer=x;
-			if (!strncmp(s,"ytop",4)) G.yt=x;
-			if (!strncmp(s,"Einner",6)) G.energy_deposited_inner=x;
-			if (!strncmp(s,"Qimp",4)) EOS.Q=x;
-			if (!strncmp(s,"Qrho",4)) G.Qrho=x;
-			if (!strncmp(s,"rhob",4)) G.rhob=x;
-			if (!strncmp(s,"rhot",4)) G.rhot=x;
-			if (!strncmp(s,"precalc",7)) G.force_precalc=(int) x;
-			if (!strncmp(s,"instant",7)) G.instant_heat=(int) x;
-			if (!strncmp(s,"Qinner",6)) G.Qinner=x;
-			if (!strncmp(s,"output",6)) G.output=x;
-			if (!strncmp(s,"timetorun",9)) G.time_to_run=24.0*3600.0*x;			
-			if (!strncmp(s,"toutburst",9)) G.outburst_duration=x;
-			if (!strncmp(s,"piecewise",9)) G.use_piecewise=(int) x;
-			if (!strncmp(s,"neutrinos",9)) G.nuflag=(int) x;
-			if (!strncmp(s,"accreted",8)) EOS.accr=(int) x;
-			if (!strncmp(s,"angle_mu",8)) G.angle_mu=x;
-			if (!strncmp(s,"cooling_bc",10)) G.force_cooling_bc=(int) x;
-			if (!strncmp(s,"extra_heating",13)) G.extra_heating=(int) x;
-			if (!strncmp(s,"deep_heating_factor",19)) G.deep_heating_factor=x;
-			if (!strncmp(s,"energy_slope",12)) G.energy_slope=x;
-			if (!strncmp(s,"potek_eos",9)) EOS.use_potek_eos=(int) x;
-			if (!strncmp(s,"envelope",8)) G.use_my_envelope=(int) x;
-			if (!strncmp(s,"extra_Q",7)) G.extra_Q=x;
-			if (!strncmp(s,"extra_y",7)) G.extra_y=x;
-		}
-	}
-
-	fclose(fp);
-
-	if (G.yt < 10.0) G.yt=pow(10.0,G.yt);
-	if (G.extra_y < 16.0) G.extra_y=pow(10.0,G.extra_y);
-
-	if (G.Qinner == -1.0) G.Qinner=EOS.Q;
-	if (G.energy_deposited_inner == -1.0) G.energy_deposited_inner = G.energy_deposited_outer;
-	
-	if (EOS.Q>=0.0) {   	// the Q values are assigned directly in 'calculate_vars'
-		G.hardwireQ=1;
-		printf("Using supplied Qimp values and HZ composition and heating.\n");
-	} else {
-		G.hardwireQ=0;
-		printf("Using Qimp, composition, and heating from the crust model.\n");
-	}
-
-	// Include dipole angular dependence in B
-	// The B provided is the polar magnetic field strength
-	if (G.angle_mu >= 0.0) EOS.B*=sqrt(0.75*G.angle_mu*G.angle_mu+0.25);
-	printf("Magnetic field set to B=%lg\n", EOS.B);
-	
-	set_ns_parameters(mass,G.radius,&G.g,&G.ZZ);
-
-	G.outburst_duration /= G.ZZ;   // redshift the outburst duration (shorter time on the NS surface)
-	
-}
-
