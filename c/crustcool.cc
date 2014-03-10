@@ -322,32 +322,32 @@ void calculate_cooling_curve(void)
 
 void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar,double *last_time_output) 
 {
-	// get CP,K,eps,eps_nu at each point on the grid
-	for (int i=1; i<=G.N+1; i++) calculate_vars(i,ODE.get_y(i,j),G.P[i],&G.CP[i],&G.K[i],&G.NU[i],&G.EPS[i]);
-
-	// outer boundary
-	double T0;
-	outer_boundary(ODE.get_y(1,j),G.K[1],G.CP[1],G.NU[1],G.EPS[1],&T0,&G.K[0],&G.CP[0],&G.NU[0],&G.EPS[0]);
-
-	// timestep
-	double dt;
-	if (j==1) dt=ODE.get_x(j); else dt=ODE.get_x(j)-ODE.get_x(j-1);
-
-	// heat fluxes on the grid
-	double *TT;
-	TT=vector(1,G.N+1);
-	for (int i=1; i<=G.N+1; i++) TT[i]=ODE.get_y(i,j);
-	double FF = calculate_heat_flux(1,TT);
-	for (int i=1; i<=G.N+1; i++) G.F[i] = calculate_heat_flux(i,TT);
-	free_vector(TT,1,G.N+1);
-
-	// total neutrino luminosity
-	double Lnu=0.0;
-	for (int i=1; i<=G.N; i++) Lnu += G.NU[i]*G.dx*G.P[i]/G.g;
-	
 	// Output if enough time has elapsed
 	if ((fabs(log10(fabs(timesofar+ODE.get_x(j))*G.ZZ)-log10(fabs(*last_time_output))) >= 0.01) || 
 			(fabs(timesofar)+ODE.get_x(j))*G.ZZ < 1e5) {
+
+		// get CP,K,eps,eps_nu at each point on the grid
+		for (int i=1; i<=G.N+1; i++) calculate_vars(i,ODE.get_y(i,j),G.P[i],&G.CP[i],&G.K[i],&G.NU[i],&G.EPS[i]);
+
+		// outer boundary
+		double T0;
+		outer_boundary(ODE.get_y(1,j),G.K[1],G.CP[1],G.NU[1],G.EPS[1],&T0,&G.K[0],&G.CP[0],&G.NU[0],&G.EPS[0]);
+
+		// timestep
+		double dt;
+		if (j==1) dt=ODE.get_x(j); else dt=ODE.get_x(j)-ODE.get_x(j-1);
+
+		// heat fluxes on the grid
+		double *TT;
+		TT=vector(1,G.N+1);
+		for (int i=1; i<=G.N+1; i++) TT[i]=ODE.get_y(i,j);
+		double FF = calculate_heat_flux(1,TT);
+		for (int i=1; i<=G.N+1; i++) G.F[i] = calculate_heat_flux(i,TT);
+		free_vector(TT,1,G.N+1);
+
+		// total neutrino luminosity
+		double Lnu=0.0;
+		for (int i=1; i<=G.N; i++) Lnu += G.NU[i]*G.dx*G.P[i]/G.g;
 	
 		// we output time, fluxes and TEFF that are already redshifted into the observer frame
 		// gon_out/prof
