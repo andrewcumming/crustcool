@@ -46,39 +46,25 @@ void heatderivs2(double t, double T[], double dTdt[]);
 // global variables
 struct globals {
   	int N;  
-  	double dx; 
+  	double dx;
   	double *P, *CP, *K, *F, *NU, *rho, *EPS;
 	double *Qheat,*Qimp;
 	double **CP_grid, **K1_grid, **K0_grid, **NU_grid, **EPS_grid, **KAPPA_grid, **K1perp_grid, **K0perp_grid;
 	double betamin, betamax, deltabeta;
-	int nbeta;
-  	double g, ZZ,mass, radius;
-  	int nuflag;  
+  	double g, ZZ,mass,radius;
 	double time_to_run;
 	double Pb, Pt, yt;
 	double rhot,rhob;
 	double mdot;
 	double Tt, Fin, Tc;
-	int accreting;
-	int output;
-	int hardwireQ;
-	double Qrho;
-	int use_piecewise;
-	int force_precalc;
-	int use_my_envelope;
-	int include_sph;
-	FILE *fp,*fp2;
-	double Qinner;
-	double energy_deposited_outer;
-	double energy_deposited_inner;
-	double energy_slope;
-	double outburst_duration;
-	double deep_heating_factor;
-	int instant_heat;
-	double surfF, surfy;
-	double angle_mu;
-	int gpe;
+	int nbeta, nuflag, accreting, output, hardwireQ, instant_heat;
+	int use_piecewise, force_precalc, use_my_envelope, include_sph, gpe;
 	int force_cooling_bc, extra_heating;
+	FILE *fp,*fp2;
+	double Qinner, Qrho;
+	double energy_deposited_outer, energy_deposited_inner, energy_slope;
+	double outburst_duration, deep_heating_factor;
+	double angle_mu;
 	double extra_Q,extra_y;
 } G;
 
@@ -973,21 +959,13 @@ double crust_heating(int i)
 {
 	double eps=0.0;
 
-	// if B>0 we are doing a magnetar
-	// changed this to:
 	// if we are heating on < 1day timescale then its a magnetar
 	if (G.outburst_duration<1.0/365.0) {
 		
 		// eps in erg/g/s
 		eps = 1e25/(G.rho[i]*G.outburst_duration*3.15e7);
 		eps /= G.mdot * G.g;   // modify to the units used in the code
-
-		// Put in a power-law heating:
-//		if (G.rho[i]>1e9) 
-//		eps *= pow(G.rho[i]/1e9,1.0);
-//		eps *= G.rho[i]/1e11;
-		
-		// the next line limits the heating to a limited region of the crust
+		// limit the heating to a region of the crust
 		if (G.rho[i] < G.rhot) eps=0.0;
 		if (G.rho[i] > G.rhob) eps=0.0;
 		
@@ -1004,15 +982,13 @@ double crust_heating(int i)
 
 
 double crust_heating_rate(int i) 
-// calculates the crust heating in erg/g/s
- // except for a factor of gravity --- multiply by gravity to get these units
+// calculates the crust heating in erg/g/s for an accreting neutron star
+// except for a factor of gravity --- multiply by gravity to get these units
 {
 	double eps=0.0, P = G.P[i];
 	// simple "smeared out" heating function, 1.2MeV in inner crust, 0.2MeV in outer crust
 	if (P >= 1e16*2.28e14 && P <= 1e17*2.28e14) eps=8.8e4*G.deep_heating_factor*1.7*9.64e17/(P*log(1e17/1e16));
-// 	if (y >= 1e12 && y < 1e15) eps=G.mdot*8.8e4*0.15*9.64e17/(y*log(1e15/1e12));
  	if (P >= 3e12*2.28e14 && P < 3e15*2.28e14) eps=8.8e4*G.deep_heating_factor*0.2*9.64e17/(P*log(3e15/3e12));
-//if (y >= 6e15 && y <= 3e18) eps=G.mdot*8.8e4*1.2*9.64e17/(y*log(3e18/6e15));
 
 	// Extra heat source in the ocean
 	if (G.extra_heating) {	
@@ -1028,8 +1004,6 @@ double crust_heating_rate(int i)
 		double P2 = G.P[i]*exp(0.5*G.dx);
 		double geff=2.28e14;
 		
-//		if (P >= extra_y1*2.28e14 && P < extra_y2*2.28e14) eps_extra=8.8e4*G.extra_Q*9.64e17/(P*log(extra_y2/extra_y1));
-
 		if (P1 > extra_y1*geff && P2 < extra_y2*geff)   // we are within the heating zone
 			eps_extra=8.8e4*G.extra_Q*9.64e17/(P*log(extra_y2/extra_y1));
 		if (P1 < extra_y1*geff && P2 < extra_y2*geff && extra_y1*geff<P2) {   // left hand edge of heated region
@@ -1105,9 +1079,7 @@ void set_up_grid(int ngrid, const char *fname)
 // and composition at each grid point
 {
   	G.N=ngrid;   // number of grid points
-	G.Pb=6.5e32; // column depth at the crust/core boundary
-						  // we used to set this to y=3e18 but now fix pressure
-//  	G.Pt=G.yt*G.g;   // pressure at the top
+	G.Pb=6.5e32; // pressure at the crust/core boundary
 	G.Pt=G.yt*2.28e14;   // pressure at the top   // note I need to use 2.28 here to get the correct match to the envelope
 
 	Spline QiSpline;
@@ -1141,17 +1113,7 @@ void set_up_grid(int ngrid, const char *fname)
 		AASpline.minit(rho,AA,npoints);
 		QiSpline.minit(rho,Qi,npoints);
 		QhSpline.minit(rho,Qh,npoints);
-	/*	
-		for (int i=0; i<=G.N+1; i++) {
-			double x=log(G.yt)+G.dx*(i-1);
-			double yh = exp(x+0.5*G.dx);
-			double rhoh = pow(10.0,RHO.get(log10(G.g*yh)));
-			EOS.rho = rhoh;
-			set_composition();
-			// GammaT[i] refers to i+1/2
-			G.GammaT[i] = pow(EOS.Z[1]*4.8023e-10,2.0)*pow(4.0*PI*rhoh/(3.0*EOS.A[1]*1.67e-24),1.0/3.0)/1.38e-16;
-		}
-	*/	
+
 		free_vector(Qi,1,npoints);
 		free_vector(Qh,1,npoints);
 		free_vector(AA,1,npoints);
