@@ -47,7 +47,7 @@ void heatderivs2(double t, double T[], double dTdt[]);
 struct globals {
   	int N;  
   	double dx; 
-  	double *P, *CP, *K, *F, *NU, *rho, *EPS, *Tmelt, *GammaT, *LoverT;
+  	double *P, *CP, *K, *F, *NU, *rho, *EPS;
 	double *Qheat,*Qimp;
 	double **CP_grid, **K1_grid, **K0_grid, **NU_grid, **EPS_grid, **KAPPA_grid, **K1perp_grid, **K0perp_grid;
 	double betamin, betamax, deltabeta;
@@ -61,7 +61,6 @@ struct globals {
 	double Tt, Fin, Tc;
 	int accreting;
 	int output;
-	int include_latent_heat, include_convection;
 	int hardwireQ;
 	double Qrho;
 	int use_piecewise;
@@ -103,8 +102,6 @@ int main(int argc, char *argv[])
 	double mass=1.62;
 	G.radius=11.2;
 	int ngrid=100;
-	G.include_latent_heat=0;
-	G.include_convection=0;
 	G.nuflag = 1;
 	G.energy_slope=0.0;
 	G.force_precalc=0;
@@ -194,8 +191,6 @@ int main(int argc, char *argv[])
 			if (!strncmp(s,"neutrinos",9)) G.nuflag=(int) x;
 			if (!strncmp(s,"accreted",8)) EOS.accr=(int) x;
 			if (!strncmp(s,"angle_mu",8)) G.angle_mu=x;
-			if (!strncmp(s,"latent_heat",11)) G.include_latent_heat=(int) x;
-			if (!strncmp(s,"convection",10)) G.include_convection=(int) x;			
 			if (!strncmp(s,"cooling_bc",10)) G.force_cooling_bc=(int) x;
 			if (!strncmp(s,"extra_heating",13)) G.extra_heating=(int) x;
 			if (!strncmp(s,"deep_heating_factor",19)) G.deep_heating_factor=x;
@@ -410,68 +405,6 @@ void derivs(double t, double T[], double dTdt[])
 	// determine the fluxes at the half-grid points
 	//  G.F[i] is the flux at i-1/2
   	for (int i=1; i<=G.N+1; i++)   G.F[i] = calculate_heat_flux(i,T);	
-
-	// find the ocean-crust boundary: I've tried two different ways, either moving in
-	// or out -- it's an issue when there is a jump in Tmelt in the ocean, e.g.
-	// because of an electron capture
-	int imelt;
-	if (0) {
-		// (i) imelt is set to be the first zone going outwards where Gamma at i-1/2 is <175
-		imelt=G.N;
-		while (imelt--, G.GammaT[imelt-1]/(0.5*(T[imelt]+T[imelt-1])) >= 2*175.0);
-	} else {
-		// (ii) imelt is set to be the first zone going inwards where Gamma at i+1/2 is >175
-		imelt=1;
-		while (imelt++, G.GammaT[imelt]/(0.5*(T[imelt]+T[imelt+1])) <= 2*175.0);
-	}
-	
-	// include the latent heat as an additional term in the heat capacity at the boundary
-	if (G.include_latent_heat) {
-		double Gp = G.GammaT[imelt]/(0.5*(T[imelt]+T[imelt+1]));
-		double Gm = G.GammaT[imelt-1]/(0.5*(T[imelt]+T[imelt-1]));
-		G.CP[imelt]+= 4.0*G.LoverT[imelt] * pow(175.0/Gm,4.0)/ (pow(Gp/Gm,4.0)-1.0);
-	}
-	
-	// include convective fluxes (only if we are cooling)
-	if (G.include_convection && G.P[imelt]/G.g>1e9) {
-
-		if (!G.accreting) {
-			
-			// This is the simple F=Ay prescription for the convective flux from Zach
-			double AA=2.4e9;
-			// first try -> double AA=2.4e11;
-
-			AA=1e9;
-
-			// First calculate dT/dt for the zone containing the liquid/solid boundary,
-			// we need this to get d y_L/ dt which determines the convective flux
-			G.CP[imelt] += AA/G.dx;
-			dTdt[imelt] = G.g*(G.F[imelt+1]-G.F[imelt])/(G.dx*G.CP[imelt]*G.P[imelt]);
-
-			// If the boundary is moving in while cooling, then there shouldn't be any convection, 
-			// so turn it off. Although this doesn't seem to affect the lightcurves..
-			if (dTdt[imelt] > 0.0) {
-				G.CP[imelt] -= AA/G.dx;
-				dTdt[imelt] = G.g*(G.F[imelt+1]-G.F[imelt])/(G.dx*G.CP[imelt]*G.P[imelt]);
-				AA=0.0;
-			}
-
-			// Add in the convective flux where liquid
-			for (int i=2; i<imelt; i++) {
-				double P2 = exp(log(G.P[i])+0.5*G.dx);
-				if (P2 > 1e25) G.F[i+1]+=AA*P2*dTdt[imelt]/G.g;	
-					//else G.F[i+1]+=-G.mdot*8.8e4*9.64e17*0.02*pow(G.rho[i]*1e-9,0.333);
-			}
-		} else {
-			
-			// Add in the convective flux where liquid
-			for (int i=2; i<imelt; i++) {
-				double P2 = exp(log(G.P[i])+0.5*G.dx);
-				if (P2 > 1e20) G.F[i+1]+=-G.mdot*8.8e4*9.64e17*0.02*pow(G.rho[i]*1e-9,0.333);
-			}
-		}
-
-	}
 	
 	// Calculate the derivatives dT/dt
 	for (int i=1; i<=G.N; i++) {
@@ -535,7 +468,6 @@ double calculate_heat_flux(int i, double *T)
 double dTdt(int i, double *T)
 // calculates the time derivative for grid cell i 
 // This is used when calculating the jacobian in tri-diagonal form
-// --- i.e. as long as include_convection is not set
 {
 	int k=i-1; if (k<1) k=1;
 	int k2=i+1; if (k2>G.N+1) k2=G.N+1;
@@ -543,15 +475,6 @@ double dTdt(int i, double *T)
 	if (i==1) outer_boundary(T[1],G.K[1],G.CP[1],G.NU[1],G.EPS[1],&T[0],&G.K[0],&G.CP[0],&G.NU[0], &G.EPS[0]);
 	if (i==G.N) inner_boundary(T[G.N],G.K[G.N],G.CP[G.N],G.NU[G.N], G.EPS[G.N],
 										&T[G.N+1],&G.K[G.N+1],&G.CP[G.N+1],&G.NU[G.N+1],&G.EPS[G.N+1]);
-
-	if (G.include_latent_heat) {
-		double Gm = G.GammaT[i-1]/(0.5*(T[i-1]+T[i]));
-		double Gp = G.GammaT[i]/(0.5*(T[i]+T[i+1]));
-		if (Gm < 175.0 && Gp > 175.0) {
-			double dxdT = (4.0/T[i]) * pow(175.0/Gm,4.0)/ (pow(Gp/Gm,4.0)-1.0);
-			G.CP[i]+= G.LoverT[i]*T[i] * dxdT;
-		}
-	}
 
 	double f=G.g*(calculate_heat_flux(i+1,T)-calculate_heat_flux(i,T))/(G.dx*G.CP[i]*G.P[i]);
 	if (G.nuflag) f+=-(G.NU[i]/G.CP[i]);
@@ -587,44 +510,24 @@ void jacobn(double t, double *T, double *dfdt, double **dfdT, int n)
 {
   	double e=0.01;
 
-	if (G.include_convection) {
-	// This version calculates the full set of derivatives each time
-		double *f;
-		f=vector(1,n);
-  		for (int i=1; i<n; i++) {
-    		if (i>1) {
-				T[i-1]*=1.0+e; derivs(t,T,f);
-      			T[i-1]/=1.0+e; dfdT[i][i-1]=(f[i]-dfdt[i])/(T[i-1]*e);
-    		}
-			T[i]*=1.0+e; derivs(t,T,f);
-    		T[i]/=1.0+e; dfdT[i][i]=(f[i]-dfdt[i])/(T[i]*e);
-    		if (i<=n) {
-				T[i+1]*=1.0+e; derivs(t,T,f);
-      			T[i+1]/=1.0+e; dfdT[i][i+1]=(f[i]-dfdt[i])/(T[i+1]*e);
-    		}
-  		}
-		free_vector(f,1,n);
-		
-	} else {
-		// takes advantage of the tri-diagonal nature to calculate as few dTdt's as needed
-		double f;
-	  // this assumes the arrays dfdt and dfdT are preinitialized to zero (I changed odeint to do this)
-	  for (int i=2; i<n; i++) {
-	  	T[i-1]*=1.0+e; f=dTdt(i,T);
-	    T[i-1]/=1.0+e; dfdT[i][i-1]=(f-dfdt[i])/(T[i-1]*e);
-	    T[i]*=1.0+e; f=dTdt(i,T);
-	    T[i]/=1.0+e; dfdT[i][i]=(f-dfdt[i])/(T[i]*e);
-	    T[i+1]*=1.0+e; f=dTdt(i,T);
-	    T[i+1]/=1.0+e; dfdT[i][i+1]=(f-dfdt[i])/(T[i+1]*e);
-	  }
-	  {
-		int i=1;
-		T[i]*=1.0+e; f=dTdt(i,T);
-		T[i]/=1.0+e; dfdT[i][i]=(f-dfdt[i])/(T[i]*e);
-		T[i+1]*=1.0+e; f=dTdt(i,T);
-		T[i+1]/=1.0+e; dfdT[i][i+1]=(f-dfdt[i])/(T[i+1]*e);
-	  }
-	}
+	// takes advantage of the tri-diagonal nature to calculate as few dTdt's as needed
+	double f;
+  // this assumes the arrays dfdt and dfdT are preinitialized to zero (I changed odeint to do this)
+  for (int i=2; i<n; i++) {
+  	T[i-1]*=1.0+e; f=dTdt(i,T);
+    T[i-1]/=1.0+e; dfdT[i][i-1]=(f-dfdt[i])/(T[i-1]*e);
+    T[i]*=1.0+e; f=dTdt(i,T);
+    T[i]/=1.0+e; dfdT[i][i]=(f-dfdt[i])/(T[i]*e);
+    T[i+1]*=1.0+e; f=dTdt(i,T);
+    T[i+1]/=1.0+e; dfdT[i][i+1]=(f-dfdt[i])/(T[i+1]*e);
+  }
+  {
+	int i=1;
+	T[i]*=1.0+e; f=dTdt(i,T);
+	T[i]/=1.0+e; dfdT[i][i]=(f-dfdt[i])/(T[i]*e);
+	T[i+1]*=1.0+e; f=dTdt(i,T);
+	T[i+1]/=1.0+e; dfdT[i][i+1]=(f-dfdt[i])/(T[i+1]*e);
+  }
 }  
 
 
@@ -811,11 +714,17 @@ void set_up_initial_temperature_profile_piecewise(char *fname)
 
 
 void heatderivs2(double T, double E[], double dEdT[])
-// calculates the time derivatives for the whole grid
 {
 	EOS.T8 = T/1e8;
 	EOS.rho = EOS.find_rho();
 	dEdT[1] = EOS.CP();
+}
+
+void heatderivs(double E, double T[], double dTdE[])
+{
+	EOS.T8 = T[1]/1e8;
+	EOS.rho = EOS.find_rho();
+	dTdE[1] = 1e25/(EOS.rho*EOS.CP());
 }
 
 
@@ -927,13 +836,6 @@ void set_up_initial_temperature_profile(void)
 
 }
 
-void heatderivs(double E, double T[], double dTdE[])
-// calculates the time derivatives for the whole grid
-{
-	EOS.T8 = T[1]/1e8;
-	EOS.rho = EOS.find_rho();
-	dTdE[1] = 1e25/(EOS.rho*EOS.CP());
-}
 
 
 #pragma mark ====== Initial setup ======
@@ -947,7 +849,7 @@ void precalculate_vars(void)
 	// (for long X-ray bursts where radiation pressure is significant,
 	// beta=Prad/P is a better variable to use)
 	G.nbeta=100;
-	G.betamin=7.0;
+	G.betamin=6.5;
 	G.betamax=10.0;
 	G.deltabeta = (G.betamax-G.betamin)/(1.0*(G.nbeta-1));	
 
@@ -1280,16 +1182,13 @@ void set_up_grid(int ngrid, const char *fname)
 
   	// storage
   	G.rho=vector(0,G.N+2);  
-  	G.Tmelt=vector(0,G.N+2);  
   	G.CP=vector(0,G.N+2);
   	G.P=vector(0,G.N+2);
   	G.K=vector(0,G.N+2);
   	G.F=vector(0,G.N+2);
   	G.NU=vector(0,G.N+2);
   	G.EPS=vector(0,G.N+2);
-  	G.GammaT=vector(0,G.N+2);
-  	G.LoverT=vector(0,G.N+2);
-
+  
   	G.Qheat=vector(0,G.N+2);
   	G.Qimp=vector(0,G.N+2);
 
@@ -1324,22 +1223,23 @@ void set_up_grid(int ngrid, const char *fname)
 		// GammaT[i] refers to i+1/2
 		// The following line uses a composition of 56Fe to calculate gamma,
 		// it avoids jumps in the melting point associated with e-capture boundaries
+		double GammaT;
 		if (0) {
 			double Z=26.0,A=56.0;   // 28Si
-			G.GammaT[i] = pow(Z*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*A*1.67e-24),1.0/3.0)/1.38e-16;
+			GammaT = pow(Z*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*A*1.67e-24),1.0/3.0)/1.38e-16;
 		} else {
-			G.GammaT[i] = pow(EOS.Z[1]*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*EOS.A[1]*1.67e-24),1.0/3.0)/1.38e-16;
+			GammaT = pow(EOS.Z[1]*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*EOS.A[1]*1.67e-24),1.0/3.0)/1.38e-16;
 		}
 		
     	G.rho[i] = pow(10.0,RHO.get(log10(G.P[i])));
 		EOS.rho = G.rho[i];
 		set_composition();
 		
-		G.Tmelt[i] = 5e8*pow(G.P[i]/(2.28e14*1.9e13),0.25)*pow(EOS.Z[1]/30.0,5.0/3.0);
-		G.LoverT[i] = 0.8 * 1.38e-16 /(EOS.A[1]*1.67e-24);
+		double Tmelt = 5e8*pow(G.P[i]/(2.28e14*1.9e13),0.25)*pow(EOS.Z[1]/30.0,5.0/3.0);
+		double LoverT = 0.8 * 1.38e-16 /(EOS.A[1]*1.67e-24);
 		if (G.output) 
 			fprintf(fp, "%d %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", i, G.P[i], G.rho[i], EOS.A[1]*(1.0-EOS.Yn), 
-				EOS.Z[1], EOS.Yn,EOS.A[1],EOS.ptot(), G.Tmelt[i], G.GammaT[i]/1e8, G.LoverT[i]*1e8);
+				EOS.Z[1], EOS.Yn,EOS.A[1],EOS.ptot(), Tmelt, GammaT/1e8, LoverT*1e8);
 			//,AASpline.get(log10(G.rho[i])),  ZZSpline.get(log10(G.rho[i])), G.Qimp[i], G.Qheat[i]);
   	}
 
@@ -1374,5 +1274,3 @@ void set_composition(void)
 		//printf("%lg %lg %lg %lg\n", EOS.Yn, EOS.rho, EOS.A[1], EOS.Z[1]);
 	}
 }
-
-

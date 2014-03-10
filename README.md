@@ -20,9 +20,6 @@ The file `init.dat` sets up the run. The parameters are
 	Qinner 	(optional) a different impurity parameter for the inner crust
 	Qrho	the density at which the Q changes from Qimp to Qinner (default 1e12)
 
-	latent_heat	include (=1) or don't include (=0) the latent heat
-	convection	include (=1) or don't include (=0) a simple model of convective fluxes f
-						from compositionally-driven convection in the liquid layer (Medin & Cumming 2012)
 	cooling_bc	if set to 1, use a cooling b.c. at the top even during accretion,
 				otherwise keep the temperature at the top fixed (to the value Tt) 
 				during accretion.
