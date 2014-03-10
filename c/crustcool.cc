@@ -636,68 +636,62 @@ void calculate_vars(int i, double T, double P, double *CP, double *K, double *NU
 	if (isnan(T) || T<0.0) T=1e7;
 	
 	double beta=log10(T);
-	
+	// if beta lies outside the table, set it to the max or min value
 	if (beta > G.betamax) beta = G.betamax;
 	if (beta < G.betamin) beta = G.betamin;
 		
-	if (beta <= G.betamax && beta >= G.betamin) {
 		// lookup values in the precalculated table
-		int j = 1 + (int) ((beta-G.betamin)/G.deltabeta);
-		double interpfac=(beta-(G.betamin + (j-1)*G.deltabeta))/G.deltabeta;
-		// interpolate the thermal conductivity to the current
-		// value of impurity parameter Q
-		double K0=G.K0_grid[i][j] + (G.K0_grid[i][j+1]-G.K0_grid[i][j])*interpfac;
-		double K1=G.K1_grid[i][j] + (G.K1_grid[i][j+1]-G.K1_grid[i][j])*interpfac;
-		//double K0perp=G.K0perp_grid[i][j] + (G.K0perp_grid[i][j+1]-G.K0perp_grid[i][j])*interpfac;
-		//double K1perp=G.K1perp_grid[i][j] + (G.K1perp_grid[i][j+1]-G.K1perp_grid[i][j])*interpfac;
-		//K0perp=0.0; K1perp=0.0;
+	int j = 1 + (int) ((beta-G.betamin)/G.deltabeta);
+	double interpfac=(beta-(G.betamin + (j-1)*G.deltabeta))/G.deltabeta;
+	// interpolate the thermal conductivity to the current
+	// value of impurity parameter Q
+	double K0=G.K0_grid[i][j] + (G.K0_grid[i][j+1]-G.K0_grid[i][j])*interpfac;
+	double K1=G.K1_grid[i][j] + (G.K1_grid[i][j+1]-G.K1_grid[i][j])*interpfac;
+	//double K0perp=G.K0perp_grid[i][j] + (G.K0perp_grid[i][j+1]-G.K0perp_grid[i][j])*interpfac;
+	//double K1perp=G.K1perp_grid[i][j] + (G.K1perp_grid[i][j+1]-G.K1perp_grid[i][j])*interpfac;
+	//K0perp=0.0; K1perp=0.0;
 
-		// use something like this next line to hardwire Q values
-		double Qval;
-		if (G.hardwireQ) {
-			if (G.rho[i] > G.Qrho) Qval=G.Qinner; else Qval=EOS.Q;
-//			if (P>2.28e29) Qval=G.Qinner; else Qval=EOS.Q;
-		} else {
-			Qval = G.Qimp[i];	
-		}
-		double KK,KKperp;
-		KK=G.g*K0*K1/(K0*Qval+(1.0-Qval)*K1);
-
-		double kappa;
-		kappa=G.KAPPA_grid[i][j] + (G.KAPPA_grid[i][j+1]-G.KAPPA_grid[i][j])*interpfac;
-		kappa*=G.g;
-		KK += kappa;
-		
-		if (EOS.B > 0) {
-			KKperp=0.0; //G.g*K0perp*K1perp/(K0perp*Qval+(1.0-Qval)*K1perp);
-			if (G.angle_mu >= 0.0) {
-				KK *= 4.0*G.angle_mu*G.angle_mu/(1.0+3.0*G.angle_mu*G.angle_mu);
-			} else {
-				KK = 0.5*(1.0544*KK+0.9456*KKperp);  // average over dipole geometry	
-			}
-		}
-//		if (EOS.B > 0) {
-//		//KKperp = G.g*K0perp*K1perp/(K0perp*Qval+(1.0-Qval)*K1perp);		
-//		double fcond = 4.0*G.angle_mu*G.angle_mu/(1.0+3.0*G.angle_mu*G.angle_mu);		
-//		*K=fcond*KK;//+(1.0-fcond)*KKperp;	
-//	} else {
-		*K=KK;
-//	}
-		
-		*CP=G.CP_grid[i][j] + (G.CP_grid[i][j+1]-G.CP_grid[i][j])*interpfac;
-		if (G.nuflag) *NU=G.NU_grid[i][j] + (G.NU_grid[i][j+1]-G.NU_grid[i][j])*interpfac; 
-		else *NU=0.0;
-		if (G.accreting) {
-			*EPS=G.EPS_grid[i][1];  // assume heating is independent of temperature 
-		//	*EPS=(G.EPS_grid[i][j] + (G.EPS_grid[i][j+1]-G.EPS_grid[i][j])*interpfac); 
-			*EPS=*EPS * G.mdot * G.g;
-		}
-		else *EPS=0.0;
+	// use something like this next line to hardwire Q values
+	double Qval;
+	if (G.hardwireQ) {
+		if (G.rho[i] > G.Qrho) Qval=G.Qinner; else Qval=EOS.Q;
+//		if (P>2.28e29) Qval=G.Qinner; else Qval=EOS.Q;
 	} else {
-		// if beta is outside the range of the precalculated table, then calculate directly
-		printf("Note: log10T outside range (T=%lg beta=%lg)\n", T,beta);
-		exit(0);
+		Qval = G.Qimp[i];	
 	}
+	double KK,KKperp;
+	KK=G.g*K0*K1/(K0*Qval+(1.0-Qval)*K1);
+
+	double kappa;
+	kappa=G.KAPPA_grid[i][j] + (G.KAPPA_grid[i][j+1]-G.KAPPA_grid[i][j])*interpfac;
+	kappa*=G.g;
+	KK += kappa;
+	
+	if (EOS.B > 0) {
+		KKperp=0.0; //G.g*K0perp*K1perp/(K0perp*Qval+(1.0-Qval)*K1perp);
+		if (G.angle_mu >= 0.0) {
+			KK *= 4.0*G.angle_mu*G.angle_mu/(1.0+3.0*G.angle_mu*G.angle_mu);
+		} else {
+			KK = 0.5*(1.0544*KK+0.9456*KKperp);  // average over dipole geometry	
+		}
+	}
+//	if (EOS.B > 0) {
+//	//KKperp = G.g*K0perp*K1perp/(K0perp*Qval+(1.0-Qval)*K1perp);		
+//	double fcond = 4.0*G.angle_mu*G.angle_mu/(1.0+3.0*G.angle_mu*G.angle_mu);		
+//	*K=fcond*KK;//+(1.0-fcond)*KKperp;	
+//} else {
+	*K=KK;
+//}
+	
+	*CP=G.CP_grid[i][j] + (G.CP_grid[i][j+1]-G.CP_grid[i][j])*interpfac;
+	if (G.nuflag) *NU=G.NU_grid[i][j] + (G.NU_grid[i][j+1]-G.NU_grid[i][j])*interpfac; 
+	else *NU=0.0;
+	if (G.accreting) {
+		*EPS=G.EPS_grid[i][1];  // assume heating is independent of temperature 
+	//	*EPS=(G.EPS_grid[i][j] + (G.EPS_grid[i][j+1]-G.EPS_grid[i][j])*interpfac); 
+		*EPS=*EPS * G.mdot * G.g;
+	}
+	else *EPS=0.0;
  }
 
 
