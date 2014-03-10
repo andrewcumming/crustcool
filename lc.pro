@@ -619,68 +619,59 @@ pro lcplot, namestring, ls, tscal=tscal, linecol=linecol,Lscale=Lscale,Lmin=Lmin
 end
 
 
-pro lcsum2, namestring, ls, Rvec=Rvec, mumin=mumin, Lscale=Lscale
+pro lcsum2, namestring, ls, mumin=mumin, Lscale=Lscale,source=source
 	
 	if not keyword_set(mumin) then mumin=0
 	
 	name = 'gon_out/prof_'+namestring
-	;if (namestring eq '') then namestring = 'gon_out/prof'
+	if (namestring eq '') then name = 'gon_out/prof'
 	print, 'Reading file ',name
 	readcol, name, tm,Fm,format=('D,X,D'),/silent	
 	tm/=(24.0*3600.0)  ; convert time to days
 	Fm*=4.0*!dpi*1.12d6^2
 	
+	if keyword_set(source) then begin
+		if (strcmp(source,'1627',4)) then begin
+			yr=[1d33,1d35]
+			xr=[1.0,10000.0]
+		endif
+		plot, tm, Fm, /nodata,/xlog,/ylog,yrange=yr,xrange=xr,xtitle=textoidl('Time (days)'),$
+						ytitle=textoidl('Luminosity (erg s^{-1})')
+		if (strcmp(source,'1627_1998',9)) then begin
+			readcol, 'data/1998cooling.dat', t, F, dF, format=('D,D,D')
+			F*=1d35
+			dF*=1d35
+			oploterror, t, F, dF, psym=6, /nohat, symsize=0.7
+			dd=11.0
+		endif
+		if (strcmp(source,'1627_2008',9)) then begin
+			readcol, 'data/2008cooling.dat', t, F, dF, format=('D,D,D')
+			F*=1d35
+			dF*=1d35
+			oploterror, t[0:n_elements(t)-2], F[0:n_elements(t)-2], dF[0:n_elements(t)-2], psym=6, /nohat, symsize=0.7
+			dd=11.0
+			oploterror, t[n_elements(t)-1], F[n_elements(t)-1], dF[n_elements(t)-1], psym=6, /nohat, symsize=0.7,/lobar			
+		endif
+	endif	
+	
 	LL = [Fm[0]]
 	for i=1L,n_elements(tm)-1 do begin
 		II = 0.0
-;		for j=1L,i do begin
-;			II+=2.0*Fm[j]*(tm[j]-tm[j-1])/(tm[j]*(4.0*(tm[i]/tm[j])-3.0)^1.5)
-;		endfor
-
-		nmu = 30
-		for j=-nmu+1,nmu do begin
+		nmu = 100
+		for j=1,nmu do begin
 			mu=(1.0/nmu)*j
 			; dipole l=1
-			;mup2 = 4.0*mu*mu/(1.0+3.0*mu*mu)
+			mup2 = 4.0*mu*mu/(1.0+3.0*mu*mu)
 			; l=2
-			mup2 = (1.0 - 6.0*mu^2 + 9.0*mu^4)/(1.0 - 2.0*mu^2 + 5.0*mu^4)
-			II += 0.5 * (1.0/nmu) * mup2 * interpol(Fm,tm,tm[i]*mup2)
+			;mup2 = (1.0 - 6.0*mu^2 + 9.0*mu^4)/(1.0 - 2.0*mu^2 + 5.0*mu^4)
+			if (mup2 gt mumin) then begin
+				II +=  (1.0/nmu) * mup2 * interpol(Fm,tm,tm[i]*mup2)
+			endif
 		endfor
-
 		LL=[LL,II]
 	endfor
-
-	;oplot, tm, LL, linestyle=ls, col=180
-
-
-		LL = [Fm[0]]
-		for i=1L,n_elements(tm)-1 do begin
-			II = 0.0
-	;		for j=1L,i do begin
-	;			II+=2.0*Fm[j]*(tm[j]-tm[j-1])/(tm[j]*(4.0*(tm[i]/tm[j])-3.0)^1.5)
-	;		endfor
-
-			nmu = 30
-			for j=1,nmu do begin
-				mu=(1.0/nmu)*j
-				; dipole l=1
-				mup2 = 4.0*mu*mu/(1.0+3.0*mu*mu)
-				; l=2
-				;mup2 = (1.0 - 6.0*mu^2 + 9.0*mu^4)/(1.0 - 2.0*mu^2 + 5.0*mu^4)
-				if (mup2 gt mumin) then begin
-					II +=  (1.0/nmu) * mup2 * interpol(Fm,tm,tm[i]*mup2)
-				endif
-			endfor
-
-			LL=[LL,II]
-		endfor
-
-		oplot, tm, LL, linestyle=ls
-	
-		openw, lun, '2.dat', /get_lun
-		for i=0,n_elements(tm)-1 do printf, lun, tm[i], LL[i], format='(g,g)'
-		free_lun, lun
-	
+	oplot, tm, LL, linestyle=ls
+			
 end
 
 
@@ -1333,7 +1324,7 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 		xr=[1.0,10000.0]
 	endif
 	if (strcmp(source,'1627_2008',9)) then begin
-		yr=[3d32,1d35]
+		yr=[8d32,1d35]
 		xr=[1.0,10000.0]
 	endif
 	if (strcmp(source,'1900',4)) then yr=[1d34,1d38]
@@ -1694,9 +1685,16 @@ if (strcmp(source,'1627_2008',9)) then begin
 ;		lcplot, '1627_2008_step', 0
 ;	lcplot, '1627_10', 2
 
-lcplot, '1627_new_2', 0
-lcplot, '1627_new_1', 2
-lcplot, '1627_new_3', 1
+;lcplot, '1627_new_2', 0
+;lcplot, '1627_new_1', 2
+;lcplot, '1627_new_3', 1
+
+lcsum2, '1627_chandra1',0,mumin=0.89
+lcsum2, '1627_chandra2',1,mumin=0.78
+
+
+oplot, [2700.0,2700.0],[1d32,1d36],linestyle=2
+
 endif
 	
 	
@@ -1965,8 +1963,9 @@ endif
 			readcol, 'data/2008cooling.dat', t, F, dF, format=('D,D,D')
 			F*=1d35
 			dF*=1d35
-			oploterror, t, F, dF, psym=6, /nohat, symsize=0.7
+			oploterror, t[0:n_elements(t)-2], F[0:n_elements(t)-2], dF[0:n_elements(t)-2], psym=6, /nohat, symsize=0.7
 			dd=11.0
+			oploterror, t[n_elements(t)-1], F[n_elements(t)-1], dF[n_elements(t)-1], psym=6, /nohat, symsize=0.7,/lobar			
 		endif
 		
 		if (strcmp(source,'fluxes',6)) then begin
@@ -2829,7 +2828,7 @@ pro initial,ps=ps
 			;rho2=y/2.28d14
 
 	!p.multi=[0,2,2,0,0]
-	plot, rho, T,/xlog,/ylog, ytitle=textoidl('T (K)'),xtitle=textoidl('Column depth (g cm^{-2})'),xrange=[1d11,1d14]
+	plot, rho, T,/xlog,/ylog, ytitle=textoidl('T (K)'),xtitle=textoidl('Column depth (g cm^{-2})'),xrange=[1d7,1d14]
 	oplot,rho2,T2,linestyle=1
 	oplot, rho,TC+1e5, linestyle=2
 
