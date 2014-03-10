@@ -63,8 +63,7 @@ The file `init.dat` sets up the run. The parameters are
 			5=B1 from Reddy and Page
 			6=BCS from Reddy and Page
 	kncrit	neutrons are normal for kn<kncrit (to use this set SFgap=4)
-	sph		whether to inlcude SF phonons (0=no 1=yes)
-
+	
 	potek_eos	use the EOS routines from Potekhin in the EOS
 
 	piecewise	if =1 then the initial temperature is specified in a piecewise

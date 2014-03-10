@@ -58,7 +58,7 @@ struct globals {
 	double mdot;
 	double Tt, Fin, Tc;
 	int nbeta, nuflag, accreting, output, hardwireQ, instant_heat;
-	int use_piecewise, force_precalc, use_my_envelope, include_sph, gpe;
+	int use_piecewise, force_precalc, use_my_envelope, gpe;
 	int force_cooling_bc, extra_heating;
 	FILE *fp,*fp2;
 	double Qinner, Qrho;
@@ -109,7 +109,6 @@ int main(int argc, char *argv[])
 	G.use_piecewise=0;
 	G.Qrho=1e12;
 	G.instant_heat = 0;
-	G.include_sph=0;
 	G.angle_mu=-1.0;
 	G.gpe=0;
 	G.force_cooling_bc=0;
@@ -157,7 +156,6 @@ int main(int argc, char *argv[])
 			if (!strncmp(s,"kncrit",6)) EOS.kncrit=x;
 			if (!strncmp(s,"mdot",4)) G.mdot=x;
 			if (!strncmp(s,"mass",4)) mass=x;
-			if (!strncmp(s,"sph",3)) G.include_sph=(int) x;
 			if (!strncmp(s,"gpe",3)) G.gpe=(int) x;
 			if (!strncmp(s,"radius",6)) G.radius=x;
 			if (!strncmp(s,"Edep",4)) G.energy_deposited_outer=x;
