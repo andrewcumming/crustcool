@@ -1329,12 +1329,12 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 		xr=[0.3,6000.0]
 	endif
 	if (strcmp(source,'1627_1998',9)) then begin
-		yr=[1d33,4d35]
-		xr=[1.0,6000.0]
+		yr=[3d32,1d35]
+		xr=[1.0,10000.0]
 	endif
 	if (strcmp(source,'1627_2008',9)) then begin
-		yr=[1d33,1d35]
-		xr=[1.0,6000.0]
+		yr=[3d32,1d35]
+		xr=[1.0,10000.0]
 	endif
 	if (strcmp(source,'1900',4)) then yr=[1d34,1d38]
 	if (strcmp(source,'SGR1900',7)) then begin
@@ -1441,7 +1441,7 @@ if (0) then begin
 endif
 
 
-if (1) then begin
+if (0) then begin
 ;lcplot, 'maxL_15', 0, Lscale=0.1, Lmin = PYL(5e7,1e15), linecol=250
 lcplot, 'maxL_14', 0, Lscale=0.1, Lmin = PYL(5e7,1e14), linecol=80
 ;lcplot, 'maxL_3e14', 0, Lscale=0.1, Lmin = PYL(5e7,3e14), linecol=120

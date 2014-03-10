@@ -31,7 +31,6 @@ void set_up_initial_temperature_profile_piecewise(char *fname);
 void precalculate_vars(void);
 void set_up_grid(int ngrid,const char*fname);
 void get_TbTeff_relation(void);
-double crust_heating_rate(int i);
 double crust_heating(int i);
 double energy_deposited(int i);
 void output_result_for_step(int j, FILE *fp, FILE *fp2, double timesofar, double *last_time_output);
@@ -54,7 +53,7 @@ struct globals {
   	double g, ZZ,mass,radius;
 	double time_to_run;
 	double Pb, Pt, yt;
-	double rhot,rhob;
+	double rhot,rhob,heating_P1,heating_P2;
 	double mdot;
 	double Tt, Fin, Tc;
 	int nbeta, nuflag, accreting, output, hardwireQ, instant_heat;
@@ -104,8 +103,8 @@ int main(int argc, char *argv[])
 	G.mdot=0.1;
 	G.energy_deposited_outer=1.0;
 	G.energy_deposited_inner=-1.0;
-	G.rhob=1e15; 
-	G.rhot=1e3;
+	G.rhob=1e14; 
+	G.rhot=1e6;
 	G.use_piecewise=0;
 	G.Qrho=1e12;
 	G.instant_heat = 0;
@@ -846,6 +845,15 @@ void precalculate_vars(void)
 	G.NU_grid = matrix(1,G.N+2,1,G.nbeta);	
 	G.EPS_grid = matrix(1,G.N+2,1,G.nbeta);	
 
+	// For the crust heating, we need to convert the density limits into 
+	// pressures
+	EOS.rho = G.rhot;
+	set_composition();
+	G.heating_P1 = EOS.ptot();
+	EOS.rho = G.rhob;
+	set_composition();
+	G.heating_P2 = EOS.ptot();
+	
 	FILE *fp = NULL;
 	char s[100];
 	if (EOS.B > 0.0) sprintf(s,"gon_out/precalc_results_%lg",log10(EOS.B));
@@ -955,67 +963,65 @@ double crust_heating(int i)
 // calculates the crust heating in erg/g/s
 // for grid point i
 {
-	double eps=0.0;
+	double eps=0.0,P = G.P[i];
 
 	// if we are heating on < 1day timescale then its a magnetar
 	if (G.outburst_duration<1.0/365.0) {
 		
 		// eps in erg/g/s
-		eps = 1e25/(G.rho[i]*G.outburst_duration*3.15e7);
-		eps /= G.mdot * G.g;   // modify to the units used in the code
+		double eps_heat = 1e25/(G.rho[i]*G.outburst_duration*3.15e7);
+		eps_heat /= G.mdot * G.g;   // modify to the units used in the code
+
 		// limit the heating to a region of the crust
-		if (G.rho[i] < G.rhot) eps=0.0;
-		if (G.rho[i] > G.rhob) eps=0.0;
-		
+		double P1 = P*exp(-0.5*G.dx);
+		double P2 = P*exp(0.5*G.dx);
+		if (P1 > G.heating_P1 && P2 < G.heating_P2)   // we are within the heating zone
+			eps = eps_heat;
+		if (P1 < G.heating_P1 && P2 < G.heating_P2 && G.heating_P1<P2) {   // left hand edge of heated region
+			eps = eps_heat * log(P2/G.heating_P1)/G.dx;
+		}
+		if (P1 > G.heating_P1 && P2 > G.heating_P2 && G.heating_P2>P1) {  // right hand edge of heated region
+			eps = eps_heat * log(G.heating_P2/P1)/G.dx;
+		}
+
 	} else {  // otherwise we are doing an accreting neutron star
 
-		if (!G.hardwireQ) 
+		if (!G.hardwireQ) {
 			eps = G.Qheat[i]*8.8e4*9.64e17/(G.P[i]*G.dx);
-		else
-			eps = crust_heating_rate(i);
+		} else {
+			// simple "smeared out" heating function, 1.2MeV in inner crust, 0.2MeV in outer crust
+			if (P >= 1e16*2.28e14 && P <= 1e17*2.28e14) eps=8.8e4*G.deep_heating_factor*1.7*9.64e17/(P*log(1e17/1e16));
+		 	if (P >= 3e12*2.28e14 && P < 3e15*2.28e14) eps=8.8e4*G.deep_heating_factor*0.2*9.64e17/(P*log(3e15/3e12));
+
+			// Extra heat source in the ocean
+			if (G.extra_heating) {	
+				// Put all of the extra heat into one grid point
+				//if (G.P[i]*exp(-0.5*G.dx) <G.extra_y*2.28e14 && G.P[i]*exp(0.5*G.dx)>G.extra_y*2.28e14)
+				//		eps+=8.8e4*G.extra_Q*9.64e17/(P*G.dx);
+
+				// More distributed heating
+				double extra_y1 = G.extra_y/3.0;	
+				double extra_y2 = G.extra_y*3.0;
+				double eps_extra=0.0;
+				double P1 = P*exp(-0.5*G.dx);
+				double P2 = P*exp(0.5*G.dx);
+				double geff=2.28e14;
+
+				if (P1 > extra_y1*geff && P2 < extra_y2*geff)   // we are within the heating zone
+					eps_extra=8.8e4*G.extra_Q*9.64e17/(P*log(extra_y2/extra_y1));
+				if (P1 < extra_y1*geff && P2 < extra_y2*geff && extra_y1*geff<P2) {   // left hand edge of heated region
+					eps_extra=8.8e4*G.extra_Q*9.64e17/(P*log(extra_y2/extra_y1));
+					eps_extra *= log(P2/(extra_y1*geff))/G.dx;
+				}
+				if (P1 > extra_y1*geff && P2 > extra_y2*geff && extra_y2*geff>P1) {  // right hand edge of heated region
+					eps_extra=8.8e4*G.extra_Q*9.64e17/(P*log(extra_y2/extra_y1));
+					eps_extra *= log(extra_y2*geff/P1)/G.dx;
+				}
+				eps+=eps_extra;
+			}
+		}
 	}
 
-	return eps;	
-}
-
-
-double crust_heating_rate(int i) 
-// calculates the crust heating in erg/g/s for an accreting neutron star
-// except for a factor of gravity --- multiply by gravity to get these units
-{
-	double eps=0.0, P = G.P[i];
-	// simple "smeared out" heating function, 1.2MeV in inner crust, 0.2MeV in outer crust
-	if (P >= 1e16*2.28e14 && P <= 1e17*2.28e14) eps=8.8e4*G.deep_heating_factor*1.7*9.64e17/(P*log(1e17/1e16));
- 	if (P >= 3e12*2.28e14 && P < 3e15*2.28e14) eps=8.8e4*G.deep_heating_factor*0.2*9.64e17/(P*log(3e15/3e12));
-
-	// Extra heat source in the ocean
-	if (G.extra_heating) {	
-		// Put all of the extra heat into one grid point
-		//if (G.P[i]*exp(-0.5*G.dx) <G.extra_y*2.28e14 && G.P[i]*exp(0.5*G.dx)>G.extra_y*2.28e14)
-		//		eps+=8.8e4*G.extra_Q*9.64e17/(P*G.dx);
-	
-		// More distributed heating
-		double extra_y1 = G.extra_y/3.0;	
-		double extra_y2 = G.extra_y*3.0;
-		double eps_extra=0.0;
-		double P1 = G.P[i]*exp(-0.5*G.dx);
-		double P2 = G.P[i]*exp(0.5*G.dx);
-		double geff=2.28e14;
-		
-		if (P1 > extra_y1*geff && P2 < extra_y2*geff)   // we are within the heating zone
-			eps_extra=8.8e4*G.extra_Q*9.64e17/(P*log(extra_y2/extra_y1));
-		if (P1 < extra_y1*geff && P2 < extra_y2*geff && extra_y1*geff<P2) {   // left hand edge of heated region
-			eps_extra=8.8e4*G.extra_Q*9.64e17/(P*log(extra_y2/extra_y1));
-			eps_extra *= log(P2/(extra_y1*geff))/G.dx;
-		}
-		if (P1 > extra_y1*geff && P2 > extra_y2*geff && extra_y2*geff>P1) {  // right hand edge of heated region
-			eps_extra=8.8e4*G.extra_Q*9.64e17/(P*log(extra_y2/extra_y1));
-			eps_extra *= log(extra_y2*geff/P1)/G.dx;
-		}
-		eps+=eps_extra;
-	}
-	
-	
 	return eps;	
 }
 

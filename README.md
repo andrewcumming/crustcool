@@ -58,7 +58,7 @@ The file `init.dat` sets up the run. The parameters are
 	
 	SFgap	neutron superfluid gap. Choices are
 			0=normal neutrons (not SF)
-			1=SFB03, 2=AWPII, 3=Gaussian Tc(k)
+			1=SFB03 (default choice), 2=AWPII, 3=Gaussian Tc(k)
 			4=all or nothing, the neutrons are normal for k<kncrit
 			5=B1 from Reddy and Page
 			6=BCS from Reddy and Page
