@@ -1294,8 +1294,8 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 ;		!p.charthick=3
  ; 	endif
 	
-	yr=[5d32,5d35]
-	xr=[1.0,9000.0]
+	yr=[1d32,1d37]
+	xr=[0.1,10000.0]
 	if (strcmp(source,'0556',4)) then begin
 		yr=[1d34,5d35]
 		xr=[1.0,5000.0]
@@ -1441,12 +1441,12 @@ if (0) then begin
 endif
 
 
-if (0) then begin
-lcplot, 'maxL_15', 0, Lscale=0.1, Lmin = PYL(5e7,1e15), linecol=250
+if (1) then begin
+;lcplot, 'maxL_15', 0, Lscale=0.1, Lmin = PYL(5e7,1e15), linecol=250
 lcplot, 'maxL_14', 0, Lscale=0.1, Lmin = PYL(5e7,1e14), linecol=80
-lcplot, 'maxL_3e14', 0, Lscale=0.1, Lmin = PYL(5e7,3e14), linecol=120
+;lcplot, 'maxL_3e14', 0, Lscale=0.1, Lmin = PYL(5e7,3e14), linecol=120
 ;lcplot, 'maxL_3e15', 0, Lscale=0.1, Lmin = PYL(5e7,3e15), linecol=250
-lcplot, 'maxL_0', 0, Lscale=0.1, Lmin = PYL(5e7,0)
+;lcplot, 'maxL_0', 0, Lscale=0.1, Lmin = PYL(5e7,0)
 
 xyouts, 0.3,1d35, textoidl('B=0')
 xyouts, 0.3,10^34.8, textoidl('B=10^{14}G'), col=80
@@ -1458,7 +1458,7 @@ readcol, 'out/fcontour_0.dat', Fcont, tcont, format=('X,X,X,D,X,X,D')
 tcont/=24.0*3600.0
 Fcont=10^Fcont
 Fcont*=4.0*!dpi*1.2d6^2/(1.24^2)
-oplot,  tcont*1.24/2, 0.5*(1.6/2.28)*Fcont*0.1, linestyle=2
+;oplot,  tcont*1.24/2, 0.5*(1.6/2.28)*Fcont*0.1, linestyle=2
 
 readcol, 'out/fcontour_14.dat', Fcont, tcont, format=('X,X,X,D,X,X,D')
 tcont/=24.0*3600.0

@@ -696,42 +696,7 @@ void calculate_vars(int i, double T, double P, double *CP, double *K, double *NU
 	} else {
 		// if beta is outside the range of the precalculated table, then calculate directly
 		printf("Note: log10T outside range (T=%lg beta=%lg)\n", T,beta);
-		EOS.P=P; 
-		EOS.T8=1e-8*T; 		
-		EOS.rho=G.rho[i];
-		set_composition();
-		*CP=EOS.CP();
-		
-		double Qval=EOS.Q;
-		if (G.hardwireQ) {
-			if (G.rho[i] > G.Qrho) Qval=G.Qinner;
-		} else {
-			Qval = G.Qimp[i];	
-		}
-			
-		double Qkeep = EOS.Q;
-		EOS.Q=Qval;
-		//if (EOS.B == 0.0) { 
-		//	*K=EOS.rho*EOS.K_cond(0.0)*G.g/P;	
-	//	} else {
-			double Kcond, Kcondperp;
-			Kcond = EOS.potek_cond();
-			Kcondperp = EOS.Kperp;	
-			//Kcondperp=0.0;
-			if (EOS.B > 0.0) {
-			if (G.angle_mu >= 0.0) {
-				Kcond *= 4.0*G.angle_mu*G.angle_mu/(1.0+3.0*G.angle_mu*G.angle_mu);
-			} else {
-				Kcond = 0.5*(1.0544*Kcond+0.9456*Kcondperp);  // average over dipole geometry
-			}
-			}
-			*K=EOS.rho*Kcond*G.g/P;
-	//	}
-		EOS.Q=Qkeep;
-			
-		//*K=3.03e20*pow(EOS.T8,3)/(EOS.opac()*y);
-		if (G.nuflag) *NU=EOS.eps_nu(); else *NU=0.0;	
-		if (G.accreting) *EPS=crust_heating(i)*energy_deposited(i)*G.mdot * G.g; else *EPS=0.0;
+		exit(0);
 	}
  }
 
