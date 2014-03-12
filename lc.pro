@@ -471,7 +471,7 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 	;	FF = 1.38d-16*Teff/(1.6d-12)
 	;	oplot, tt,FF,linestyle=0
 
-	if (source eq '1731') then begin
+	if (source eq '1731' and 0) then begin
 
 		readcol, 'gon_out/prof_1731_chandra1', tt,Teff, format=('F,X,X,X,F')
 		tt/=(24*3600.0)
@@ -501,6 +501,58 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 		oplot, tt,FF,linestyle=4
 
 		openw, lun,'lc_1731_chandra3.dat', /get_lun
+		for i=0,n_elements(tt)-1 do begin
+			if tt[i] gt 0.0 then printf, lun, tt[i], FF[i], format='(g,g)'
+		endfor
+		free_lun, lun
+
+
+		oplot, [5230.0,5230.0],[10.0,1000.0],linestyle=2
+
+	endif
+
+
+
+	if (source eq '1731' ) then begin
+
+		readcol, 'gon_out/prof_mcmc1', tt,Teff, format=('F,X,X,X,F')
+		tt/=(24*3600.0)
+		FF = 1.38d-16*Teff/(1.6d-12)
+		oplot, tt,FF,linestyle=0,col=80
+		
+		openw, lun,'lc_1731_mcmc1.dat', /get_lun
+		for i=0,n_elements(tt)-1 do begin
+			if tt[i] gt 0.0 then printf, lun, tt[i], FF[i], format='(g,g)'
+		endfor
+		free_lun, lun
+		
+		readcol, 'gon_out/prof_mcmc2', tt,Teff, format=('F,X,X,X,F')
+		tt/=(24*3600.0)
+		FF = 1.38d-16*Teff/(1.6d-12)
+		oplot, tt,FF,linestyle=1,col=80
+
+		openw, lun,'lc_1731_mcmc2.dat', /get_lun
+		for i=0,n_elements(tt)-1 do begin
+			if tt[i] gt 0.0 then printf, lun, tt[i], FF[i], format='(g,g)'
+		endfor
+		free_lun, lun
+
+		readcol, 'gon_out/prof_mcmc3', tt,Teff, format=('F,X,X,X,F')
+		tt/=(24*3600.0)
+		FF = 1.38d-16*Teff/(1.6d-12)
+		oplot, tt,FF,linestyle=0,col=250
+
+		openw, lun,'lc_1731_mcmc3.dat', /get_lun
+		for i=0,n_elements(tt)-1 do begin
+			if tt[i] gt 0.0 then printf, lun, tt[i], FF[i], format='(g,g)'
+		endfor
+		free_lun, lun
+		readcol, 'gon_out/prof_mcmc4', tt,Teff, format=('F,X,X,X,F')
+		tt/=(24*3600.0)
+		FF = 1.38d-16*Teff/(1.6d-12)
+		oplot, tt,FF,linestyle=1,col=250
+
+		openw, lun,'lc_1731_mcmc4.dat', /get_lun
 		for i=0,n_elements(tt)-1 do begin
 			if tt[i] gt 0.0 then printf, lun, tt[i], FF[i], format='(g,g)'
 		endfor
