@@ -685,7 +685,7 @@ pro lcsum2, namestring, ls, mumin=mumin, Lscale=Lscale,source=source
 	if keyword_set(source) then begin
 		if (strcmp(source,'1627',4)) then begin
 			yr=[1d33,1d35]
-			xr=[1.0,10000.0]
+			xr=[10.0,10000.0]
 		endif
 		plot, tm, Fm, /nodata,/xlog,/ylog,yrange=yr,xrange=xr,xtitle=textoidl('Time (days)'),$
 						ytitle=textoidl('Luminosity (erg s^{-1})')
@@ -693,10 +693,10 @@ pro lcsum2, namestring, ls, mumin=mumin, Lscale=Lscale,source=source
 			readcol, 'data/1998cooling.dat', t, F, dF, format=('D,D,D')
 			F*=1d35
 			dF*=1d35
-			oploterror, t, F, dF, psym=6, /nohat, symsize=0.7
+			oploterror, t, F, dF, psym=6, /nohat, symsize=0.7,col=250
 			dd=11.0
-		endif
-		if (strcmp(source,'1627_2008',9)) then begin
+		;endif
+		;if (strcmp(source,'1627_2008',9)) then begin
 			readcol, 'data/2008cooling.dat', t, F, dF, format=('D,D,D')
 			F*=1d35
 			dF*=1d35
@@ -710,15 +710,18 @@ pro lcsum2, namestring, ls, mumin=mumin, Lscale=Lscale,source=source
 	for i=1L,n_elements(tm)-1 do begin
 		II = 0.0
 		nmu = 100
-		for j=1,nmu do begin
+		for j=-nmu,nmu do begin
 			mu=(1.0/nmu)*j
 			; dipole l=1
 			mup2 = 4.0*mu*mu/(1.0+3.0*mu*mu)
 			; l=2
 			;mup2 = (1.0 - 6.0*mu^2 + 9.0*mu^4)/(1.0 - 2.0*mu^2 + 5.0*mu^4)
-			if (mup2 gt mumin) then begin
+			if (mu gt mumin) then begin
 				II +=  (1.0/nmu) * mup2 * interpol(Fm,tm,tm[i]*mup2)
-			endif
+			endif else begin
+				II += (1.0/nmu) * mup2 * Fm[-1]
+			endelse
+			
 		endfor
 		LL=[LL,II]
 	endfor
@@ -1373,7 +1376,7 @@ pro lc, source=source,ps=ps, nodata=nodata, nolabel=nolabel, noplot=noplot, over
 	endif
 	if (strcmp(source,'1627_1998',9)) then begin
 		yr=[3d32,1d35]
-		xr=[1.0,10000.0]
+		xr=[10.0,10000.0]
 	endif
 	if (strcmp(source,'1627_2008',9)) then begin
 		yr=[8d32,1d35]
@@ -1741,8 +1744,8 @@ if (strcmp(source,'1627_2008',9)) then begin
 ;lcplot, '1627_new_1', 2
 ;lcplot, '1627_new_3', 1
 
-lcsum2, '1627_chandra1',0,mumin=0.89
-lcsum2, '1627_chandra2',1,mumin=0.78
+lcsum2, '1627_chandra1',0,mumin=0.78
+lcsum2, '1627_chandra2',1,mumin=0.58
 
 
 oplot, [2700.0,2700.0],[1d32,1d36],linestyle=2

@@ -36,11 +36,11 @@ double energy_deposited(int i);
 void output_result_for_step(int j, FILE *fp, FILE *fp2, double timesofar, double *last_time_output);
 void read_in_data(const char *fname);
 void calculate_cooling_curve(char *fname);
-void calculate_chisq(void);
+void calculate_chisq(Ode_Int *ODE, Spline *TEFF, double g, double ZZ, double R,double Lscale,double Lmin);
 void set_composition(void);
 void heatderivs(double t, double T[], double dTdt[]);
 void heatderivs2(double t, double T[], double dTdt[]);
-void parse_parameters(char *fname);
+void parse_parameters(char *fname, char*sourcename);
 
 // global variables
 struct globals {
@@ -65,6 +65,7 @@ struct globals {
 	double outburst_duration, deep_heating_factor;
 	double angle_mu;
 	double extra_Q,extra_y;
+	double Lscale,Lmin;
 } G;
 
 Ode_Int ODE;
@@ -98,19 +99,15 @@ int main(int argc, char *argv[])
 		default:
 			strcat(fname,fnamedefault);
 	}
-			
-	// get input parameters
-	parse_parameters(fname);
+	
+	// name of source for data file: default is 1659
+	char sourcename[200]="1659";
 
-	{ // Read in observed lightcurve
-		char fobsname[40]="data/";
-		if (argc >1) {
-			strcat(fobsname,argv[1]);
-			read_in_data(fobsname);
-		} else {
-			read_in_data("data/1659");
-		}	
-	}	
+	// get input parameters
+	parse_parameters(fname,sourcename);
+	
+	// Read in observed lightcurve
+	read_in_data(sourcename);
 
 	// ------------------------------ Set up ------------------------------------
 
@@ -145,7 +142,7 @@ int main(int argc, char *argv[])
 	calculate_cooling_curve(fname);
 
 	// calculate chisq
-	calculate_chisq(&ODE,&TEFF,G.g,G.ZZ);
+	calculate_chisq(&ODE,&TEFF,G.g,G.ZZ,G.radius,G.Lscale,G.Lmin);
 
 	// ----------------------------------------------------------------------------------
 
@@ -626,7 +623,7 @@ void set_up_initial_temperature_profile_by_heating(void)
 	}
 	start_timing(&timer);
 
-	if (1) {
+	if (0) {
 	// First, let the crust cool for 30 years to get into eqm with the core
 	G.accreting = 0;  // switch off heating for this one
 	ODE.go(0.0, 30.0*3.15e7, 1e6, 1e-6, derivs);
@@ -1137,7 +1134,7 @@ void set_composition(void)
 	}
 }
 
-void parse_parameters(char *fname) {
+void parse_parameters(char *fname,char *sourcename) {
 
 	// ----------------------------------------------------------------------
  	//   Set parameters
@@ -1177,6 +1174,8 @@ void parse_parameters(char *fname) {
 	G.extra_y=0.0;
 	G.output=1;
 	G.deep_heating_factor=1.0;
+	G.Lscale=1.0;
+	G.Lmin=0.0;
 	
 	printf("============================================\n");
 	printf("Reading input data from %s\n",fname);
@@ -1227,6 +1226,11 @@ void parse_parameters(char *fname) {
 			if (!strncmp(s,"envelope",8)) G.use_my_envelope=(int) x;
 			if (!strncmp(s,"extra_Q",7)) G.extra_Q=x;
 			if (!strncmp(s,"extra_y",7)) G.extra_y=x;
+			if (!strncmp(s,"Lscale",6)) G.Lscale=x;
+			if (!strncmp(s,"Lmin",4)) G.Lmin=x;
+			if (!strncmp(s,"source",6)) {
+				sscanf(s1,"%s\t%s\n",s,sourcename);
+			}
 		}
 	}
 

@@ -28,7 +28,35 @@ def main():
 		samples=read_samples('12/')
 		plot_hist1d(samples,'k','current data')
 		plt.legend()
-		plt.savefig('g14_new.pdf')
+		plt.savefig('g14.pdf')
+
+	if 0:
+		# 1D histograms of gravity
+		samples=read_samples('13/')
+		plot_hist1d(samples,'r','T=54 eV')
+		plt.xlim([8.0,16.0])
+		plt.ylim([0,0.07])
+		samples=read_samples('14/')
+		plot_hist1d(samples,'b','T=63.1 eV')
+		plt.xlabel('R (km)')
+		samples=read_samples('12/')
+		plot_hist1d(samples,'k','current data')
+		plt.legend(loc=2)
+		plt.savefig('R.pdf')
+
+	if 0:
+		# 1D histograms of gravity
+		samples=read_samples('13/')
+		plot_hist1d(samples,'r','T=54 eV')
+		plt.xlim([1.1,2.4])
+		plt.ylim([0,0.14])
+		samples=read_samples('14/')
+		plot_hist1d(samples,'b','T=63.1 eV')
+		plt.xlabel('R (km)')
+		samples=read_samples('12/')
+		plot_hist1d(samples,'k','current data')
+		plt.legend()
+		plt.savefig('mass.pdf')
 
 	if 0:
 		# 2D contours for Tc and gravity
@@ -44,7 +72,7 @@ def main():
 		samples=read_samples('14/')
 		plot_hist(samples,'r')
 
-		plt.savefig('Tc_g14_new.pdf')
+		plt.savefig('g14_mdot.pdf')
 
 
 def read_samples(dir):
@@ -58,7 +86,7 @@ def read_samples(dir):
 	# number of points
 	n = samples.shape[0]
 	# remove burn in points
-	samples = samples[1.0*n/4:,:]
+	samples = samples[1.0*n/2:,:]
 	
 	return samples
 
@@ -77,7 +105,18 @@ def plot_hist1d(samples,col_string,label_string):
 	mdot = samples[:,3]
 	Tc = samples[:,0]
 
-	n1, bins, patches = plt.hist(g, 50, weights=[1.0/n]*n,normed=False,alpha=1.0,color=col_string,histtype='step',label=label_string)
+	ind = (mdot>0.05).nonzero()
+	T_c = Tc[ind]
+	g = g[ind]
+	Q = Q[ind]
+	R = R[ind]
+	M = M[ind]
+	mdot = mdot[ind]
+	n=len(mdot)
+
+	n1, bins, patches = plt.hist(M, 50, weights=[1.0/n]*n,normed=False,alpha=1.0,color=col_string,histtype='step',label=label_string)
+#	n1, bins, patches = plt.hist(R, 50, weights=[1.0/n]*n,normed=False,alpha=1.0,color=col_string,histtype='step',label=label_string)
+#	n1, bins, patches = plt.hist(g, 50, weights=[1.0/n]*n,normed=False,alpha=1.0,color=col_string,histtype='step',label=label_string)
 
 def plot_hist(samples,col_string):
 	
@@ -92,13 +131,27 @@ def plot_hist(samples,col_string):
 	
 	#n, bins, patches = plt.hist(g, 25, normed=1,alpha=0.1,color=col_string)
 	
+	ind = (mdot>0.05).nonzero()
+	T_c = Tc[ind]
+	g = g[ind]
+	Q = Q[ind]
+	mdot = mdot[ind]
 	
-	triangle.hist2d(Tc,g,plot_datapoints=False,bins=25,extent=[(2,12),(0.5,3)])
-	plt.xlabel(r'$T_c (10^7 K)$')
-	plt.ylabel(r'$g_{14}$')
-	#triangle.hist2d(M/R,Q,plot_datapoints=False,bins=25,extent=[(0,0.33),(-3,2)])
-	#triangle.hist2d(g,Q,plot_datapoints=False,bins=30,extent=[(0.5,2.5),(-3,2)],
-	#			color=col_string,plot_contours=False,plot_ellipse=True)
+	if 0:
+		triangle.hist2d(Tc,g,plot_datapoints=False,bins=25,extent=[(2,12),(0.5,3)])
+		plt.xlabel(r'$T_c (10^7 K)$')
+		plt.ylabel(r'$g_{14}$')
+
+	if 0:
+		triangle.hist2d(g,Q,plot_datapoints=False,bins=25,extent=[(0.5,3),(-3,2)])
+		plt.ylabel(r'$Q_{imp}$')
+		plt.xlabel(r'$g_{14}$')
+
+	if 1:
+		triangle.hist2d(g,mdot,plot_datapoints=False,bins=25,extent=[(0.5,3),(0.0,0.5)])
+		plt.ylabel(r'$Accretion rate$')
+		plt.xlabel(r'$g_{14}$')
+
 	
 
 
@@ -106,20 +159,30 @@ def plot_triangle(samples,dir):
 
 	nparams = samples.shape[1]
 
-	if nparams == 4:
-		fig = triangle.corner(samples,labels=[r"$T_{c,7}$", r"$Q_{imp}$", r"$T_{b,8}$",
-						r"$\dot M$"], extents=[(4,11),(-3,2),(2,6),(0,0.5)],
-			quantiles=[0.16, 0.5, 0.84], plot_datapoints=False,bins=50,plot_ellipse=False)
-
 	if nparams == 3:
-		fig = triangle.corner(samples,labels=[r"$T_{c,7}$", r"$Q_{imp}$", r"$T_{b,8}$"],
-			extents=[(4,11),(-3,2),(2,6)],
-					quantiles=[0.16, 0.5, 0.84], plot_datapoints=False,bins=50,plot_ellipse=False)
+		fig = triangle.corner(samples,labels=[r"$Q_{imp}$", r"$L_{scale}$",
+						r"$E_{dep}$"], 
+			quantiles=[0.16, 0.5, 0.84], plot_datapoints=True,bins=50,plot_ellipse=False)
+
+	#if nparams == 4:
+	#	fig = triangle.corner(samples,labels=[r"$T_{c,7}$", r"$Q_{imp}$", r"$T_{b,8}$",
+	#					r"$\dot M$"], extents=[(4,11),(-3,2),(2,6),(0,0.5)],
+	#		quantiles=[0.16, 0.5, 0.84], plot_datapoints=False,bins=50,plot_ellipse=False)
+
+	#if nparams == 3:
+	#	fig = triangle.corner(samples,labels=[r"$T_{c,7}$", r"$Q_{imp}$", r"$T_{b,8}$"],
+	#		extents=[(4,11),(-3,2),(2,6)],
+	#				quantiles=[0.16, 0.5, 0.84], plot_datapoints=False,bins=50,plot_ellipse=False)
 
 	if nparams == 6:
-		fig = triangle.corner(samples,labels=[r"$T_{c,7}$", r"$Q_{imp}$", r"$T_{b,8}$",
-				r"$\dot M$", r"$M (M_\odot)$", r"$R (km)$"],extents=[(3,11),(-3,2),(2,6),(0,0.5),(1.2,2.4),(8,16)],
+		fig = triangle.corner(samples,labels=[r"$Q_{imp}$", r"$L_{scale}$",
+						r"$E_{dep}$", r"$T_{c,7}$", r"$M (M_\odot)$", r"$R (km)$"],
 				quantiles=[0.16, 0.5, 0.84], plot_datapoints=False,bins=50,plot_ellipse=False)
+				
+#				if nparams == 6:
+#					fig = triangle.corner(samples,labels=[r"$T_{c,7}$", r"$Q_{imp}$", r"$T_{b,8}$",
+#							r"$\dot M$", r"$M (M_\odot)$", r"$R (km)$"],extents=[(3,11),(-3,2),(2,6),(0,0.5),(1.2,2.4),(8,16)],
+#							quantiles=[0.16, 0.5, 0.84], plot_datapoints=False,bins=50,plot_ellipse=False)
 
 	fig.savefig('mcmc/'+dir+'mcplot.png')
 
