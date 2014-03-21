@@ -7,8 +7,6 @@
 #include "../h/nrutil.h"
 
 #define me 510.999
-#define F14 0.352
-#define F15 0.648
 #define RADa 7.5657e-15
 
 #include "../h/odeint.h"
@@ -17,7 +15,7 @@
 
 void* pt2Object;
 
-
+// Wrappers for Potekhin's conductivity and EOS routines
 extern "C"{
   void condegin_(double *temp,double *densi,double *B,double *Zion,double *CMI,
 					double *CMI1,double *Zimp, double *RSIGMA,double *RTSIGMA,
@@ -39,69 +37,50 @@ void Eos::tidy(void)
 
 void Eos::init(int n)
 {
-  this->ns=n;
-
-  this->A=vector(1,this->ns);
-  this->Z=vector(1,this->ns);
-  this->X=vector(1,this->ns);
-  this->Z2=0.0;
-  this->Yn=0.0;
-  this->set_Ye=0.0;
-  this->set_Yi=0.0;
-  this->accr=1;  // default crust composition is HZ with Fe56
-  this->gamma_melt=175.0;
-  this->Q=900.0; // treat the crust as a liquid for conductivities
-  this->B=0.0; // default is unmagnetized 
+	this->ns=n;
+	this->A=vector(1,this->ns);
+	this->Z=vector(1,this->ns);
+	this->X=vector(1,this->ns);
+	this->set_YZ2=0.0;
+	this->Yn=0.0;
+	this->set_Ye=0.0;
+	this->set_Yi=0.0;
+	this->accr=1;  // default crust composition is HZ with Fe56
+	this->gamma_melt=175.0;
+	this->Q=900.0; // treat the crust as a liquid for conductivities
+	this->B=0.0; // default is unmagnetized 
 	this->use_potek_cond = 0;
 	this->use_potek_eos = 0;
-	this->rho_core = 1.6e14;
+	this->kncrit=0.0;
 }
 
 // ------------------------ mean molecular weights ------------------------
 
 double Eos::Yi(void)
-  // inverse mean molecular weight per ion
+// inverse mean molecular weight per ion
 {
-  //  return this->X+(this->Y/4.0)+(F14*this->Z/14.0)+(F15*this->Z/15.0);
-  int i;
-  double sum=0.0;
-
-  if (set_Yi > 0.0) sum=set_Yi;
-  else {
-    for (i=1; i<=this->ns; i++)
-      sum+=this->X[i]/this->A[i];
-  }
-  return sum;
+	if (set_Yi > 0.0) return set_Yi;
+	double sum=0.0;
+	for (int i=1; i<=this->ns; i++) sum+=this->X[i]/this->A[i];
+	return sum;
 }
 
 double Eos::Ye(void)
-  // inverse mean molecular weight per electron
+// inverse mean molecular weight per electron
 {
-  //  return this->X+(this->Y/2.0)+(F14*this->Z*8.0/14.0)+(F15*this->Z*8.0/15.0);
-  int i;
-  double sum=0.0;
-
-  if (set_Ye > 0.0) sum=set_Ye;
-  else {
-    for (i=1; i<=this->ns; i++)
-      sum+=this->X[i]*this->Z[i]/this->A[i];
-  }
-  return sum;
+	if (set_Ye > 0.0) return set_Ye;
+	double sum=0.0;
+	for (int i=1; i<=this->ns; i++) sum+=this->X[i]*this->Z[i]/this->A[i];
+	return sum;
 }
 
 double Eos::YZ2(void)
-  // sum of (X/A)*Z^2
+// sum of (X/A)*Z^2
 {
-  //  return this->X+this->Y+(F14*this->Z*64.0/14.0)+(F15*this->Z*64.0/15.0);
-  int i;
-  double sum=0.0;
-  if (this->Z2 == 0.0) {
-    for (i=1; i<=this->ns; i++)
-      sum+=this->X[i]*this->Z[i]*this->Z[i]/this->A[i];
-  } else {
-    sum=this->Z2;  
-  }
-  return sum;
+	if (this->set_YZ2 > 0.0) return this->set_YZ2;
+	double sum=0.0;
+	for (int i=1; i<=this->ns; i++) sum+=this->X[i]*this->Z[i]*this->Z[i]/this->A[i];
+	return sum;
 }
 
 // ------------------------ equation of state ------------------------------
@@ -111,30 +90,13 @@ double Eos::pe(void)
   // semi-analytic formula of Paczynski (1983) ApJ 267 315.
 {
 	double rY, pednr, pedr, pend, ped;
-  rY=this->rho*Ye();
-	double B12=this->B/1e12;
-	//B12=0.0;
-		pednr=9.91e-2*pow(rY,5.0/3.0);
-		pedr=1.231e1*pow(rY,4.0/3.0);
-	  ped=1/sqrt((1/pow(pedr,2))+(1/pow(pednr,2)));
-	
-	if (0) {//(rY<7.09e3*pow(B12,1.5)) {
-		double xr = 2.96e-5*rY/B12;
-		
-		double TB8 = 1.343*1e-12*this->B/sqrt(1.0+xr*xr);
-		if (this->T8 < TB8) {
-		
-		double ef = 9.11*9e-8*(sqrt(1.0+xr*xr)-1.0);
-		pednr = 1e-14 * (2.0/3.0)*ef*rY/1.67e-24;		
-		pedr = 1e-14 * 0.5*ef*rY/1.67e-24;
-	  	ped=1.0/sqrt((1.0/pow(pedr,2))+(1.0/pow(pednr,2)));
-	}
-	}
-  	
-  	pend=8.254e-7*1e8*this->T8*rY;
-  	return(1e14*sqrt(pow(ped,2)+pow(pend,2)));
+	rY=this->rho*Ye();
+	pednr=9.91e-2*pow(rY,5.0/3.0);
+	pedr=1.231e1*pow(rY,4.0/3.0);
+	ped=1/sqrt((1/pow(pedr,2))+(1/pow(pednr,2)));
+	pend=8.254e-7*1e8*this->T8*rY;
+	return(1e14*sqrt(pow(ped,2)+pow(pend,2)));
 }
-
 
 double Eos::ptot(void)
   // Calculates the total pressure, that is the sum of electron +
@@ -171,38 +133,16 @@ double Eos::ptot(void)
 }
 
 
-
-double Eos::pemod(void)
-  // Modified version of the electron pressure formula
-  // to use for heat capacity
-  // (Paczynski 1983 ApJ 267 315)
-{
-  double rY, pednr, pedr, pend, ped;
-  rY=this->rho*this->Ye();
-  // divide pednr and pedr by appropriate factors
-  pednr=9.91e-2*pow(rY,5.0/3.0)/1.32;
-  pedr=1.231e1*pow(rY,4.0/3.0)/0.822;
-  ped=1/sqrt((1/pow(pedr,2))+(1/pow(pednr,2)));
-  pend=8.254e-7*1e8*this->T8*rY;
-  return(1e14*sqrt(pow(ped,2)+pow(pend,2)));
-}
-
-
-
-
 double Eos::Utot(void)
   // internal energy density
 {
-  double f, r, tau;
-  tau=this->T8/59.4;
-  r=this->FermiI(2,this->T8,this->Chabrier_EF())/
-    this->FermiI(1,this->T8,this->Chabrier_EF());
-  if (this->Z[1]>1.0) f=1.5+this->Uex(); else f=1.5;
-  return 8.254e15*this->rho*this->T8*Yi()*f + 
-    1.5*this->pe()*(1.0+tau*r)/(1.0+0.5*tau*r) +
-    3.0*2.521967e17*pow(this->T8,4);
+	double f, r, tau;
+	tau=this->T8/59.4;
+	r=this->FermiI(2,this->T8,this->Chabrier_EF())/this->FermiI(1,this->T8,this->Chabrier_EF());
+	if (this->Z[1]>1.0) f=1.5+this->Uex(); else f=1.5;
+	return 8.254e15*this->rho*this->T8*Yi()*f + 1.5*this->pe()*(1.0+tau*r)/(1.0+0.5*tau*r) +
+		3.0*2.521967e17*pow(this->T8,4);
 }
-
 
 double Eos::FermiI(int k, double T8, double EF)
   // fitting formula for the generalized Fermi integrals
@@ -331,10 +271,6 @@ double Eos::Chabrier_EF(void)
   corr=1.5*log(1+corr);
 
   // return E_F including the rest mass
-
-  // for debugging
-  //  printf("Chabrier_EF::::  %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", EFnr, corr, theta, tau,q1,q2,q3,etu,et);
-
   return mc2+EFnr-kT*corr;
 }
 
@@ -343,135 +279,59 @@ double Eos::Chabrier_EF(void)
 
 
 void Eos::set_comp(void)
-  // works out the composition at density rho
+  // works out the composition at density rho according to the class variable 'accr'
   // accr=1 or 2 accreted crust; accr=0 equilibrium crust
 {
-// accreted matter composition from Haensel & Zdunik (1990)
-  double Acell[19]={56.0,56.0,56.0,56.0,56.0,56.0,56.0,56.0,112.0,112.0,
-		    112.0,112.0,112.0,224.0,224.0,224.0,224.0,448.0,448.0};
-  double Aa[19]={56.0,56.0,56.0,56.0,56.0,52.0,46.0,40.0,68.0,62.0,56.0,
-		 50.0,44.0,66.0,60.0,54.0,48.0,96.0,88.0};
-  double Za[19]={26.0,24.0,22.0,20.0,18.0,16.0,14.0,12.0,20.0,18.0,16.0,
-		 14.0,12.0,18.0,16.0,14.0,12.0,24.0,22.0};
-  double rhomaxa[19]={1.494e9,1.1145e10,7.848e10,2.496e11,6.110e11,9.075e11,
-		     1.131e12,1.455e12,1.766e12,2.134e12,2.634e12,3.338e12,
-		     4.379e12,5.665e12,7.041e12,8.980e12,1.127e13,1.137e13,
-		     1.253e13};
- // accreted matter composition from Haensel & Zdunik (2003)
-  double Acell2[29]={106.0,106.0,106.0,106.0,106.0,106.0,106.0,106.0,
-		     106.0,106.0,106.0,106.0,106.0,106.0,106.0,106.0,
-		     212.0,212.0,212.0,212.0,424.0,424.0,424.0,424.0,
-		     424.0,848.0,848.0,848.0,848.0};
-  double Aa2[29]={106.0,106.0,106.0,106.0,106.0,106.0,106.0,92.0,
-		  86.0,80.0,74.0,68.0,62.0,56.0,50.0,42.0,
-		  72.0,66.0,60.0,54.0,92.0,86.0,80.0,74.0,
-		  68.0,124.0,120.0,118.0,116.0};
-  double Za2[29]={44.0,42.0,40.0,38.0,36.0,34.0,32.0,28.0,26.0,24.0,
-		  22.0,20.0,18.0,16.0,14.0,12.0,20.0,18.0,16.0,14.0,
-		  24.0,22.0,20.0,18.0,16.0,28.0,26.0,24.0,22.0};
-  double rhomaxa2[29]={3.517e8,5.621e9,2.413e10,6.639e10,1.455e11,2.774e11,
-		       4.811e11,7.785e11,8.989e11,1.032e12,1.197e12,1.403e12,
-		       1.668e12,2.016e12,2.488e12,3.153e12,3.472e12,4.399e12,
-		       5.355e12,6.655e12,8.487e12,9.242e12,1.096e13,1.317e13,
-		       1.609e13,2.003e13,2.520e13,3.044e14,3.844e13};
-  // Haensel & Pichon (1994) for cold catalysed matter
-  // from Table 1, missing off the last element
-  double Ab[13]={56.0,62.0,64.0,66.0,86.0,84.0,82.0,80.0,78.0,126.0,
-		 124.0,122.0,120.0};
-  double Zb[13]={26.0,28.0,28.0,28.0,36.0,34.0,32.0,30.0,28.0,44.0,
-	 42.0,40.0,38.0};
-  double rhomaxb[13]={7.96e6,2.71e8,1.30e9,1.48e9,3.12e9,1.10e10,2.80e10,
-		      5.44e10,9.64e10,1.29e11,1.88e11,2.67e11,3.79e11};
-  // continued using Douchin & Haensel (2001) Table 1 and 2
-  // nc is nb in units of fm-3; xc is the neutron fraction
-  double Ac[43]={130.076,135.750,139.956,141.564,142.161,142.562,143.530,
-		 144.490,145.444,146.398,147.351,148.306,149.263,151.184,
-		 154.094,156.055,159.030,162.051,166.150,170.333,175.678,
-		 181.144,187.838,195.775,202.614,211.641,220.400,224.660,
-		 229.922,235.253,240.924,245.999,253.566,261.185,270.963,
-		 283.993,302.074,328.489,357.685,401.652,476.253,566.654,
-		 615.840};
-  double Zc[43]={42.198,42.698,43.019,43.106,43.140,43.163,43.215,43.265,
-		 43.313,43.359,43.404,43.447,43.490,43.571,43.685,43.755,
-		 43.851,43.935,44.030,44.101,44.155,44.164,44.108,43.939,
-		 43.691,43.198,42.506,42.089,41.507,40.876,40.219,39.699,
-		 39.094,38.686,38.393,38.281,38.458,39.116,40.154,42.051,
-		 45.719,50.492,53.162};
-  double nc[43]={1.2126e-4,1.6241e-4,1.9772e-4,2.0905e-4,2.2059e-4,2.3114e-4,
-		 2.6426e-4,3.0533e-4,3.5331e-4,4.0764e-4,4.6800e-4,5.3414e-4,
-		 6.0594e-4,7.6608e-4,1.0471e-3,1.2616e-3,1.6246e-3,2.0384e-3,
-		 2.6726e-3,3.4064e-3,4.4746e-3,5.7260e-3,7.4963e-3,9.9795e-3,
-		 1.2513e-2,1.6547e-2,2.1405e-2,2.4157e-2,2.7894e-2,3.1941e-2,
-		 3.6264e-2,3.9888e-2,4.4578e-2,4.8425e-2,5.2327e-2,5.6264e-2,
-		 6.0219e-2,6.4183e-2,6.7163e-2,7.0154e-2,7.3174e-2,7.5226e-2,
-		 7.5959e-2};
-  double xc[43]={0.0000,0.0000,0.0000,0.0000,0.0247,0.0513,0.1299,0.2107,
-		 0.2853,0.3512,0.4082,0.4573,0.4994,0.5669,0.6384,0.6727,
-		 0.7111,0.7389,0.7652,0.7836,0.7994,0.8099,0.8179,0.8231,
-		 0.8250,0.8249,0.8222,0.8200,0.8164,0.8116,0.8055,0.7994,
-		 0.7900,0.7806,0.7693,0.7553,0.7381,0.7163,0.6958,0.6699,
-		 0.6354,0.6038,0.5898};
-  double Z,A;
-  
-  if (this->accr==2) { // accreted composition
-    int i=0;
-    while (this->rho > rhomaxa2[i] && i<29) i++;
-    if (i==29) i=28; // higher density than HZ's table, 
-    // in this case just set it to the last value
-    
-    A=Aa2[i]; Z=Za2[i];
-    // From the composition, work out the neutron fraction
-    this->Yn=(Acell2[i]-A)/Acell2[i];
-  } else {
-  	if (this->accr==1) { // accreted composition
-    	int i=0;
-		while (this->rho > rhomaxa[i] && i<18) i++;
-		A=Aa[i]; Z=Za[i];
-		//if (i==18) Z=12;
-		// From the composition, work out the neutron fraction
-		this->Yn=(Acell[i]-A)/Acell[i];	
-    } else {  // cold matter composition
-      	if (this->rho < rhomaxb[11]) {
-			int i=0;
-			while (this->rho > rhomaxb[i] && i<12) i++;
-			A=Ab[i]; Z=Zb[i]; this->Yn=0.0;
-      	} else {
-			int i=0;
-			while (this->rho > nc[i]*1.66e15 && i<42) i++;
-			A=Ac[i-1]+(Ac[i]-Ac[i-1])*(this->rho-1.66e15*nc[i-1])/(1.66e15*(nc[i]-nc[i-1]));
-			Z=Zc[i-1]+(Zc[i]-Zc[i-1])*(this->rho-1.66e15*nc[i-1])/(1.66e15*(nc[i]-nc[i-1]));
-			this->Yn=xc[i-1]+(xc[i]-xc[i-1])*(this->rho-1.66e15*nc[i-1])/(1.66e15*(nc[i]-nc[i-1]));
-      	}
-    }
-  }
+	// accreted matter composition from Haensel & Zdunik (1990)
+	double Acell[19]={56.0,56.0,56.0,56.0,56.0,56.0,56.0,56.0,112.0,112.0,112.0,112.0,112.0,224.0,224.0,224.0,224.0,448.0,448.0};
+	double Aa[19]={56.0,56.0,56.0,56.0,56.0,52.0,46.0,40.0,68.0,62.0,56.0,50.0,44.0,66.0,60.0,54.0,48.0,96.0,88.0};
+	double Za[19]={26.0,24.0,22.0,20.0,18.0,16.0,14.0,12.0,20.0,18.0,16.0,14.0,12.0,18.0,16.0,14.0,12.0,24.0,22.0};
+	double rhomaxa[19]={1.494e9,1.1145e10,7.848e10,2.496e11,6.110e11,9.075e11,1.131e12,1.455e12,1.766e12,2.134e12,2.634e12,3.338e12,4.379e12,5.665e12,7.041e12,8.980e12,1.127e13,1.137e13,1.253e13};
+	// accreted matter composition from Haensel & Zdunik (2003)
+	double Acell2[29]={106.0,106.0,106.0,106.0,106.0,106.0,106.0,106.0,106.0,106.0,106.0,106.0,106.0,106.0,106.0,106.0,212.0,212.0,212.0,212.0,424.0,424.0,424.0,424.0,424.0,848.0,848.0,848.0,848.0};
+	double Aa2[29]={106.0,106.0,106.0,106.0,106.0,106.0,106.0,92.0,86.0,80.0,74.0,68.0,62.0,56.0,50.0,42.0,72.0,66.0,60.0,54.0,92.0,86.0,80.0,74.0,68.0,124.0,120.0,118.0,116.0};
+	double Za2[29]={44.0,42.0,40.0,38.0,36.0,34.0,32.0,28.0,26.0,24.0,22.0,20.0,18.0,16.0,14.0,12.0,20.0,18.0,16.0,14.0,24.0,22.0,20.0,18.0,16.0,28.0,26.0,24.0,22.0};
+  	double rhomaxa2[29]={3.517e8,5.621e9,2.413e10,6.639e10,1.455e11,2.774e11,4.811e11,7.785e11,8.989e11,1.032e12,1.197e12,1.403e12,1.668e12,2.016e12,2.488e12,3.153e12,3.472e12,4.399e12,5.355e12,6.655e12,8.487e12,9.242e12,1.096e13,1.317e13,1.609e13,2.003e13,2.520e13,3.044e14,3.844e13};
+	// Haensel & Pichon (1994) for cold catalysed matter
+	// from Table 1, missing off the last element
+	double Ab[13]={56.0,62.0,64.0,66.0,86.0,84.0,82.0,80.0,78.0,126.0,124.0,122.0,120.0};
+	double Zb[13]={26.0,28.0,28.0,28.0,36.0,34.0,32.0,30.0,28.0,44.0,42.0,40.0,38.0};
+	double rhomaxb[13]={7.96e6,2.71e8,1.30e9,1.48e9,3.12e9,1.10e10,2.80e10,5.44e10,9.64e10,1.29e11,1.88e11,2.67e11,3.79e11};
+	// continued using Douchin & Haensel (2001) Table 1 and 2  (nc is nb in units of fm-3; xc is the neutron fraction)
+  	double Ac[43]={130.076,135.750,139.956,141.564,142.161,142.562,143.530,144.490,145.444,146.398,147.351,148.306,149.263,151.184,154.094,156.055,159.030,162.051,166.150,170.333,175.678,181.144,187.838,195.775,202.614,211.641,220.400,224.660,229.922,235.253,240.924,245.999,253.566,261.185,270.963,283.993,302.074,328.489,357.685,401.652,476.253,566.654,615.840};
+	double Zc[43]={42.198,42.698,43.019,43.106,43.140,43.163,43.215,43.265,43.313,43.359,43.404,43.447,43.490,43.571,43.685,43.755,43.851,43.935,44.030,44.101,44.155,44.164,44.108,43.939,43.691,43.198,42.506,42.089,41.507,40.876,40.219,39.699,39.094,38.686,38.393,38.281,38.458,39.116,40.154,42.051,45.719,50.492,53.162};
+	double nc[43]={1.2126e-4,1.6241e-4,1.9772e-4,2.0905e-4,2.2059e-4,2.3114e-4,2.6426e-4,3.0533e-4,3.5331e-4,4.0764e-4,4.6800e-4,5.3414e-4,6.0594e-4,7.6608e-4,1.0471e-3,1.2616e-3,1.6246e-3,2.0384e-3,2.6726e-3,3.4064e-3,4.4746e-3,5.7260e-3,7.4963e-3,9.9795e-3,1.2513e-2,1.6547e-2,2.1405e-2,2.4157e-2,2.7894e-2,3.1941e-2,3.6264e-2,3.9888e-2,4.4578e-2,4.8425e-2,5.2327e-2,5.6264e-2,6.0219e-2,6.4183e-2,6.7163e-2,7.0154e-2,7.3174e-2,7.5226e-2,7.5959e-2};
+	double xc[43]={0.0000,0.0000,0.0000,0.0000,0.0247,0.0513,0.1299,0.2107,0.2853,0.3512,0.4082,0.4573,0.4994,0.5669,0.6384,0.6727,0.7111,0.7389,0.7652,0.7836,0.7994,0.8099,0.8179,0.8231,0.8250,0.8249,0.8222,0.8200,0.8164,0.8116,0.8055,0.7994,0.7900,0.7806,0.7693,0.7553,0.7381,0.7163,0.6958,0.6699,0.6354,0.6038,0.5898};
 
-  /*
-  // simple model of crust composition
-  // to roughly match Ed
-  Z=20.0; A=56.0; 
-  if (this->rho < 1e11) { Z=28.0; }
-  if (this->rho < 1e12) { A=64.0; }
-  if (this->rho > 1e13) { Z=12.0; A=80.0; }
-  if (this->rho > 1e12) this->Yn=0.8;
-  else this->Yn=0.0;
-  */
-
-  //this->X[1]=1.0-this->Yn; 
-
-	// Here we set A[1] to be Acell. This means that Yi = 1/Acell, correctly giving the ion density
-  this->X[1]=1.0; this->Z[1]=Z; this->A[1]=A/(1.0-this->Yn);
-  
-  this->set_Ye=(1.0-this->Yn)*Z/A;
-
- 
-  if (this->rho > this->rho_core) {
-	
-	this->Yn=0.9;
-	this->X[1]=1.0; this->Z[1]=1.0; this->A[1]=1.0;
-	  this->set_Ye=(1.0-this->Yn);
-	
-	
+	double Z,A;
+  	int i;
+	switch (this->accr) {
+		case 2:   // accreted composition (A=106)
+    		i=0; while (this->rho > rhomaxa2[i] && i<29) i++;
+    		if (i==29) i=28; // higher density than HZ's table, set it to the last value
+			A=Aa2[i]; Z=Za2[i];
+       		this->Yn=(Acell2[i]-A)/Acell2[i];
+			break;
+		case 1: // accreted composition (A=56)
+    		i=0; while (this->rho > rhomaxa[i] && i<18) i++;
+			A=Aa[i]; Z=Za[i];
+			this->Yn=(Acell[i]-A)/Acell[i];
+			break;
+		default: // cold matter composition
+      		if (this->rho < rhomaxb[11]) {
+				i=0; while (this->rho > rhomaxb[i] && i<12) i++;
+				A=Ab[i]; Z=Zb[i]; this->Yn=0.0;
+      		} else {
+				i=0; while (this->rho > nc[i]*1.66e15 && i<42) i++;
+				A=Ac[i-1]+(Ac[i]-Ac[i-1])*(this->rho-1.66e15*nc[i-1])/(1.66e15*(nc[i]-nc[i-1]));
+				Z=Zc[i-1]+(Zc[i]-Zc[i-1])*(this->rho-1.66e15*nc[i-1])/(1.66e15*(nc[i]-nc[i-1]));
+				this->Yn=xc[i-1]+(xc[i]-xc[i-1])*(this->rho-1.66e15*nc[i-1])/(1.66e15*(nc[i]-nc[i-1]));
+      		}
 	}
+
+	// We set A[1] to be Acell. This means that Yi = 1/Acell, correctly giving the ion density
+  	this->X[1]=1.0; this->Z[1]=Z; this->A[1]=A/(1.0-this->Yn);
+	this->set_Ye=(1.0-this->Yn)*Z/A;
 }
 
 
@@ -480,215 +340,134 @@ void Eos::set_comp(void)
 
 double Eos::chi(double *x)
 {
-  double x1, x2, p1, p2;
-  x1=*x; p1=ptot();
-  x2=*x=1.001*x1; p2=ptot();
-  *x=x1;
-  return (log(p2)-log(p1))/(log(x2)-log(x1));
+	double x1, x2, p1, p2;
+	x1=*x; p1=ptot();
+	x2=*x=1.001*x1; p2=ptot();
+	*x=x1;
+	return (log(p2)-log(p1))/(log(x2)-log(x1));
 }
 
-
 double Eos::CP(void)
-  // Calculates specific heat at constant pressure
+// Calculates specific heat at constant pressure
 {
-  double cv, chiT, chirho;
-
-  chirho=chi(&this->rho);
-  chiT=chi(&this->T8);
-  cv=CV();
-
-  return cv+chiT*chiT*ptot()/(this->rho*this->T8*1e8*chirho);
+	double chirho=chi(&this->rho);
+	double chiT=chi(&this->T8);
+	return CV()+chiT*chiT*ptot()/(this->rho*this->T8*1e8*chirho);
 }
 
 double Eos::Gamma1(void)
 {
-  double chirho, chiT, gam1, cv;
-
-  chirho=chi(&this->rho);
-  chiT=chi(&this->T8);
-  cv=CV();
-  
-  gam1=chirho+chiT*chiT*ptot()/(cv*this->rho*1e8*this->T8);
-
-  return gam1;
+	double chirho=chi(&this->rho);
+	double chiT=chi(&this->T8);
+	return chirho+chiT*chiT*ptot()/(CV()*this->rho*1e8*this->T8);
 }  
-
 
 double Eos::del_ad(void)
   // calculates dlnT/dlnp at constant entropy
 {
-  double chirho, chiT, gam1, cv;
-
-  chirho=chi(&this->rho);
-  chiT=chi(&this->T8);
-  cv=CV();
-  
-  gam1=chirho+chiT*chiT*ptot()/(cv*this->rho*1e8*this->T8);
-
-  return ptot()*chiT/(cv*gam1*this->rho*1e8*this->T8);
+	double chirho=chi(&this->rho);
+	double chiT=chi(&this->T8);
+	double gam1=chirho+chiT*chiT*ptot()/(CV()*this->rho*1e8*this->T8);
+	return ptot()*chiT/(CV()*gam1*this->rho*1e8*this->T8);
 }
 
-
-
-
 double Eos::CV(void)
-  // Calculates the specific heat at constant volume (density)
+// Calculates the specific heat at constant volume (density)
 {
-	
-	if (this->use_potek_eos && !(this->Yn>0.0)) {
+	if (this->use_potek_eos && !(this->Yn>0.0)) {   // use Potekhin's eos only before neutron drip
 		double dummy, dummy2, dummy3;
 		potek_eos(&dummy,&dummy2,&dummy3);
 		this->cvion = dummy3;
 		this->cve=dummy2;
 	} else {
 		
-  		double gg, alpha;
+		// IONS		
+		double gg=this->gamma();
 
-  		// first the IONS
-  		gg=this->gamma();
+		if (gg < this->gamma_melt) {  // liquid
 
-  		if (gg < this->gamma_melt) {  // liquid
-	    	// alpha comes from Chabrier's fit --- see Potekhin & Chabrier 2000
-    		double a1,a2,a3,b1,b2,b3,b4;
-    		a1=-0.9070; a2=0.62954; a3=-0.5*sqrt(3.0)-a1/sqrt(a2);
-    		b1=4.56e-3; b2=211.6; b3=-1.0e-4; b4=4.62e-3;
-    		alpha=0.5*pow(gg,1.5)*(a3*(gg-1.0)/pow(gg+1.0,2.0)-a1*a2/pow(gg+a2,1.5))
-      				+pow(gg,2.0)*(b3*(pow(gg,2.0)-b4)/pow(pow(gg,2.0)+b4,2.0)-b1*b2/pow(gg+b2,2.0));
-    		this->cvion=8.3144e7*(1.5+alpha)*this->Yi();
-    		cv_alpha=alpha;
+			// alpha is from Potekhin & Chabrier 2000
+			double a1,a2,a3,b1,b2,b3,b4;
+			a1=-0.9070; a2=0.62954; a3=-0.5*sqrt(3.0)-a1/sqrt(a2);
+			b1=4.56e-3; b2=211.6; b3=-1.0e-4; b4=4.62e-3;
+			double alpha=0.5*pow(gg,1.5)*(a3*(gg-1.0)/pow(gg+1.0,2.0)-a1*a2/pow(gg+a2,1.5))
+				+pow(gg,2.0)*(b3*(pow(gg,2.0)-b4)/pow(pow(gg,2.0)+b4,2.0)-b1*b2/pow(gg+b2,2.0));
+			this->cvion=8.3144e7*(1.5+alpha)*this->Yi();
+			cv_alpha=alpha;
 
   		} else {  // solid    -- This implements equation (5) of Chabrier 1993 
-
+	
 			// In the next line, I am putting the mass of the nucleus  A = Acell(1-Yn) = A[1](1-Yn), ie. no entrainment
-    		double eta=7.76e-5*this->Z[1]*sqrt(this->Yi()*this->rho/(this->A[1]*(1.0-this->Yn)))/this->T8;
- 
-    		double alphaeta=0.399*eta;
-    		double gameta=0.899*eta;
-    		double dd,dd1,dd2;
-    		double x=alphaeta;
-    		dd1=pow(3.141592654,4.0)/(5.0*pow(x,3.0));
-    		dd1-=3.0*exp(-x)*(6.0+x*(6.0+x*(3.0+x)))/pow(x,3.0);
-    		dd2=1.0-0.375*x+0.05*x*x;
-    		if (dd1 > dd2) dd=dd2; else dd=dd1;
-    		this->cvion=8.3144e7*this->Yi()*(8.0*dd-6*alphaeta/(exp(alphaeta)-1.0)+(pow(gameta,2.0)*exp(gameta)/pow(exp(gameta)-1.0,2.0)));	
+			double eta=7.76e-5*this->Z[1]*sqrt(this->Yi()*this->rho/(this->A[1]*(1.0-this->Yn)))/this->T8;
+			double alphaeta=0.399*eta;
+			double gameta=0.899*eta;
+			double dd,dd1,dd2;
+			double x=alphaeta;
+			dd1=pow(3.141592654,4.0)/(5.0*pow(x,3.0));
+			dd1-=3.0*exp(-x)*(6.0+x*(6.0+x*(3.0+x)))/pow(x,3.0);
+			dd2=1.0-0.375*x+0.05*x*x;
+			if (dd1 > dd2) dd=dd2; else dd=dd1;
+			this->cvion=8.3144e7*this->Yi()*(8.0*dd-6*alphaeta/(exp(alphaeta)-1.0)+(pow(gameta,2.0)*exp(gameta)/pow(exp(gameta)-1.0,2.0)));	
 			if (isnan(this->cvion)) this->cvion=0.0;
-      }
+
+		}
   	
-
-  	// ELECTRONS
-  	{ // modified version of Paczynksi's fit for cve
-    	double dT,temp,p1,p2;
-    	temp=1.001*this->T8; dT=temp-this->T8;
-	//    p1=this->pe(); this->T8+=dT; p2=this->pe(); this->T8-=dT;
-       	p1=this->pemod(); this->T8+=dT; p2=this->pemod(); this->T8-=dT;
-    	this->cve=(1/((this->f()-1)*this->rho))*1e-8*(p2-p1)/dT;
+  		// ELECTRONS
+		{ // modified version of Paczynksi's fit for cve
+    		double dT,temp,p1,p2;
+			temp=1.001*this->T8; dT=temp-this->T8;
+       		p1=this->pemod(); this->T8+=dT; p2=this->pemod(); this->T8-=dT;
+			this->cve=(1/((this->f()-1)*this->rho))*1e-8*(p2-p1)/dT;
+		}
 	}
-}
+
   	// RADIATION
-   	//cvrad=3.0256e10*pow(this->T8,3)/this->rho;
     this->cvrad=4.0*RADa*1e24*pow(this->T8,3)/this->rho;
-  	//cvrad=0.0;
-  
 
-  // NEUTRONS
+  	// NEUTRONS
 	this->cvneut=0.0;
-  if (this->Yn > 0.0) {
-	
-	//cvneut = this->Yn*0.5*PI*PI*1.38e-16*1.38e-16*this->T8*1e8/(1.67e-24*this->Chabrier_EF()*1.6e-9);	
-	
-	 double EFn;
-    // Assume the neutrons are non-relativistic
-     EFn=1.42*pow(1e-12*rho*Yn,2.0/3.0);
-    // but we use a fit for EFn which includes interactions
-    // comes from Mackie and Baym
-	//double k;
-    //k=0.207*pow(1e-12*this->rho*this->Yn, 1.0/3.0);
-    //EFn=1.730*k+25.05*k*k-30.47*k*k*k+17.42*k*k*k*k;  // in MeV
-//    P+=0.4*EFn*1.6e-6*this->rho*this->Yn/1.66e-24;
-	cvneut=0.5*3.1415*3.1415*8.3144e7*this->Yn * 1.38e-16*1e8*this->T8/(EFn*1.6e-6);
-   
-//	printf("%lg %lg %lg %lg\n", this->rho, 1.38e-16*1e8*this->T8/(EFn*1.6e-6), 
-//		cvneut, this->Yn);
-
+  	if (this->Yn > 0.0) {
+		double EFn;
+		EFn=1.42*pow(1e-12*rho*Yn,2.0/3.0);
+		cvneut=0.5*3.1415*3.1415*8.3144e7*this->Yn * 1.38e-16*1e8*this->T8/(EFn*1.6e-6);
 		if (this->gap > 0) {
 			double R00;
-//			R00=exp(-this->TC()/(1e8*this->T8));
-//			R00=exp(-1.76*this->TC()/(1e8*this->T8));
-			
 			double t, u;
-			
 			t = 1e8*this->T8/this->TC();
 			if (t>1.0) t=1.0;
-			//if (t<0.01) t=0.01;
 			u = sqrt(1.0-t)*(1.456 - 0.157/sqrt(t)+1.764/t);			
-			R00 = pow(0.4186+sqrt(1.007*1.007 + pow(0.5010*u,2.0)),2.5) *
-				exp(1.456 - sqrt(1.456*1.456+u*u));
-	
+			R00 = pow(0.4186+sqrt(1.007*1.007 + pow(0.5010*u,2.0)),2.5) * exp(1.456 - sqrt(1.456*1.456+u*u));
 			cvneut *= R00;
 		}
-
 	}
 
-	if (this->rho>this->rho_core) {
-			 double EFn;
-		
-		    // Assume the neutrons are non-relativistic
-		     EFn=1.42*pow(1e-12*rho*Yn,2.0/3.0);
-		    // but we use a fit for EFn which includes interactions
-		    // comes from Mackie and Baym
-		    //double k;
-		//k=0.207*pow(1e-12*this->rho*this->Yn, 1.0/3.0);
-		    //EFn=1.730*k+25.05*k*k-30.47*k*k*k+17.42*k*k*k*k;  // in MeV
-		//    P+=0.4*EFn*1.6e-6*this->rho*this->Yn/1.66e-24;
-			cvneut=0.5*3.1415*3.1415*8.3144e7*this->Yn * 1.38e-16*1e8*this->T8/(EFn*1.6e-6);
-		}
-
-
-//    cvion=8.3144e7*3.0*this->Yi();
-
-//	printf("-->%lg %lg\n",this->cve, this->cvion);
-
-
-  // total
 	return this->cvion+this->cve+this->cvrad+cvneut;
+}
 
-}
-/*
-double Eos::CV(void)
-  // Calculates the specific heat at constant volume (density) by 
-  // performing a numerical differentiation. The electron specific heat
-  // is calculated using the fitting formula given by Paczynski (1983).
+
+double Eos::pemod(void)
+// Modified version of the electron pressure formula to use for heat capacity (Paczynski 1983 ApJ 267 315)
 {
-  double cv, T1, T2, p1, p2, U1, U2;
-  T1=this->T8; p1=pe(); U1=this->Uex();
-  this->T8=T2=1.001*T1; p2=pe(); U2=this->Uex();
-  this->T8=T1;
-  cv=0.0;
-  // ions
-  cv+=8.3144e7*1.5*this->Yi();
-  if (this->Z[1] > 1.0) 
-    cv+=8.3144e7*this->Yi()*(U2*T2-U1*T1)/(T2-T1);
-  // electrons
-  cv+=(1/((f()-1)*this->rho))*1e-8*(p2-p1)/(T2-T1);
-  // radiation
-  cv+=3.0256e10*pow(T1,3)/this->rho;
-  return cv;
+	double rY, pednr, pedr, pend, ped;
+	rY=this->rho*this->Ye();
+	// divide pednr and pedr by appropriate factors
+	pednr=9.91e-2*pow(rY,5.0/3.0)/1.32;
+	pedr=1.231e1*pow(rY,4.0/3.0)/0.822;
+	ped=1/sqrt((1/pow(pedr,2))+(1/pow(pednr,2)));
+	pend=8.254e-7*1e8*this->T8*rY;
+	return(1e14*sqrt(pow(ped,2)+pow(pend,2)));
 }
-*/
 
 double Eos::f(void)
-  // Calculates f = dln ped/dln rho, using the fitting formula given
-  // by Paczynski (1983).
+// Calculates f = dln ped/dln rho, using the fitting formula given by Paczynski (1983)
 {
-  double rY, pednr, pedr, ped;
-  rY=this->rho*Ye();
-  pednr=9.91e-2*pow(rY,5.0/3.0);
-  pedr=1.231e1*pow(rY,4.0/3.0);
-  ped=1/sqrt((1/pow(pedr,2))+(1/pow(pednr,2)));
-  return (5.0*pow(ped/pednr,2) + 4.0*pow(ped/pedr,2))/3.0;
+	double rY, pednr, pedr, ped;
+	rY=this->rho*Ye();
+	pednr=9.91e-2*pow(rY,5.0/3.0);
+	pedr=1.231e1*pow(rY,4.0/3.0);
+	ped=1/sqrt((1/pow(pedr,2))+(1/pow(pednr,2)));
+	return (5.0*pow(ped/pednr,2) + 4.0*pow(ped/pedr,2))/3.0;
 }
-
-
 
 // --------------------------- opacity ------------------------------------
 
@@ -876,140 +655,96 @@ double Eos::TC(void)
 // calculates the critical temp for neutron superfluidity in the crust
 {
 	// neutron k_F in fm^-1
-  	double k=0.261*pow(1e-12*this->rho*this->Yn,1.0/3.0);
+	double k=0.261*pow(1e-12*this->rho*this->Yn,1.0/3.0);
+	double Tcrit;
  	
-	// Tc=0 everywhere:  no superfluidity
-  	if (this->gap==0) return 0.0;
+	switch (this->gap) {
 
-	//
-	if (this->gap==1) {
-
-		// This one is SFB03
-  		double k0[18]={0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.175,
-		 	1.25, 1.3, 1.35, 1.4, 1.45};
-  		double d0[18]={0.0, 0.09, 0.210, 0.360, 0.500, 0.610, 0.720, 0.790, 0.780,
-		 	0.700, 0.580, 0.450, 0.280, 0.190, 0.100, 0.030, 0.0};
-  		double d2[18]={2.915e1, -4.297, 6.040, -1.863, -4.59, 2.221, -4.296,
-		 	-9.037, -7.555, -2.741, -5.480, -1.344e1, 1.656e1, -6.667,
-		 	1.010e1, 1.426e1, 2.887e1};
-
-  		if (k < k0[0]) return 0.0;
-  		if (k > k0[16]) return 0.0;
+		case 1: {// SFB03
+  			double k0[18]={0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.175,1.25, 1.3, 1.35, 1.4, 1.45};
+  			double d0[18]={0.0, 0.09, 0.210, 0.360, 0.500, 0.610, 0.720, 0.790, 0.780,0.700, 0.580, 0.450, 0.280, 0.190, 0.100, 0.030, 0.0};
+  			double d2[18]={2.915e1, -4.297, 6.040, -1.863, -4.59, 2.221, -4.296,-9.037, -7.555, -2.741, -5.480, -1.344e1, 1.656e1, -6.667,1.010e1, 1.426e1, 2.887e1};
+  			if (k < k0[0]) return 0.0;
+  			if (k > k0[16]) return 0.0;
+	  		int i1=0;
+  			int i2=16;
+  			int i;
+  			while ((i2-i1)>1) {
+    			i=(i2+i1)/2;
+    			if (k0[i] > k) {
+      				i2=i;
+    			} else {
+      				i1=i;
+    			}
+  			}
+  			double delk=k0[i2]-k0[i1];
+  			double a=(k0[i2]-k)/delk;
+  			double b=(k-k0[i1])/delk;
+  			double t=a*d0[i1]+b*d0[i2]+((pow(a,3.0)-a)*d2[i1]+(pow(b,3.0)-b)*d2[i2])*(delk*delk)/6;
+  			Tcrit=(t/1.76)*1.1604e10;
+			} break;
 		
-  		int i1=0;
-  		int i2=16;
-  		int i;
-  		while ((i2-i1)>1) {
-    		i=(i2+i1)/2;
-    		if (k0[i] > k) {
-      			i2=i;
-    		} else {
-      			i1=i;
-    		}
-  		}
-  		double delk=k0[i2]-k0[i1];
-  		double a=(k0[i2]-k)/delk;
-  		double b=(k-k0[i1])/delk;
-  		double t=a*d0[i1]+b*d0[i2]+
-				((pow(a,3.0)-a)*d2[i1]+(pow(b,3.0)-b)*d2[i2])*(delk*delk)/6;
-  		return (t/1.76)*1.1604e10;
-  	}
-
-	
-
-
- 	if (this->gap==2) {
-
-		// This looks like AWP II  because it extends to k=1.7
-  		double k0[18]={0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2,
-		 	1.3, 1.4, 1.5, 1.6, 1.7};
-  		double d0[18]={0.0, 3.3e8, 1.18e9, 2.44e9, 4.20e9, 6.13e9, 7.91e9,
-		 	9.10e9, 9.56e9, 9.03e9, 7.71e9, 5.93e9,
-		 	4.15e9, 2.50e9, 1.12e9, 3.61e8, 0.0};
-  		double d2[18]={7.58e10, 4.64e10, 5.06e10, -2.87e9, 1.17e11, -7.45e10, -5.28e10,
-		 	-6.83e10, -1.12e11, -7.75e10, -5.19e10, 9.16e9, 1.53e10, 7.71e9,
-		 	1.16e11, -3.87e10, 1.58e11};
-
-  		if (k < k0[0]) return 0.0;
-  		if (k > k0[16]) return 0.0;
-
-  		int i1=0;
-  		int i2=16;
-  		int i;
-  		while ((i2-i1)>1) {
-    		i=(i2+i1)/2;
-    		if (k0[i] > k) {
-      			i2=i;
-    		} else {
-      			i1=i;
-    		}
-  		}
-  		double delk=k0[i2]-k0[i1];
-  		double a=(k0[i2]-k)/delk;
-  		double b=(k-k0[i1])/delk;
-  		double t=a*d0[i1]+b*d0[i2]+
-    		((pow(a,3.0)-a)*d2[i1]+(pow(b,3.0)-b)*d2[i2])*(delk*delk)/6;
-  		return t;
- 	}
-
-
-	// Gaussian Tc
- 	if (this->gap == 3) {
-
-   		double kbar=1.3;
-   		double width=0.5;
+		case 2: { // AWP II
+  			double k0[18]={0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2,1.3, 1.4, 1.5, 1.6, 1.7};
+  			double d0[18]={0.0, 3.3e8, 1.18e9, 2.44e9, 4.20e9, 6.13e9, 7.91e9,9.10e9, 9.56e9, 9.03e9, 7.71e9, 5.93e9,4.15e9, 2.50e9, 1.12e9, 3.61e8, 0.0};
+  			double d2[18]={7.58e10, 4.64e10, 5.06e10, -2.87e9, 1.17e11, -7.45e10, -5.28e10,-6.83e10, -1.12e11, -7.75e10, -5.19e10, 9.16e9, 1.53e10, 7.71e9,1.16e11, -3.87e10, 1.58e11};
+  			if (k < k0[0]) return 0.0;
+  			if (k > k0[16]) return 0.0;
+  			int i1=0;
+  			int i2=16;
+  			int i;
+  			while ((i2-i1)>1) {
+    			i=(i2+i1)/2;
+    			if (k0[i] > k) {
+      				i2=i;
+    			} else {
+      				i1=i;
+    			}
+  			}
+  			double delk=k0[i2]-k0[i1];
+  			double a=(k0[i2]-k)/delk;
+  			double b=(k-k0[i1])/delk;
+			double t=a*d0[i1]+b*d0[i2]+((pow(a,3.0)-a)*d2[i1]+(pow(b,3.0)-b)*d2[i2])*(delk*delk)/6;
+  			Tcrit=t;
+			} break;
 		
-   		return 6e9*exp(-pow(k-kbar,2.0)/(2.0*width*width));
- 	}
-
-	// "all or nothing" cutoff for k<kc
-	if (this->gap == 4) {
-		double k=0.261*pow(1e-12*this->rho*this->Yn,1.0/3.0);		
-		if (k < this->kncrit) return 0.0;
-		else return 1e10;
+		case 3: { // Gaussian Tc
+   			double kbar=1.3;
+   			double width=0.5;
+			Tcrit=6e9*exp(-pow(k-kbar,2.0)/(2.0*width*width));
+			} break;
+		
+		case 4: { // "all or nothing" cutoff for k<kc
+			double k=0.261*pow(1e-12*this->rho*this->Yn,1.0/3.0);		
+			if (k < this->kncrit) Tcrit=0.0; else Tcrit=1e10;
+			} break;
+		
+		case 5: { //"B1" from Reddy and Page (2011) book chapter Fig 4
+			double rh[36]={11.8,11.8211,11.8632,11.9265,12.0056,12.0532,12.0904,12.1223,12.1543,12.1914,12.2233,12.2657,12.3133,12.3609,12.3981,12.6160,12.7330,12.8235,12.8977,12.9721,13.0620,13.1781,13.2728,13.3251,13.3773,13.4136,13.4499,13.4808,13.5223,13.5480,13.5998,13.6617,13.7706,13.8536,13.9266,14.0};
+			double T[36]={0.0,0.0319625,0.0961741,0.192491,0.451774,0.809955,1.23378,1.72311,2.27779,2.73430,3.12559,3.51659,3.90745,4.26563,4.72213,7.69005,9.45157,10.8543,11.6693,12.6150,13.2661,13.7205,13.5872,13.0956,12.5059,11.8187,10.9680,10.0848,9.16864,8.25291,7.07503,5.34132,3.05077,1.28380,0.334101,0.0};
+			double rr=log10(this->rho);
+			if (rr <= rh[0] || rr >= rh[35]) return 0.0;
+			int ii=0; 
+			while (rr>rh[ii]) ii++;
+			double Tc=T[ii-1] + T[ii]*(rr-rh[ii-1])/(rh[ii]-rh[ii-1]);
+			Tcrit=1e9*Tc;
+			} break;
+		
+		case 6: { //BCS
+			double Tc;
+			if (k >0.0) {
+				double xx = PI / (2.0*18.5*k);	
+				Tc = (8.0/137.0) * exp(-xx) * pow(1.05e-27*1e13*k,2.0)/(2.0*1.67e-24);
+				Tc/=1.38e-16;
+			} else Tc=0.0;
+			Tcrit=Tc/1.76;
+			} break;
+		
+		default:   // Tc=0 everywhere:  no superfluidity
+			Tcrit=0.0;
 	}
 
-
-	if (this->gap==5) {
-		//this is "B1" from Reddy and Page (2011) book chapter Fig 4
-		
-		double rh[36]={11.8,11.8211,11.8632,11.9265,12.0056,12.0532,12.0904,12.1223,
-			12.1543,12.1914,12.2233,12.2657,12.3133,12.3609,12.3981,12.6160,
-			12.7330,12.8235,12.8977,12.9721,13.0620,13.1781,13.2728,13.3251,
-			13.3773,13.4136,13.4499,13.4808,13.5223,13.5480,13.5998,13.6617,
-			13.7706,13.8536,13.9266,14.0};
-		double T[36]={0.0,0.0319625,0.0961741,0.192491,0.451774,0.809955,1.23378,1.72311,
-			2.27779,2.73430,3.12559,3.51659,3.90745,4.26563,4.72213,7.69005,9.45157,
-			10.8543,11.6693,12.6150,13.2661,13.7205,13.5872,13.0956,12.5059,11.8187,
-			10.9680,10.0848,9.16864,8.25291,7.07503,5.34132,3.05077,1.28380,0.334101,0.0};
-		
-		double rr=log10(this->rho);
-		
-		if (rr <= rh[0] || rr >= rh[35]) return 0.0;
-		
-		int ii=0; 
-		while (rr>rh[ii]) ii++;
-		
-		double Tc=T[ii-1] + T[ii]*(rr-rh[ii-1])/(rh[ii]-rh[ii-1]);
-		
-		return 1e9*Tc;
-		
-		
-	}
-
-
-	if (this->gap==6) {
-		//BCS
-		double Tc;
-		if (k >0.0) {
-		double xx = PI / (2.0*18.5*k);	
-		Tc = (8.0/137.0) * exp(-xx) * pow(1.05e-27*1e13*k,2.0)/(2.0*1.67e-24);
-		Tc/=1.38e-16;
-		} else Tc=0.0;
-		return Tc/1.76;
-	}
-
-	return 0.0;
+	return Tcrit;
 }
 
 
@@ -1018,72 +753,33 @@ double Eos::TC(void)
 double Eos::opac(void)
   // Calculates the opacity
 {
-  double kappa, ef, eta;
-  int i;
+	// Electron scattering opacity from Paczynski
+	this->kes=(0.4*Ye())/((1+2.7e11*this->rho*pow(1e8*this->T8,-2.0))*(1+pow(this->T8/4.5,0.86)));
 
-  // This is the fitting formula for the electron scattering
-  // opacity from Paczynski
-	//this->kes=0.4*Ye();
-  this->kes=(0.4*Ye())/((1+2.7e11*this->rho*pow(1e8*this->T8,-2.0))*
-		(1+pow(this->T8/4.5,0.86)));
-
-  /*
-  if (this->rho < 1000.0) {
-    this->kff=0.0;
-    this->kcond=0.0;
-    kappa=this->kes;
-    return kappa;
-  }
-  */
-
-  // Fermi energy
-  ef=Chabrier_EF();
-  if (ef == 0) {
-    eta=Fermi_Inv_1_2(1.105e-4*this->rho*Ye()/pow(this->T8,1.5));
-    ef=eta*8.617*this->T8;
-  } else {
-    eta=(ef-me)/(8.617*this->T8);
-  }
-/*
-	if (eta > 0.0) {
-		double xr;
-		if (this->rho < 7.09e3*pow(1e-12*this->B,1.5)/this->Ye()) {
-			xr = 2.96e-5*this->rho*this->Ye()*1e12/this->B;			
-			//if (xr < sqrt(1.38e-8*this->T8/(9.11e-28*9e20))) xr=1e-10;
-		eta = 511.0*(sqrt(1.0+xr*xr)-1.0)/8.617*this->T8;
-		}	
+	// Fermi energy
+	double eta, ef=Chabrier_EF();
+	if (ef == 0) {
+	  eta=Fermi_Inv_1_2(1.105e-4*this->rho*Ye()/pow(this->T8,1.5));
+	  ef=eta*8.617*this->T8;
+	} else {
+	  eta=(ef-me)/(8.617*this->T8);
 	}
-*/ 
- // Free-Free opacity
-  this->kff=7.53e-6*this->rho*Ye()/pow(this->T8, 3.5);
 
-  kgaunt=0.0;
-  // this is the general formula
-  for (i=1; i<=this->ns; i++)
-    kgaunt+=this->Z[i]*this->Z[i]*this->X[i]*gff(this->Z[i],eta)/this->A[i];
-
-  // fix for hot CNO
-  //gaunt=this->X*gff(1,eta)+this->Y*gff(2,eta)+
-  //64.0*((F15/15.0)+(F14/14.0))*this->Z*gff(8,eta);
-  // this line is a fix to compare to hendrik/greg stuff (24 Oct 2001)
-  //gaunt+=this->Z2*gff(this->Yi()/this->Ye(), eta);
-  this->kff*=kgaunt;
-
-  //  if (this->Z[1]==26.0) this->kff*=0.5;
-
-
+	// Free-Free opacity
+	this->kff=7.53e-6*this->rho*Ye()/pow(this->T8, 3.5);
+	kgaunt=0.0;
+	for (int i=1; i<=this->ns; i++) kgaunt+=this->Z[i]*this->Z[i]*this->X[i]*gff(this->Z[i],eta)/this->A[i];
+	this->kff*=kgaunt;
 	if (this->B > 0.0) {
-	// Free-free opacity from Potekhin:
+		// Free-free opacity from Potekhin's magnetized envelopes
 		double TRy = 100.0*this->T8/(0.15789*this->Z[1]*this->Z[1]);
 		double c7 = 108.8 + 77.6*pow(TRy,0.834);
 		c7 /= 1.0+0.502*pow(TRy,0.355)+0.245*pow(TRy,0.834);
-		this->kff = this->kes * 2e4 * pow(this->Z[1],2.0) * this->rho /
-			(c7 * this->A[1] * pow(100.0*this->T8,3.5));
+		this->kff = this->kes * 2e4 * pow(this->Z[1],2.0) * this->rho /(c7 * this->A[1] * pow(100.0*this->T8,3.5));
 	}
-
-
-  // total radiative opacity
-  this->kappa_rad=this->kff+this->kes;
+  	
+	// total radiative opacity
+	this->kappa_rad=this->kff+this->kes;
 
 	// "non-additivity" factor from Potekhin et al. (2001) eqs 19-20
 	double f=this->kff/this->kappa_rad;
@@ -1092,18 +788,13 @@ double Eos::opac(void)
 	this->kappa_rad*=A;
 
 	if (this->B > 0.0) {
-		// now include a magnetic correction
-		// Potekhin et al. 2001 eqs 21-23
-//		double xr=1.009*pow(1e-6*this->rho*this->Ye(),1.0/3.0);		
+		// magnetic correction, Potekhin et al. 2001 eqs 21-23
 		double xr;
 		if (this->rho < 7.09e3*pow(1e-12*this->B,1.5)/this->Ye()) {
 			xr = 2.96e-5*this->rho*this->Ye()*1e12/this->B;			
-			//if (xr < sqrt(1.38e-8*this->T8/(9.11e-28*9e20))) xr=1e-10;
 		} else {
-//			xr=1.009*pow(1e-6*this->rho*this->Ye(),1.0/3.0);	
 			xr = this->x();
-		}
-		
+		}		
 		double TB8 = 1.343*1e-12*this->B/sqrt(1.0+xr*xr);
 		double u = TB8/(2.0*this->T8);
 		double AA1,AA2,AA3;
@@ -1115,74 +806,48 @@ double Eos::opac(void)
 		double corr = 1.0  + u*u*(AA1*u+pow(AA2*u,2.0))/(1.0+AA3*u*u);
 		this->kappa_rad /= corr;
 	}
-
-  // add correction for frequencies < plasma frequency
-  // (not sure where this came from ??) 
- //  double TP=3.3e-3*sqrt(this->rho*this->Ye());  // plasma temperature
- // kappa_rad*=exp(TP/this->T8);
- // double up=TP/this->T8;
- // kappa_rad*=(1-2.448*pow(0.1*up,2.0)+16.40*pow(0.1*up,6.0));
+	
 	// Correction for plasma frequency from Potekhin et al. (2003) ApJ 594,404
-	kappa_rad *= exp(0.005 *
-		log(1.0 + 1.5*sqrt(this->rho*1e-6*this->Ye())*(28.8/(8.625*this->T8))));
-		
-  // Conduction
+	kappa_rad *= exp(0.005*log(1.0 + 1.5*sqrt(this->rho*1e-6*this->Ye())*(28.8/(8.625*this->T8))));	
+	
+  	// Conduction
 	double KK;
-	if (use_potek_cond) KK = potek_cond();
-	else KK = K_cond(ef);
-  this->kcond=3.024e20*pow(this->T8,3)/(KK*this->rho);
+	if (use_potek_cond) KK = potek_cond(); else KK = K_cond(ef);
+  	this->kcond=3.024e20*pow(this->T8,3)/(KK*this->rho);
  
-  // Add up opacities  
-  kappa=1.0/((1.0/this->kcond)+(1.0/this->kappa_rad));
-
-  return kappa;
+  	// Add up opacities in parallel
+	return 1.0/((1.0/this->kcond)+(1.0/this->kappa_rad));
 }
 
 
 double Eos::gff(double Z1, double eta)
-  // Calculates the free-free Gaunt factor for element with
-  // charge Z1 using a fitting
-  // formula described in the Schatz et al steady state paper
-  // Agrees to 10% with Itoh et al. 1991
+// Calculates the free-free Gaunt factor for element with
+// charge Z1 using a fitting formula described in Schatz et al. (1999)
 {
-  double gaunt, x, rY, T8_32, gam;
-
-  rY=this->rho*Ye();
-  T8_32=pow(this->T8, 1.5);
-
-  if (eta < 100.0) x=log(1.0+exp(eta)); 
-  else x=eta; // make sure it doesn't freak out for extremely large eta
-
-  // normalisation and degeneracy piece
-  gaunt=1.16*8.02e3*x*T8_32/rY;
-
-  x=pow(1+x,2.0/3.0);
-  gam=sqrt(1.58e-3/this->T8)*Z1;
-
-  // Elwert factor
-  gaunt*=(1.0-exp(-2*PI*gam/sqrt(x+10.0)))/(1.0-exp(-2*PI*gam/sqrt(x)));
-
-  // relativistic piece
-  gaunt*=1.0+pow(this->T8/7.7, 1.5);
-
-  // send it back
-  return gaunt;
+	double gaunt, x, rY, T8_32, gam;
+	rY=this->rho*Ye();
+	T8_32=pow(this->T8, 1.5);
+	if (eta < 100.0) x=log(1.0+exp(eta)); else x=eta; // make sure it doesn't freak out for extremely large eta
+	gaunt=1.16*8.02e3*x*T8_32/rY;  // normalisation and degeneracy piece
+	x=pow(1+x,2.0/3.0);
+	gam=sqrt(1.58e-3/this->T8)*Z1;
+	gaunt*=(1.0-exp(-2*PI*gam/sqrt(x+10.0)))/(1.0-exp(-2*PI*gam/sqrt(x))); // Elwert factor
+	gaunt*=1.0+pow(this->T8/7.7, 1.5);  // relativistic piece
+	return gaunt;
 }
 
 
 double Eos::Uex(void)
   // Coulomb correction Uex/kT
 {
-  double u,g,g2,g3,g14;
-  g=this->gamma(); g2=g*g; g3=g2*g; g14=pow(g,0.25);
-
-  if (g < this->gamma_melt) {
-    u=-0.89813*g+0.98686*g14-0.91095+0.25098/g14;
-  } else {
-    u=-0.89593*g+1.5+9.65/g+840/g2+1.101e5/g3;
-  }
-
-  return u;
+	double u,g,g2,g3,g14;
+	g=this->gamma(); g2=g*g; g3=g2*g; g14=pow(g,0.25);
+	if (g < this->gamma_melt) {
+		u=-0.89813*g+0.98686*g14-0.91095+0.25098/g14;
+	} else {
+		u=-0.89593*g+1.5+9.65/g+840/g2+1.101e5/g3;
+	}
+	return u;
 }
 
 
@@ -1478,7 +1143,6 @@ return found;
   }
 }
 
-
 double Eos::Wrapper_find_rho_eqn(double r)
 {
   Eos* mySelf = (Eos*) pt2Object;
@@ -1491,9 +1155,6 @@ double Eos::find_rho_eqn(double r)
   this->rho=r;
   return this->ptot()-this->P;
 }
-
-
-
 
 double Eos::x(void)
 {
@@ -1514,134 +1175,96 @@ double Eos::gamma(void)
   //  return 0.11*this->Z[1]*this->Z[1]*pow(this->rho*1e-5*Yi(),1.0/3.0)/this->T8;
 }
 
+
 double Eos::K_cond(double ef)
-  // Calculates the conductivity due to electron-ion and
-  // electron-electron collisions
-  // ef is the Fermi energy in keV
+// Calculates the conductivity due to electron-ion and electron-electron collisions
+// ef is the Fermi energy in keV
 {
-  double x, lam, y, rY, x2, K;
-  double gam, f_c, beta;
+	// set up parameters
+	double rY=this->rho*this->Ye();
+	double x=this->x();
+	double x2=sqrt(1+x*x); 
+	double beta=x/x2;
+	double gam=this->gamma();
 
-  // set up parameters
-  rY=this->rho*this->Ye();
-  x=this->x();
+	// Coulomb logarithm from Yakovlev and Urpin
+	//double lam=log(pow(2*PI*Ye()/(3*Yi()),1.0/3.0)*sqrt(1.5+3.0/gam));
+	//lam-=0.5*beta*beta;
+	//this->lambda2=lam;
 
-  //double xx1=this->x();
-  //double xx2=0.26*sqrt(this->T8);
-  // if (xx1>xx2) x=xx1; else x=xx2;
-  
-  x2=sqrt(1+x*x); beta=x/x2;
-  gam=this->gamma();
-
-  // This is the Coulomb logarithm from Yakovlev and Urpin
-  //lam=log(pow(2*PI*Ye()/(3*Yi()),1.0/3.0)*sqrt(1.5+3.0/gam));
-  //lam-=0.5*beta*beta;
-  //this->lambda2=lam;
-
-  // get the Coulomb logarithm for electron-ion collisions
-  // from Potekhin et al. 1999
+	// Coulomb logarithm for electron-ion collisions from Potekhin et al. 1999
 	if (this->rho > 1e3)  this->lambda2=this->lamei(1); else this->lambda2=1.0;
 
-  // electron-electron collisions
-  // Note that Potekhin et al 1997 which is where we get the J(x,y)
-  // function has a misprint in the prefactor for f_ee. 
-  // The correct expression is in Timmes 1992 or in 
-  // Potekhin et al. (1999).
-  
-  y=5.771e-3*sqrt(rY/x2)/this->T8;
-  f_ee=5.11e15*this->T8*this->T8*pow(x,1.5)*J(x,y)/pow(1+x*x,1.25);
-  
-  if (gam < this->gamma_melt || this->Q == 900.0) { // if Q=900 treat as liquid 
+  	// electron-electron collisions
+  	// Note that Potekhin et al 1997 which is where we get the J(x,y) function has a misprint in the prefactor for f_ee
+	// The correct expression is in Timmes 1992 or in Potekhin et al. (1999).
+    double y=5.771e-3*sqrt(rY/x2)/this->T8;
+  	f_ee=5.11e15*this->T8*this->T8*pow(x,1.5)*J(x,y)/pow(1+x*x,1.25);
 
-    // The electron-ion collision frequency
-    f_ei=1.76e16*this->lambda2*x2*YZ2()/Ye();
+	double f_c;
+	
+	if (gam < this->gamma_melt || this->Q == 900.0) { // if Q=900 treat as liquid 
 
-    // The collision frequencies add
-    f_c=f_ee+f_ei;
+    	// The electron-ion collision frequency
+    	f_ei=1.76e16*this->lambda2*x2*YZ2()/Ye();
+    	// The collision frequencies add
+    	f_c=f_ee+f_ei;
 
-  } else { // solid --- NB assumes A=2Z and single species
+  	} else { // solid --- NB assumes A=2Z and single species
 
-    // The electron-ion collision frequency (ie. phonons)
-    // is calculated as given by Potekhin et al. 1999
-    f_ep=1.76e16*this->lambda2*x2*YZ2()/Ye();
-    
-    // add exponential suppression when the Umklapp scatterings freeze out
-    {
-      double TU=2.2e8*sqrt(1e-12*this->rho)*this->Ye()*pow(this->Z[1]/60.0,1.0/3.0);
-      if (this->T8<1e-8*TU) 
-	f_ep*=exp(-1e-8*TU/this->T8);
-    }
+		// The electron-ion collision frequency (ie. phonons) as given by Potekhin et al. 1999
+		f_ep=1.76e16*this->lambda2*x2*YZ2()/Ye();
+		// add exponential suppression when the Umklapp scatterings freeze out
+		{
+			double TU=2.2e8*sqrt(1e-12*this->rho)*this->Ye()*pow(this->Z[1]/60.0,1.0/3.0);
+			if (this->T8<1e-8*TU) f_ep*=exp(-1e-8*TU/this->T8);
+		}
 
-    //   f_ep*=(1.0-this->Yn);  // to agree with Ed
+		/* old phonons from Yakovlev & Urpin
+		theta=0.56*sqrt(1e-9*this->rho)/this->T8;
+		lam=(2-beta*beta)/(beta*sqrt(1+pow(theta/3.5,2.0)));
+		lam+=pow(theta/5.1,2.0)*(3*this->lambda2-1+0.5*beta*beta)/
+		(beta*pow(1+pow(theta/4.2,2.0),1.5));
+		f_c=1.24e18*this->T8*lam;
+		*/
+		/* and from Baiko & Yakovlev 
+		f_ep=9.55e16*this->T8*this->Fep(1)/beta; // phonons
+		*/
 
-    /* old phonons from Yakovlev & Urpin
-       theta=0.56*sqrt(1e-9*this->rho)/this->T8;
-       lam=(2-beta*beta)/(beta*sqrt(1+pow(theta/3.5,2.0)));
-       lam+=pow(theta/5.1,2.0)*(3*this->lambda2-1+0.5*beta*beta)/
-       (beta*pow(1+pow(theta/4.2,2.0),1.5));
-       f_c=1.24e18*this->T8*lam;
-    */
-    /* and from Baiko & Yakovlev 
-       f_ep=9.55e16*this->T8*this->Fep(1)/beta; // phonons
-    */
+		// Impurity scattering, Coulomb log from Itoh & Kohyama 1993
+		double lam;
+		{
+			double ka, sm1;
+			// the following is eq.(20) of IK93 for ka
+			//ka=1.92*pow(this->Ye()/this->Yi(),1.0/3.0);
+			// instead, we use the substitution  ka -> 2k/kTF and kTF is given by eq.(3) of Potekhin et al. 1999
+			ka=sqrt(137.0*PI*beta);
+			// and then put into eqs (10,16,17) of IK93
+			sm1=0.5*log(1.0+0.4*ka*ka);
+			lam=sm1*(1.0+2.5*beta*beta/(ka*ka))-0.5*beta*beta;
+		}      
 
-    // Impurity scattering
-    // Coulomb log from Itoh & Kohyama 1993
-    {
-      double ka, sm1;
-		// the following is eq.(20) of IK93 for ka
-      //ka=1.92*pow(this->Ye()/this->Yi(),1.0/3.0);
-	  // instead, we use the substitution  ka -> 2k/kTF and kTF is given by eq.(3) of
-    	// Potekhin et al. 1999
-      ka=sqrt(137.0*PI*beta);
+		 if (this->Yn > 0.0) f_eQ=1.76e16*this->Q*lam*x2/this->Z[1];
+		 else f_eQ=1.76e16*this->Q*lam*x2/this->Z[1];
 
-	  // and then put into eqs (10,16,17) of IK93
-      sm1=0.5*log(1.0+0.4*ka*ka);
-      lam=sm1*(1.0+2.5*beta*beta/(ka*ka))-0.5*beta*beta;
-    }      
+    	// sum of phonons and impurities and electrons
+    	f_c=f_eQ+f_ep+f_ee;
+  	}
 
-    if (this->Yn > 0.0) f_eQ=1.76e16*this->Q*lam*x2/this->Z[1];
-    else f_eQ=1.76e16*this->Q*lam*x2/this->Z[1];
- 
-    /*
-    // multiply by two to get Ed's answer
-    f_eQ*=2;
-    if (this->rho > 1e13) f_eQ*=1.4;  
-    // and by a further 40% in the inner crust
-    else {
-      if (this->rho > 2e12) f_eQ*=1.2; 
-    }
-    */
-    // sum of phonons and impurities and electrons
-    f_c=f_eQ+f_ep+f_ee;
-  }
-  
-  // the conductivity is then as given by Yakovlev & Urpin
-  K = 4.116e27*this->T8*rY/(x2*f_c);
-
-  // correction due to thermoelectric field
-  //corr=9.34e-4*pow(this->T8,2.0)*(1+x*x)/pow(x,4.0);
-  //corr*=pow(6.0-2.0*beta*beta-(1.0-beta*beta+beta*beta*beta*beta)/lam,2.0);
-  //K=K*(1.0-corr); if (K<0.0) return 1e-10;
-
-	if (this->rho>this->rho_core) K=1e19;
-
-  return K; 
- 
+	// the conductivity is then as given by Yakovlev & Urpin
+	return 4.116e27*this->T8*rY/(x2*f_c);
 }
 
 
 
 double Eos::J(double x,double y)
 {
-  // from Potekhin, Chabrier, & Yakovlev 1997
-  double x2=x*x;
-  double b2=x2/(1.+x2);
-  double y3=y*y*y;
-  double y4=y3*y;
-  return (1.+0.4*(3.+1./x2)/x2)*(y3*pow(1.+0.07414*y,-3.)*
-                                 log((2.810-0.810*b2+y)/y)/3.+
-                                 pow(PI,5)*y4*pow(13.91+y,-4.)/6);
+	// from Potekhin, Chabrier, & Yakovlev 1997
+	double x2=x*x;
+	double b2=x2/(1.+x2);
+	double y3=y*y*y;
+	double y4=y3*y;
+	return (1.+0.4*(3.+1./x2)/x2)*(y3*pow(1.+0.07414*y,-3.)*log((2.810-0.810*b2+y)/y)/3.+ pow(PI,5)*y4*pow(13.91+y,-4.)/6);
 }
 
 
