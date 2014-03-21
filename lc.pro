@@ -682,10 +682,14 @@ pro lcsum2, namestring, ls, mumin=mumin, Lscale=Lscale,source=source
 	tm/=(24.0*3600.0)  ; convert time to days
 	Fm*=4.0*!dpi*1.12d6^2
 	
+	openw, lun,'lc'+namestring+'.dat', /get_lun
+	for i=0,n_elements(tm)-1 do printf, lun, tm[i], Fm[i], format='(g,g)'
+	free_lun, lun
+	
 	if keyword_set(source) then begin
 		if (strcmp(source,'1627',4)) then begin
 			yr=[1d33,1d35]
-			xr=[10.0,10000.0]
+			xr=[1.0,10000.0]
 		endif
 		plot, tm, Fm, /nodata,/xlog,/ylog,yrange=yr,xrange=xr,xtitle=textoidl('Time (days)'),$
 						ytitle=textoidl('Luminosity (erg s^{-1})')
@@ -726,6 +730,11 @@ pro lcsum2, namestring, ls, mumin=mumin, Lscale=Lscale,source=source
 		LL=[LL,II]
 	endfor
 	oplot, tm, LL, linestyle=ls
+		
+	openw, lun,'lc'+namestring+'.dat', /get_lun
+	for i=0,n_elements(tm)-1 do printf, lun, tm[i], LL[i], format='(g,g)'
+	free_lun, lun
+		
 			
 end
 
