@@ -8,6 +8,7 @@ data
 gon_out/*
 out/*
 !out/grid_He*
+*.pyc
 init/*
 !init/init.dat.mcmc
 !init/init.dat.1659_example

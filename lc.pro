@@ -395,8 +395,8 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 	if (source eq '1659' or source eq '1731') then begin
 		xr=[1.0,10000.0]
 		yr=[40,140]
-		xr=[30.0,10000.0]
-		yr=[40,110]
+		;xr=[30.0,10000.0]
+		;yr=[40,110]
 	endif
 	if (source eq '0748') then begin
 		xr=[10.0,100000.0]
@@ -2902,7 +2902,7 @@ pro initial,ps=ps
 ;	oplot,rho,cve*(rho/1e9)^0.3333*1e9/T,linestyle=2
 	oplot,rho,cvion,linestyle=1
 
-	plot, rho, K/(1e-9*T*(rho*1d-9)^0.333), /xlog,/ylog, ytitle=textoidl('K'),xtitle=textoidl('Column depth (g cm^{-2})'),$
+	plot, rho, K, /xlog,/ylog, ytitle=textoidl('K'),xtitle=textoidl('Column depth (g cm^{-2})'),$
 				yrange=[1d13,1d20]
 	oplot,rho2,K2,linestyle=1
 	oplot,rho,Kp,linestyle=2

@@ -2,22 +2,22 @@
 # Fit to MXB 1659 cooling curve
 # see below for different options
 
-output 0
+output 1
 
 mass	1.62
 radius	11.2
 Bfield  0
 mdot	0.1
 
-precalc 0
-ngrid	50
-SFgap	1
+precalc 1
+ngrid	30
+SFgap	4
 kncrit	0.0
 sph	0
 
 piecewise	0
-timetorun	4000.0
-neutrinos	1
+timetorun	10000.0
+neutrinos	0
 instant	0
 
 toutburst 2.5
@@ -26,7 +26,7 @@ gpe	0
 
 ytop	1e12
 
-Tt	4.48297e+08
-Qimp	2.5396
-Tc	3.92829e+07
+Tt	4e8
+Qimp	4.0
+Tc	3e7
 
