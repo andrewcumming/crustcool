@@ -28,14 +28,14 @@ extern "C"{
 
 // ------------------------ initialise ----------------------------------
 
-void Eos::tidy(void)
+Eos::~Eos()
 {
     free_vector(this->A,1,this->ns);
     free_vector(this->Z,1,this->ns);
     free_vector(this->X,1,this->ns);
 }
 
-void Eos::init(int n)
+Eos::Eos(int n)
 {
 	this->ns=n;
 	this->A=vector(1,this->ns);
@@ -47,7 +47,7 @@ void Eos::init(int n)
 	this->set_Yi=0.0;
 	this->accr=1;  // default crust composition is HZ with Fe56
 	this->gamma_melt=175.0;
-	this->Q=900.0; // treat the crust as a liquid for conductivities
+	this->Qimp=900.0; // treat the crust as a liquid for conductivities
 	this->B=0.0; // default is unmagnetized 
 	this->use_potek_cond = 0;
 	this->use_potek_eos = 0;
@@ -941,6 +941,9 @@ double Eos::lamei(int n)
 // n=1 for thermal n=0 for electrical
 {
 
+  double L1, L2, s, w, I1, I2;
+
+
   if (this->T8 < 0.0) return 1.0;
 
 if (this->rho > 3e14) return 1.0;
@@ -1003,7 +1006,6 @@ vc=x/sqrt(1+x*x);
   //printf("%lg %lg\n", s, w);
     
   // now calculate the exponential integrals    
-  //  double L1, L2;
 
   //  if (0) {
 
@@ -1019,7 +1021,7 @@ vc=x/sqrt(1+x*x);
     L2=(exp(-w)-1.0+w)/(2.0*w);
     
   } else {
-    double I1,I2;
+//    double I1,I2;
       // printf("s=%lg w=%lg    rho=%lg T8=%lg\n",s,w,this->rho, this->T8);
     I1=expint(1,s*w);
     //printf("I1=%lg\n",I1);
@@ -1231,7 +1233,7 @@ double Eos::K_cond(double ef)
 
 	double f_c;
 	
-	if (gam < this->gamma_melt || this->Q == 900.0) { // if Q=900 treat as liquid 
+	if (gam < this->gamma_melt || this->Qimp == 900.0) { // if Q=900 treat as liquid 
 
     	// The electron-ion collision frequency
     	f_ei=1.76e16*this->lambda2*x2*YZ2()/Ye();
@@ -1272,8 +1274,8 @@ double Eos::K_cond(double ef)
 			lam=sm1*(1.0+2.5*beta*beta/(ka*ka))-0.5*beta*beta;
 		}      
 
-		 if (this->Yn > 0.0) f_eQ=1.76e16*this->Q*lam*x2/this->Z[1];
-		 else f_eQ=1.76e16*this->Q*lam*x2/this->Z[1];
+		 if (this->Yn > 0.0) f_eQ=1.76e16*this->Qimp*lam*x2/this->Z[1];
+		 else f_eQ=1.76e16*this->Qimp*lam*x2/this->Z[1];
 
     	// sum of phonons and impurities and electrons
     	f_c=f_eQ+f_ep+f_ee;
@@ -1351,7 +1353,7 @@ double Eos::potek_cond(void)
 {
 	double s1,s2,s3,k1,k2,k3;
 	//double null=0.0;
-	double Zimp=sqrt(this->Q), AA=this->A[1]*(1.0-this->Yn);
+	double Zimp=sqrt(this->Qimp), AA=this->A[1]*(1.0-this->Yn);
 	double Bfield=this->B/4.414e13;
 	double temp=this->T8*1e2/5930.0;
 	double rr=this->rho/(this->A[1]*15819.4*1822.9);
@@ -1389,7 +1391,7 @@ double Eos::econd(void)
 {
   double x1, x2, sig, x, lambda, nu, beta;
 
-  if (this->gamma() < this->gamma_melt || this->Q == 900.0) { // if Q=900 treat as liquid
+  if (this->gamma() < this->gamma_melt || this->Qimp == 900.0) { // if Q=900 treat as liquid
     
     // This is the method from the WD paper, where I interpolate using x
     // choose appropriate value for x
@@ -1433,7 +1435,7 @@ double Eos::econd(void)
     sm1=0.5*log(1.0+0.4*ka*ka);
     lambda=sm1*(1.0+2.5*beta*beta/(ka*ka))-0.5*beta*beta;
 
-    nu+=1.75e16*this->Q*lambda*sqrt(1+x*x)/this->Z[1]; // impurities
+    nu+=1.75e16*this->Qimp*lambda*sqrt(1+x*x)/this->Z[1]; // impurities
 
     //sig=1.49e22*x*x*beta*1e16/nu;
     sig=1.52e25*1e17*pow(this->rho*1e-12*Ye(),2.0/3.0)/nu;

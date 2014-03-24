@@ -69,8 +69,7 @@ struct globals {
 } G;
 
 Ode_Int ODE;
-Eos EOS;
-Spline RHO;
+Eos EOS(1);
 Spline TEFF;
 Spline AASpline; 
 Spline ZZSpline;
@@ -152,7 +151,6 @@ int main(int argc, char *argv[])
   		fclose(G.fp2);
 	}
   	ODE.tidy(); 
-	EOS.tidy();
   	free_vector(G.rho,0,G.N+2);
   	free_vector(G.CP,0,G.N+2);
   	free_vector(G.P,0,G.N+2);
@@ -420,8 +418,8 @@ void calculate_vars(int i, double T, double P, double *CP, double *K, double *NU
 	// use something like this next line to hardwire Q values
 	double Qval;
 	if (G.hardwireQ) {
-		if (G.rho[i] > G.Qrho) Qval=G.Qinner; else Qval=EOS.Q;
-//		if (P>2.28e29) Qval=G.Qinner; else Qval=EOS.Q;
+		if (G.rho[i] > G.Qrho) Qval=G.Qinner; else Qval=EOS.Qimp;
+//		if (P>2.28e29) Qval=G.Qinner; else Qval=EOS.Qimp;
 	} else {
 		Qval = G.Qimp[i];	
 	}
@@ -680,13 +678,13 @@ void set_up_initial_temperature_profile_by_heating(void)
 					
 			double Qval;			
 				if (G.hardwireQ) {
-					if (G.rho[i] > G.Qrho) Qval=G.Qinner; else Qval=EOS.Q;
+					if (G.rho[i] > G.Qrho) Qval=G.Qinner; else Qval=EOS.Qimp;
 						//			if (P>2.28e29) Qval=G.Qinner; else Qval=EOS.Q;
 								} else {
 									Qval = G.Qimp[i];	
 								}
-								double Q_store=EOS.Q;
-								EOS.Q=Qval;
+								double Q_store=EOS.Qimp;
+								EOS.Qimp=Qval;
 								
 								double Kcondperp=0.0;
 			//double Kcond = potek_cond(&Kcondperp);
@@ -703,7 +701,7 @@ void set_up_initial_temperature_profile_by_heating(void)
 					Kcond, EOS.Yn, 1e-39*EOS.Yn * EOS.rho/1.67e-24, tt,E,EOS.A[1],EOS.Z[1],EOS.TC(),
 					EOS.Chabrier_EF(),Kcondperp,0.4*1e-9*EOS.rho*pow(EOS.Ye()/0.4,3.0)*EOS.Z[1]/34.0, EOS.cve, EOS.cvion,
 					EOS.chi(&EOS.rho), EOS.chi(&EOS.T8), G.P[i]/(G.g*EOS.rho), EOS.econd());
-				EOS.Q=Q_store;	
+				EOS.Qimp=Q_store;	
 		}
 	}	
 	if (G.output) fclose(fp);
@@ -782,9 +780,9 @@ void precalculate_vars(void)
 				// current value of Q. This means we can keep the performance of table lookup even when
 				// doing MCMC trials which vary Q.
 
-				double Q_store=EOS.Q;  // store Q temporarily
+				double Q_store=EOS.Qimp;  // store Q temporarily
 
-				EOS.Q=0.0;
+				EOS.Qimp=0.0;
 				double Kcond,Kcondperp;
 				//Kcond = EOS.K_cond(EOS.Chabrier_EF());
 				//Kcondperp=Kcond;
@@ -793,7 +791,7 @@ void precalculate_vars(void)
 				G.K0_grid[i][j]=EOS.rho*Kcond/G.P[i];
 				G.K0perp_grid[i][j]=EOS.rho*Kcondperp/G.P[i];
 
-				EOS.Q=1.0;
+				EOS.Qimp=1.0;
 				//Kcond = EOS.K_cond(EOS.Chabrier_EF());
 				//Kcondperp=Kcond;
 				Kcond = EOS.potek_cond();
@@ -801,7 +799,7 @@ void precalculate_vars(void)
 				G.K1_grid[i][j]=EOS.rho*Kcond/G.P[i];
 				G.K1perp_grid[i][j]=EOS.rho*Kcondperp/G.P[i];
 
-				EOS.Q=Q_store;  // restore to previous value
+				EOS.Qimp=Q_store;  // restore to previous value
 
 				// conductivity due to radiation
 				(void) EOS.opac();  // call to kappa sets the variable kappa_rad
@@ -1126,7 +1124,6 @@ void parse_parameters(char *fname,char *sourcename) {
 	G.force_precalc=0;
 	G.Qinner=-1.0;
 	G.outburst_duration = (1.0/24.0) * 1.0/(365.0);  // rapid heating for magnetar case	(1 hour)
-  	EOS.init(1); 
   	EOS.X[1] = 1.0;   // we only have one species at each depth;
 	EOS.accr = 0;   // set crust composition
 	EOS.use_potek_eos = 0;
@@ -1182,7 +1179,7 @@ void parse_parameters(char *fname,char *sourcename) {
 			if (!strncmp(s,"Edep",4)) G.energy_deposited_outer=x;
 			if (!strncmp(s,"ytop",4)) G.yt=x;
 			if (!strncmp(s,"Einner",6)) G.energy_deposited_inner=x;
-			if (!strncmp(s,"Qimp",4)) EOS.Q=x;
+			if (!strncmp(s,"Qimp",4)) EOS.Qimp=x;
 			if (!strncmp(s,"Qrho",4)) G.Qrho=x;
 			if (!strncmp(s,"rhob",4)) G.rhob=x;
 			if (!strncmp(s,"rhot",4)) G.rhot=x;
@@ -1217,10 +1214,10 @@ void parse_parameters(char *fname,char *sourcename) {
 	if (G.yt < 10.0) G.yt=pow(10.0,G.yt);
 	if (G.extra_y < 16.0) G.extra_y=pow(10.0,G.extra_y);
 
-	if (G.Qinner == -1.0) G.Qinner=EOS.Q;
+	if (G.Qinner == -1.0) G.Qinner=EOS.Qimp;
 	if (G.energy_deposited_inner == -1.0) G.energy_deposited_inner = G.energy_deposited_outer;
 	
-	if (EOS.Q>=0.0) {   	// the Q values are assigned directly in 'calculate_vars'
+	if (EOS.Qimp>=0.0) {   	// the Q values are assigned directly in 'calculate_vars'
 		G.hardwireQ=1;
 		printf("Using supplied Qimp values and HZ composition and heating.\n");
 	} else {
