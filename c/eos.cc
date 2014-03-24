@@ -277,7 +277,7 @@ double Eos::Chabrier_EF(void)
 
 
 
-
+/*
 void Eos::set_comp(void)
   // works out the composition at density rho according to the class variable 'accr'
   // accr=1 or 2 accreted crust; accr=0 equilibrium crust
@@ -333,6 +333,34 @@ void Eos::set_comp(void)
   	this->X[1]=1.0; this->Z[1]=Z; this->A[1]=A/(1.0-this->Yn);
 	this->set_Ye=(1.0-this->Yn)*Z/A;
 }
+*/
+
+
+void Eos::set_composition_by_pressure(void)
+  // works out the composition at density rho according to the class variable 'accr'
+  // accr=1 or 2 accreted crust; accr=0 equilibrium crust
+{
+	// accreted matter composition from Haensel & Zdunik (1990)
+	double Acell[19]={56.0,56.0,56.0,56.0,56.0,56.0,56.0,56.0,112.0,112.0,112.0,112.0,112.0,224.0,224.0,224.0,224.0,448.0,448.0};
+	double Aa[19]={56.0,56.0,56.0,56.0,56.0,52.0,46.0,40.0,68.0,62.0,56.0,50.0,44.0,66.0,60.0,54.0,48.0,96.0,88.0};
+	double Za[19]={26.0,24.0,22.0,20.0,18.0,16.0,14.0,12.0,20.0,18.0,16.0,14.0,12.0,18.0,16.0,14.0,12.0,24.0,22.0};
+	double Pmaxa[19] = {7.235e26,9.569e27,1.152e29,4.747e29,1.361e30,1.980e30,2.253e30,2.637e30,2.771e30,3.216e30,3.825e30,4.699e30,6.043e30,7.233e30,9.238e30,1.228e31,1.602e31,1.613e31,1e33};
+
+	double Z,A;
+  	int i;
+	switch (this->accr) {
+		default: // accreted composition (A=56)
+    		i=0; while (this->P > Pmaxa[i] && i<18) i++;
+			A=Aa[i]; Z=Za[i];
+			this->Yn=(Acell[i]-A)/Acell[i];
+			break;
+	}
+
+	// We set A[1] to be Acell. This means that Yi = 1/Acell, correctly giving the ion density
+  	this->X[1]=1.0; this->Z[1]=Z; this->A[1]=A/(1.0-this->Yn);
+	this->set_Ye=(1.0-this->Yn)*Z/A;
+}
+
 
 
 

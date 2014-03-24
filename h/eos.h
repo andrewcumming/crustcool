@@ -18,7 +18,8 @@ public:
   double Chabrier_EF(void);
   double Fermi_Inv_1_2(double F);
   double FermiI(int k, double T8, double EF);
-  void set_comp(void);
+  void set_composition_by_pressure(void);
+//  void set_comp(void);
   // thermodynamics
   double f(void);
   double CP(void);

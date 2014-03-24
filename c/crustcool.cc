@@ -547,8 +547,8 @@ void set_up_initial_temperature_profile_piecewise(char *fname)
 		// Figure out the energy deposited
 		EOS.P=G.P[i];
 		EOS.T8=G.Tc*1e-8;
-		EOS.rho=EOS.find_rho();
 		set_composition();				
+		EOS.rho=EOS.find_rho();
 		Ode_Int ODEheat;
 		ODEheat.init(1);
 		ODEheat.set_bc(1,0.0);
@@ -989,55 +989,37 @@ void set_up_grid(const char *fname)
 		npoints--;
 		printf("Crust model has %d points\n",npoints);
 		
-		double *Qi,*Qh,*AA,*ZZ,*rho,*Yn;
+		double *Qi,*Qh,*AA,*ZZ,*P,*Yn;
 		Qi=vector(1,npoints);
 		Qh=vector(1,npoints);
 		AA=vector(1,npoints);
 		ZZ=vector(1,npoints);
 		Yn=vector(1,npoints);
-		rho=vector(1,npoints);
+		P=vector(1,npoints);
 
 		for (int i=1; i<=npoints; i++) {
 			double dummy;
 			fscanf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg\n",
-				&dummy,&rho[i],&dummy,&Qh[i],&ZZ[i],&AA[i],&Qi[i],&Yn[i]);
+				&P[i],&dummy,&dummy,&Qh[i],&ZZ[i],&AA[i],&Qi[i],&Yn[i]);
 			//printf("%lg %lg %lg %lg %lg\n", rho[i], Qh[i],ZZ[i],AA[i],Qi[i]);
-			rho[i]=log10(rho[i]);
+			P[i]=log10(P[i]);
 		}
 
-		YnSpline.minit(rho,Yn,npoints);
-		ZZSpline.minit(rho,ZZ,npoints);
-		AASpline.minit(rho,AA,npoints);
-		QiSpline.minit(rho,Qi,npoints);
-		QhSpline.minit(rho,Qh,npoints);
+		YnSpline.minit(P,Yn,npoints);
+		ZZSpline.minit(P,ZZ,npoints);
+		AASpline.minit(P,AA,npoints);
+		QiSpline.minit(P,Qi,npoints);
+		QhSpline.minit(P,Qh,npoints);
 
 		free_vector(Qi,1,npoints);
 		free_vector(Qh,1,npoints);
 		free_vector(AA,1,npoints);
 		free_vector(ZZ,1,npoints);		
 		free_vector(Yn,1,npoints);		
+		free_vector(P,1,npoints);		
 		fclose(fp);
 
 	}
-
-  	// We will compute density at each grid point
-  	// the only complication is that composition depends on the local
-  	// density, so the approach we take is to 
-  	// first set up a spline P(rho) and then use this to 
-  	// interpolate the correct density for each pressure
-  	EOS.T8=1.0;  // have to set the temperature to be something
-  	double *dens = vector(1,1001);
-  	double *pres = vector(1,1001);
-  	for (int i=1; i<=1001; i++) {
-		dens[i] = 5.0 + (i-1)*(15.0-5.0)*0.001;
-		EOS.rho = pow(10.0,dens[i]);
-		set_composition();
-		pres[i] = log10(EOS.ptot());
-		//printf("%d %lg %lg %lg %lg %lg\n",i,EOS.rho,dens[i],pres[i],EOS.A[1],EOS.Z[1],EOS.Yn);
-  	}
-  	RHO.minit(pres,dens,1001);
-  	free_vector(dens,1,1001);
-  	free_vector(pres,1,1001);	
 
   	// storage
   	G.rho=vector(0,G.N+2);  
@@ -1060,25 +1042,12 @@ void set_up_grid(const char *fname)
   	for (int i=0; i<=G.N+2; i++) {
     	double x=log(G.Pt)+G.dx*(i-1);
     	G.P[i]=exp(x);
-
-		double P1 = exp(x-0.5*G.dx);
-		double P2 = exp(x+0.5*G.dx);
-		double rho1 = pow(10.0,RHO.get(log10(P1)));
-		double rho2 = pow(10.0,RHO.get(log10(P2)));
-		G.Qheat[i]=0.0;
-		if (!G.hardwireQ) {
-			G.Qheat[i]=QhSpline.get(log10(rho2))-QhSpline.get(log10(rho1));
-			if (G.Qheat[i]<0.0) G.Qheat[i]=0.0;
-		}
-		Qtot+=G.Qheat[i];
-
-		if (!G.hardwireQ) {
-			G.Qimp[i]=QiSpline.get(log10(G.rho[i]));
-			if (G.Qimp[i] < 0.0) G.Qimp[i]=0.0;
-		}
-	
-		EOS.rho = rho2;
+		EOS.P = G.P[i];
+		EOS.T8=1.0;   // we have to set the temperature to something
 		set_composition();
+		EOS.rho=EOS.find_rho();
+		G.rho[i]=EOS.rho;
+
 		// GammaT[i] refers to i+1/2
 		// The following line uses a composition of 56Fe to calculate gamma,
 		// it avoids jumps in the melting point associated with e-capture boundaries
@@ -1089,13 +1058,24 @@ void set_up_grid(const char *fname)
 		} else {
 			GammaT = pow(EOS.Z[1]*4.8023e-10,2.0)*pow(4.0*PI*EOS.rho/(3.0*EOS.A[1]*1.67e-24),1.0/3.0)/1.38e-16;
 		}
-		
-    	G.rho[i] = pow(10.0,RHO.get(log10(G.P[i])));
-		EOS.rho = G.rho[i];
-		set_composition();
-		
+
 		double Tmelt = 5e8*pow(G.P[i]/(2.28e14*1.9e13),0.25)*pow(EOS.Z[1]/30.0,5.0/3.0);
 		double LoverT = 0.8 * 1.38e-16 /(EOS.A[1]*1.67e-24);
+
+		G.Qheat[i]=0.0;
+		if (!G.hardwireQ) {
+			double P1 = exp(x-0.5*G.dx);
+			double P2 = exp(x+0.5*G.dx);
+			G.Qheat[i]=QhSpline.get(log10(P2))-QhSpline.get(log10(P1));
+			if (G.Qheat[i]<0.0) G.Qheat[i]=0.0;
+		}
+		Qtot+=G.Qheat[i];
+
+		if (!G.hardwireQ) {
+			G.Qimp[i]=QiSpline.get(log10(G.P[i]));
+			if (G.Qimp[i] < 0.0) G.Qimp[i]=0.0;
+		}
+
 		if (G.output) 
 			fprintf(fp, "%d %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", i, G.P[i], G.rho[i], EOS.A[1]*(1.0-EOS.Yn), 
 				EOS.Z[1], EOS.Yn,EOS.A[1],EOS.ptot(), Tmelt, GammaT/1e8, LoverT*1e8);
@@ -1109,8 +1089,6 @@ void set_up_grid(const char *fname)
   	printf("Grid has %d points, delx=%lg, Pb=%lg, rhob=%lg, Pt=%lg, rhot=%lg\n", 
 			G.N, G.dx, G.P[G.N],G.rho[G.N],G.P[1],G.rho[1]);
 		printf("Total heat release is %lg MeV\n",Qtot);
-		
-		RHO.tidy();
 }
 
 
@@ -1119,16 +1097,16 @@ void set_composition(void)
 	if (G.hardwireQ) {
 		// use the EOS routines to get the composition
 		// ie. crust models from the literature
-		EOS.set_comp();	
+		EOS.set_composition_by_pressure();	
 	} else {
 		// otherwise use our crust model
 		// the model gives the mean A, mean Z and Yn
 		// and we set up the variables as in our EOS.set_comp() routine
-		EOS.Yn = YnSpline.get(log10(EOS.rho));
+		EOS.Yn = YnSpline.get(log10(EOS.P));
 		if (EOS.Yn < 1e-6) EOS.Yn=0.0;
-		EOS.A[1]=AASpline.get(log10(EOS.rho));
+		EOS.A[1]=AASpline.get(log10(EOS.P));
 		EOS.A[1]/=(1.0-EOS.Yn);
-		EOS.Z[1]=ZZSpline.get(log10(EOS.rho));
+		EOS.Z[1]=ZZSpline.get(log10(EOS.P));
 		EOS.set_Ye=EOS.Z[1]/EOS.A[1];		
 		//printf("%lg %lg %lg %lg\n", EOS.Yn, EOS.rho, EOS.A[1], EOS.Z[1]);
 	}
