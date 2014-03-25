@@ -55,7 +55,6 @@ int main(int argc, char *argv[])
 
 	// Cooling phase
 	crust.output=1;
-	crust.force_precalc=0;
 	crust.evolve(time_to_run,0.0);
 	
 	// Calculate the chi-sq

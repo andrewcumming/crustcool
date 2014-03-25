@@ -25,7 +25,7 @@ Crust::Crust() {
 	this->output = 1;
 	this->hardwireQ=1;	
 	this->B=0.0;
-	this->accr=1;
+	this->accr=0;
 	this->Tc = 3e7;
 	this->yt = 1e12;
 	
@@ -114,6 +114,7 @@ void Crust::evolve(double time, double mdot) {
 	clock_t timer;
 	start_timing(&timer);
   	precalculate_vars();
+	this->force_precalc=0;  // only precalc once per session
 	stop_timing(&timer,"precalculate_vars");
 
 	start_timing(&timer);
