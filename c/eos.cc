@@ -49,7 +49,7 @@ Eos::Eos(int n)
 	this->gamma_melt=175.0;
 	this->Qimp=900.0; // treat the crust as a liquid for conductivities
 	this->B=0.0; // default is unmagnetized 
-	this->use_potek_cond = 0;
+	this->use_potek_cond = 1;
 	this->use_potek_eos = 0;
 	this->kncrit=0.0;
 }
@@ -277,8 +277,8 @@ double Eos::Chabrier_EF(void)
 
 
 
-/*
-void Eos::set_comp(void)
+
+void Eos::set_composition_by_density(void)
   // works out the composition at density rho according to the class variable 'accr'
   // accr=1 or 2 accreted crust; accr=0 equilibrium crust
 {
@@ -333,7 +333,7 @@ void Eos::set_comp(void)
   	this->X[1]=1.0; this->Z[1]=Z; this->A[1]=A/(1.0-this->Yn);
 	this->set_Ye=(1.0-this->Yn)*Z/A;
 }
-*/
+
 
 
 void Eos::set_composition_by_pressure(void)
@@ -364,16 +364,16 @@ void Eos::set_composition_by_pressure(void)
 	double Z,A;
   	int i;
 	switch (this->accr) {
-		case 2:   // accreted composition (A=106)
+		case 2: {  // accreted composition (A=106)
     		i=0; while (this->P > Pmaxa2[i] && i<30) i++;
 			A=Aa2[i]; Z=Za2[i];
        		this->Yn=(Acell2[i]-A)/Acell2[i];
-			break;
-		case 1: // accreted composition (A=56)
+			} break;
+		case 1: { // accreted composition (A=56)
     		i=0; while (this->P > Pmaxa[i] && i<18) i++;
 			A=Aa[i]; Z=Za[i];
 			this->Yn=(Acell[i]-A)/Acell[i];
-			break;
+			} break;
 		default: // cold matter composition
       		if (this->P < Pmaxb[11]) {
 				i=0; while (this->P > Pmaxb[i] && i<12) i++;
@@ -1138,37 +1138,6 @@ double Eos::expint(int n, double x)
 	return gsl_sf_expint_E1(x);
 }
 
-
-double Eos::Fermi(double n, double eta)
-{
-  double F;
-  Ode_Int FERMI;
-  
-  pt2Object=(void*) this;
-
-  FERMI.init(1);
-
-  //if (eta>30.0) return pow(eta,n+1.0)/(n+1.0);
-  this->Fermi_n=n; this->Fermi_alpha=-eta;
-  FERMI.set_bc(1,0);
-  FERMI.go(0.0, 200.0, 1.0, 1e-8, &Eos::Wrapper_Fermi_derivs);
-  F=FERMI.get_y(1,FERMI.kount);
-
-  FERMI.tidy();
-  return F;
-}
-
-void Eos::Wrapper_Fermi_derivs(double x, double ff[], double dfdx[])
-{
-  Eos* mySelf = (Eos*) pt2Object;
-  // call member
-  mySelf->Fermi_derivs(x, ff, dfdx);
-}
-
-void Eos::Fermi_derivs(double x, double ff[], double dfdx[])
-{
-  dfdx[1]=pow(x,Fermi_n)/(1+exp(x+Fermi_alpha));
-}
 
 
 double Eos::find_rho(void)
