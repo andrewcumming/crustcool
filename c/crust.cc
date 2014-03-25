@@ -74,7 +74,7 @@ void Crust::setup(void) {
 	
 	if (this->Qimp>=0.0) {   	// the Q values are assigned directly in 'calculate_vars'
 		this->hardwireQ=1;
-		printf("Using supplied Qimp values and HZ composition and heatinthis->\n");
+		printf("Using supplied Qimp values and HZ composition and heating.\n");
 	} else {
 		this->hardwireQ=0;
 		printf("Using Qimp, composition, and heating from the crust model.\n");

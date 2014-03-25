@@ -364,16 +364,16 @@ void Eos::set_composition_by_pressure(void)
 	double Z,A;
   	int i;
 	switch (this->accr) {
-		case 2:   // accreted composition (A=106)
+		case 2: {  // accreted composition (A=106)
     		i=0; while (this->P > Pmaxa2[i] && i<30) i++;
 			A=Aa2[i]; Z=Za2[i];
        		this->Yn=(Acell2[i]-A)/Acell2[i];
-			break;
-		case 1: // accreted composition (A=56)
+			} break;
+		case 1: { // accreted composition (A=56)
     		i=0; while (this->P > Pmaxa[i] && i<18) i++;
 			A=Aa[i]; Z=Za[i];
 			this->Yn=(Acell[i]-A)/Acell[i];
-			break;
+			} break;
 		default: // cold matter composition
       		if (this->P < Pmaxb[11]) {
 				i=0; while (this->P > Pmaxb[i] && i<12) i++;
