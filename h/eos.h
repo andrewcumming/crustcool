@@ -19,6 +19,7 @@ public:
 	double Yi(void);
 	double YZ2(void);
 	void set_composition_by_pressure(void);
+	void set_composition_by_density(void);
 	double set_Ye, set_Yi, set_YZ2;
 
 	// equation of state
@@ -33,9 +34,6 @@ public:
 	double gamma(void);
 	double Uex(void);
 	double eta(void);
-	double Fermi(double n, double eta);
-	void Fermi_derivs(double x, double ff[], double dfdx[]);
-	static void Wrapper_Fermi_derivs(double x, double ff[], double dfdx[]);
 
 	// thermodynamics
 	double f(void);
