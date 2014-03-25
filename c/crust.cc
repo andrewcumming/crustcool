@@ -113,7 +113,10 @@ void Crust::evolve(double time, double mdot) {
 
 	clock_t timer;
 	start_timing(&timer);
+	int store_output=this->output;
+	this->output=1;
   	precalculate_vars();
+	this->output=store_output;
 	this->force_precalc=0;  // only precalc once per session
 	stop_timing(&timer,"precalculate_vars");
 
