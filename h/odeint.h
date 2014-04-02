@@ -13,6 +13,7 @@ public:
   void init(int n);
   void tidy(void);
   void go(double x1, double x2, double xstep, double eps, Ode_Int_Delegate *delegate);
+  void go_simple(double x1, double x2, int nstep, Ode_Int_Delegate *delegate);	
   void set_bc(int n, double num);
   double get_x(int i);
   double get_y(int n, int i);

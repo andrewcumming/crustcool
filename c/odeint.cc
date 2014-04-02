@@ -74,7 +74,11 @@ void Ode_Int::go(double x1, double x2, double xstep,
 	 &this->nbad,delegate);
 }
 
-
+void Ode_Int::go_simple(double x1, double x2, int nstep, Ode_Int_Delegate *delegate)
+{
+  rkdumb(this->ystart,this->nvar,x1,x2,nstep,delegate);
+  this->kount=nstep+1;
+}
 
 
 #define SAFETY 0.9

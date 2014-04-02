@@ -21,7 +21,7 @@ CFLAGS = -O3 -pipe
 # main code
 OBJS = $(LOCODIR)/crustcool.o $(LOCODIR)/crust.o $(ODIR)/root.o $(ODIR)/nr.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag12.o $(LOCODIR)/eos12.o $(LOCODIR)/timer.o $(LOCODIR)/data.o $(LOCODIR)/ns.o
 OBJS2 = $(LOCODIR)/ocean.o $(ODIR)/root.o $(ODIR)/nr.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o
-OBJS3 = $(LOCODIR)/makegrid.o $(ODIR)/root.o $(ODIR)/nr.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag12.o $(LOCODIR)/eos12.o
+OBJS3 = $(LOCODIR)/makegrid.o $(ODIR)/root.o $(ODIR)/nr.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag12.o $(LOCODIR)/eos12.o $(LOCODIR)/envelope.o
 
 crustcool : $(OBJS)
 	$(CC) -o crustcool $(OBJS) $(CFLAGS) -lm -lgfortran -lgsl
@@ -30,7 +30,7 @@ $(LOCODIR)/crustcool.o : $(LOCCDIR)/crustcool.cc
 	$(CC) -c $(LOCCDIR)/crustcool.cc -o $(LOCODIR)/crustcool.o $(CFLAGS)
 
 makegrid : $(OBJS3)
-	$(CC) -o makegrid $(OBJS3) $(CFLAGS) -lgfortran
+	$(CC) -o makegrid $(OBJS3) $(CFLAGS) -lgfortran -lgsl
 
 $(LOCODIR)/makegrid.o : $(LOCCDIR)/makegrid.cc
 	$(CC) -c $(LOCCDIR)/makegrid.cc -o $(LOCODIR)/makegrid.o $(CFLAGS) 
@@ -60,6 +60,9 @@ $(ODIR)/ns.o : $(CDIR)/ns.c
 
 $(ODIR)/eos.o : $(CDIR)/eos.cc
 	$(CC) -c $(CDIR)/eos.cc -o $(ODIR)/eos.o $(CFLAGS)
+
+$(ODIR)/envelope.o : $(CDIR)/envelope.cc
+	$(CC) -c $(CDIR)/envelope.cc -o $(ODIR)/envelope.o $(CFLAGS)
 
 $(ODIR)/crust.o : $(CDIR)/crust.cc
 	$(CC) -c $(CDIR)/crust.cc -o $(ODIR)/crust.o $(CFLAGS)
