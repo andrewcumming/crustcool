@@ -12,7 +12,6 @@
 #include "../h/spline.h"
 #include "../h/eos.h"
 #include "../h/odeint.h"
-#include "../h/crust.h"
 
 void Ode_Int::tidy(void)
 {
@@ -67,12 +66,12 @@ double Ode_Int::get_y(int n, int i)
 }
 
 void Ode_Int::go(double x1, double x2, double xstep,
-	double eps, Crust *crust)
+	double eps, Ode_Int_Delegate *delegate)
 {
   if (this->dxsav == 0.0) this->dxsav=xstep;
 
   odeint(this->ystart,this->nvar,x1,x2,eps,xstep,this->minstep,&this->nok,
-	 &this->nbad,crust);
+	 &this->nbad,delegate);
 }
 
 
@@ -87,7 +86,7 @@ void Ode_Int::go(double x1, double x2, double xstep,
 
 void Ode_Int::odeint(double ystart[], int nvar, double x1, double x2, 
 		     double eps, double h1, double hmin, int *nok, int *nbad,
-		     Crust *crust )
+		     Ode_Int_Delegate *delegate )
   // see NR pp 721.
 {
   int nstp,i;
@@ -105,7 +104,7 @@ void Ode_Int::odeint(double ystart[], int nvar, double x1, double x2,
   if (kmax>0) xsav=x-this->dxsav*2.0;
   for (nstp=1;nstp<=MAXSTP;nstp++) {
 	 if (this->verbose) printf("--- t=%lg delt=%lg nstep=%d\n", x, h,nstp);
-    crust->derivs(x,y,dydx);
+    delegate->derivs(x,y,dydx);
     
     for (i=1;i<=nvar;i++)
       yscal[i]=fabs(y[i])+fabs(dydx[i]*h)+TINY;
@@ -124,10 +123,10 @@ void Ode_Int::odeint(double ystart[], int nvar, double x1, double x2,
     //printf("h=%lg\n", h);
     if (this->stiff) {
       // if we've set the stiff flag use stifbs
-      stifbs(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,crust);
+      stifbs(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,delegate);
     } else {
       // otherwise rkqs
-      rkqs(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,crust);
+      rkqs(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,delegate);
     }
     //  printf("hdid=%lg, hnext=%lg\n", hdid, hnext);
     if (hdid == h) ++(*nok); else ++(*nbad);
@@ -157,7 +156,7 @@ void Ode_Int::odeint(double ystart[], int nvar, double x1, double x2,
 void Ode_Int::rkqs(double y[], double dydx[], int n, double *x, 
 		   double htry, double eps, double yscal[], double *hdid, 
 		   double *hnext,
-		   Crust *crust)
+		   Ode_Int_Delegate *delegate)
 
   // Numerical recipes pp 719 
 
@@ -169,7 +168,7 @@ void Ode_Int::rkqs(double y[], double dydx[], int n, double *x,
    ytemp=vector(1,n);
    h=htry;
    for (;;) {
-      rkck(y,dydx,n,*x,h,ytemp,yerr,crust);
+      rkck(y,dydx,n,*x,h,ytemp,yerr,delegate);
       errmax=0.0;
       for (i=1;i<=(n-this->ignore);i++) {
 	//printf("%lg %lg %lg %lg\n", y[i],  yerr[i], yscal[i], yerr[i]/yscal[i]);
@@ -194,7 +193,7 @@ void Ode_Int::rkqs(double y[], double dydx[], int n, double *x,
 
 void Ode_Int::rkck(double y[], double dydx[], int n, double x, 
 		   double h, double yout[], double yerr[], 
-		   Crust *crust)
+		   Ode_Int_Delegate *delegate)
 {
    int i;
    static double a2=0.2,a3=0.3,a4=0.6,a5=1.0,a6=0.875,b21=0.2,
@@ -216,19 +215,19 @@ void Ode_Int::rkck(double y[], double dydx[], int n, double x,
    ytemp=vector(1,n);
    for (i=1;i<=n;i++)
       ytemp[i]=y[i]+b21*h*dydx[i];
-   crust->derivs(x+a2*h,ytemp,ak2);
+   delegate->derivs(x+a2*h,ytemp,ak2);
    for (i=1;i<=n;i++)
       ytemp[i]=y[i]+h*(b31*dydx[i]+b32*ak2[i]);
-   crust->derivs(x+a3*h,ytemp,ak3);
+   delegate->derivs(x+a3*h,ytemp,ak3);
    for (i=1;i<=n;i++)
       ytemp[i]=y[i]+h*(b41*dydx[i]+b42*ak2[i]+b43*ak3[i]);
-   crust->derivs(x+a4*h,ytemp,ak4);
+   delegate->derivs(x+a4*h,ytemp,ak4);
    for (i=1;i<=n;i++)
      ytemp[i]=y[i]+h*(b51*dydx[i]+b52*ak2[i]+b53*ak3[i]+b54*ak4[i]);
-   crust->derivs(x+a5*h,ytemp,ak5);
+   delegate->derivs(x+a5*h,ytemp,ak5);
    for (i=1;i<=n;i++)
      ytemp[i]=y[i]+h*(b61*dydx[i]+b62*ak2[i]+b63*ak3[i]+b64*ak4[i]+b65*ak5[i]);
-   crust->derivs(x+a6*h,ytemp,ak6);
+   delegate->derivs(x+a6*h,ytemp,ak6);
    for (i=1;i<=n;i++)
       yout[i]=y[i]+h*(c1*dydx[i]+c3*ak3[i]+c4*ak4[i]+c6*ak6[i]);
    for (i=1;i<=n;i++) {
@@ -250,7 +249,7 @@ void Ode_Int::rkck(double y[], double dydx[], int n, double x,
 #define NRANSI
 
 void Ode_Int::rkscale(float vstart[], int nvar, float x1, float x2, float h1,
-	Crust *crust)
+	Ode_Int_Delegate *delegate)
 {
 	int i,k;
 	float x,h;
@@ -269,7 +268,7 @@ void Ode_Int::rkscale(float vstart[], int nvar, float x1, float x2, float h1,
 	h=h1; // user supplies initial step size
 	k=1; // count the number of steps
 	while ( x2>(x+h) ) {
-		crust->derivs(x,v,dv);
+		delegate->derivs(x,v,dv);
 
 		// choose a step size
 		hsum=0.0;
@@ -279,7 +278,7 @@ void Ode_Int::rkscale(float vstart[], int nvar, float x1, float x2, float h1,
 		h=0.1/hsum;
 		//printf("x=%lg, h=%lg\n  ", x, h);
 
-		rk4(v,dv,nvar,x,h,vout,crust);
+		rk4(v,dv,nvar,x,h,vout,delegate);
 		if ((float)(x+h) == x) nrerror("Step size too small in routine rkdumb");
 		x += h;
 		this->xp[k+1]=x;
@@ -305,7 +304,7 @@ void Ode_Int::rkscale(float vstart[], int nvar, float x1, float x2, float h1,
 }
 
 void Ode_Int::rkdumb(float vstart[], int nvar, float x1, float x2, int nstep,
-	Crust *crust)
+	Ode_Int_Delegate *delegate)
 {
 	int i,k;
 	float x,h;
@@ -322,8 +321,8 @@ void Ode_Int::rkdumb(float vstart[], int nvar, float x1, float x2, int nstep,
 	x=x1;
 	h=(x2-x1)/nstep;
 	for (k=1;k<=nstep;k++) {
-		crust->derivs(x,v,dv);
-		rk4(v,dv,nvar,x,h,vout,crust);
+		delegate->derivs(x,v,dv);
+		rk4(v,dv,nvar,x,h,vout,delegate);
 		if ((float)(x+h) == x) nrerror("Step size too small in routine rkdumb");
 		x += h;
 		this->xp[k+1]=x;
@@ -339,7 +338,7 @@ void Ode_Int::rkdumb(float vstart[], int nvar, float x1, float x2, int nstep,
 
 
 void Ode_Int::rk4(float y[], float dydx[], int n, float x, float h, float yout[],
-	Crust *crust)
+	Ode_Int_Delegate *delegate)
 {
 	int i;
 	float xh,hh,h6,*dym,*dyt,*yt;
@@ -351,14 +350,14 @@ void Ode_Int::rk4(float y[], float dydx[], int n, float x, float h, float yout[]
 	h6=h/6.0;
 	xh=x+hh;
 	for (i=1;i<=n;i++) yt[i]=y[i]+hh*dydx[i];
-	crust->derivs(xh,yt,dyt);
+	delegate->derivs(xh,yt,dyt);
 	for (i=1;i<=n;i++) yt[i]=y[i]+hh*dyt[i];
-	crust->derivs(xh,yt,dym);
+	delegate->derivs(xh,yt,dym);
 	for (i=1;i<=n;i++) {
 		yt[i]=y[i]+h*dym[i];
 		dym[i] += dyt[i];
 	}
-	crust->derivs(x+h,yt,dyt);
+	delegate->derivs(x+h,yt,dyt);
 	for (i=1;i<=n;i++)
 		yout[i]=y[i]+h6*(dydx[i]+dyt[i]+2.0*dym[i]);
 	free_vector(yt,1,n);
@@ -380,7 +379,7 @@ void Ode_Int::rk4(float y[], float dydx[], int n, float x, float h, float yout[]
 
 void Ode_Int::simpr(float y[], float dydx[], float dfdx[], float **dfdy, int n,
 	float xs, float htot, int nstep, float yout[],
-	Crust *crust)
+	Ode_Int_Delegate *delegate)
 {
   //	void lubksb(float **a, int n, int *indx, float b[]);
   //	void ludcmp(float **a, int n, int *indx, float *d);
@@ -403,7 +402,7 @@ void Ode_Int::simpr(float y[], float dydx[], float dfdx[], float **dfdy, int n,
 	for (i=1;i<=n;i++)
 		ytemp[i]=y[i]+(del[i]=yout[i]);
 	x=xs+h;
-	crust->derivs(x,ytemp,yout);
+	delegate->derivs(x,ytemp,yout);
 	for (nn=2;nn<=nstep;nn++) {
 		for (i=1;i<=n;i++)
 			yout[i]=h*yout[i]-del[i];
@@ -411,7 +410,7 @@ void Ode_Int::simpr(float y[], float dydx[], float dfdx[], float **dfdy, int n,
 		for (i=1;i<=n;i++)
 			ytemp[i] += (del[i] += 2.0*yout[i]);
 		x += h;
-		crust->derivs(x,ytemp,yout);
+		delegate->derivs(x,ytemp,yout);
 	}
 	for (i=1;i<=n;i++)
 		yout[i]=h*yout[i]-del[i];
@@ -426,7 +425,7 @@ void Ode_Int::simpr(float y[], float dydx[], float dfdx[], float **dfdy, int n,
 
 void Ode_Int::bansimpr(float y[], float dydx[], float dfdx[], float **dfdy, int n,
 	float xs, float htot, int nstep, float yout[],
-	Crust *crust)
+	Ode_Int_Delegate *delegate)
 {
 	int i,j,nn, *indx;
 	float d,h,x,**a,**al,*del,*ytemp;
@@ -455,7 +454,7 @@ void Ode_Int::bansimpr(float y[], float dydx[], float dfdx[], float **dfdy, int 
 	for (i=1;i<=n;i++)
 		ytemp[i]=y[i]+(del[i]=yout[i]);
 	x=xs+h;
-	crust->derivs(x,ytemp,yout);
+	delegate->derivs(x,ytemp,yout);
 	for (nn=2;nn<=nstep;nn++) {
 		for (i=1;i<=n;i++)
 			yout[i]=h*yout[i]-del[i];
@@ -463,7 +462,7 @@ void Ode_Int::bansimpr(float y[], float dydx[], float dfdx[], float **dfdy, int 
 		for (i=1;i<=n;i++)
 			ytemp[i] += (del[i] += 2.0*yout[i]);
 		x += h;
-		crust->derivs(x,ytemp,yout);
+		delegate->derivs(x,ytemp,yout);
 	}
 	for (i=1;i<=n;i++)
 		yout[i]=h*yout[i]-del[i];
@@ -478,7 +477,7 @@ void Ode_Int::bansimpr(float y[], float dydx[], float dfdx[], float **dfdy, int 
 
 void Ode_Int::trisimpr(float y[], float dydx[], float dfdx[], float **dfdy, int n,
 	float xs, float htot, int nstep, float yout[],
-	Crust *crust)
+	Ode_Int_Delegate *delegate)
 {
 	int i,nn;
 	float h,x,*del,*ytemp;
@@ -501,7 +500,7 @@ void Ode_Int::trisimpr(float y[], float dydx[], float dfdx[], float **dfdy, int 
 	for (i=1;i<=n;i++)
 		ytemp[i]=y[i]+(del[i]=yout[i]);
 	x=xs+h;
-	crust->derivs(x,ytemp,yout);
+	delegate->derivs(x,ytemp,yout);
 	for (nn=2;nn<=nstep;nn++) {
 		for (i=1;i<=n;i++)
 		  r[i]=h*yout[i]-del[i];
@@ -509,7 +508,7 @@ void Ode_Int::trisimpr(float y[], float dydx[], float dfdx[], float **dfdy, int 
 		for (i=1;i<=n;i++)
 			ytemp[i] += (del[i] += 2.0*yout[i]);
 		x += h;
-		crust->derivs(x,ytemp,yout);
+		delegate->derivs(x,ytemp,yout);
 	}
 	for (i=1;i<=n;i++) r[i]=h*yout[i]-del[i];
 	tridag(AA,BB,CC,r,yout,n);
@@ -536,7 +535,7 @@ void Ode_Int::trisimpr(float y[], float dydx[], float dfdx[], float **dfdy, int 
 
 void Ode_Int::stifbs(float y[], float dydx[], int nv, float *xx, float htry, float eps,
 	float yscal[], float *hdid, float *hnext,
-	Crust *crust )
+	Ode_Int_Delegate *delegate )
 {
 
 	int i,iq,k,kk,km=0;
@@ -583,7 +582,7 @@ void Ode_Int::stifbs(float y[], float dydx[], int nv, float *xx, float htry, flo
 	}
 	h=htry;
 	for (i=1;i<=nv;i++) ysav[i]=y[i];
-	crust->jacobn(*xx,y,dfdx,dfdy,nv);
+	delegate->jacobn(*xx,y,dfdx,dfdy,nv);
 	if (*xx != xnew || h != (*hnext)) {
 		first=1;
 		kopt=kmax;
@@ -594,9 +593,9 @@ void Ode_Int::stifbs(float y[], float dydx[], int nv, float *xx, float htry, flo
 			xnew=(*xx)+h;
 			if (xnew == (*xx)) { printf("stepsize underflow in stifbs, h=%lg\n",h); exitflag=1;} 
 			  //nrerror("step size underflow in stifbs");
-			if (this->tri==1) trisimpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq,crust);
-			else if (this->tri==2) bansimpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq,crust);
-			else simpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq,crust);
+			if (this->tri==1) trisimpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq,delegate);
+			else if (this->tri==2) bansimpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq,delegate);
+			else simpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq,delegate);
 			float sqrarg = (h/nseq[k]);
 			xest=(sqrarg == 0.0 ? 0.0 : sqrarg*sqrarg);
 			pzextr(k,xest,yseq,y,yerr,nv);

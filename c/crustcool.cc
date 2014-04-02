@@ -6,7 +6,6 @@
 #include <math.h>
 #include "../h/spline.h"
 #include "../h/nrutil.h"
-#include "../h/odeint.h"
 #include "../h/crust.h"
 #include "../h/data.h"
 
@@ -58,8 +57,9 @@ int main(int argc, char *argv[])
 	crust.evolve(time_to_run,0.0);
 	
 	// Calculate the chi-sq
-	read_in_data(sourcename);
-	calculate_chisq(&crust.ODE,&crust.TEFF,crust.g,crust.ZZ,crust.radius,crust.Lscale,crust.Lmin);
+	Data data;
+	data.read_in_data(sourcename);
+	data.calculate_chisq(&crust);
 }
 
 

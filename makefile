@@ -52,8 +52,8 @@ $(ODIR)/root.o : $(CDIR)/root.c
 $(ODIR)/timer.o : $(CDIR)/timer.c
 		$(CC) -c $(CDIR)/timer.c -o $(ODIR)/timer.o $(CFLAGS)
 
-$(ODIR)/data.o : $(CDIR)/data.c
-		$(CC) -c $(CDIR)/data.c -o $(ODIR)/data.o $(CFLAGS)
+$(ODIR)/data.o : $(CDIR)/data.cc
+		$(CC) -c $(CDIR)/data.cc -o $(ODIR)/data.o $(CFLAGS)
 
 $(ODIR)/ns.o : $(CDIR)/ns.c
 		$(CC) -c $(CDIR)/ns.c -o $(ODIR)/ns.o $(CFLAGS)

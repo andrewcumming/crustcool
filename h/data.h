@@ -1,4 +1,14 @@
-void read_in_data(const char *fname);
-void calculate_chisq(Ode_Int *ODE, Spline *TEFF, double g, double ZZ, double R,double Lscale,double Lmin);
+class Crust;
+
+class Data {
+public:
+	double *t, *TT, *Te;
+	int n;
+	int luminosity;
+	
+	void read_in_data(const char *fname);
+	void calculate_chisq(Crust *crust);
+};
+
 
 

@@ -1,8 +1,11 @@
-class Ode_Int;
-class Eos;
-class Spline;
+#include "../h/odeint.h"
+#include "../h/spline.h"
+#include "../h/eos.h"
 
-class Crust {
+//class Eos;
+//class Spline;
+
+class Crust: public Ode_Int_Delegate {
 public:
 	Crust();
     ~Crust();

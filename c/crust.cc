@@ -6,7 +6,6 @@
 #include "../h/spline.h"
 #include "../h/nr.h"
 #include "../h/nrutil.h"
-#include "../h/odeint.h"
 #include "../h/eos.h"
 #include "../h/crust.h"
 #include "../h/ns.h"
@@ -125,7 +124,7 @@ void Crust::evolve(double time, double mdot) {
 	for (int i=1; i<=this->N+1; i++) {
 		this->ODE.set_bc(i,this->T[i]);
 	}
-	this->ODE.go(0.0, this->outburst_duration*3.15e7, this->outburst_duration*3.15e7*0.01,1e-6,this);
+	this->ODE.go(0.0, this->outburst_duration*3.15e7, this->outburst_duration*3.15e7*0.01,1e-6,dynamic_cast<Ode_Int_Delegate *>(this));
 	stop_timing(&timer,"this->ODE.go");
 	printf("number of steps = %d\n", this->ODE.kount);
 
