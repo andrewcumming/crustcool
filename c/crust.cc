@@ -3,10 +3,8 @@
 #include "math.h"
 #include <stdarg.h>
 #include <stdlib.h>
-#include "../h/spline.h"
 #include "../h/nr.h"
 #include "../h/nrutil.h"
-#include "../h/eos.h"
 #include "../h/crust.h"
 #include "../h/ns.h"
 #include "../h/timer.h"

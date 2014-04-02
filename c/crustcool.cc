@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "../h/spline.h"
 #include "../h/nrutil.h"
 #include "../h/crust.h"
 #include "../h/data.h"
