@@ -5,7 +5,7 @@ class Spline;
 class Crust {
 public:
 	Crust();
-       ~Crust();
+    ~Crust();
 	void setup(void);
 	void evolve(double time, double mdot);
 	

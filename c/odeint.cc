@@ -67,7 +67,7 @@ double Ode_Int::get_y(int n, int i)
 }
 
 void Ode_Int::go(double x1, double x2, double xstep,
-		 double eps, Crust *crust)
+	double eps, Crust *crust)
 {
   if (this->dxsav == 0.0) this->dxsav=xstep;
 

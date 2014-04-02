@@ -6,8 +6,7 @@ public:
   double dxsav, minstep, hmax;
   void init(int n);
   void tidy(void);
-  void go(double x1, double x2, double xstep,
-	  double eps, Crust *crust);
+  void go(double x1, double x2, double xstep, double eps, Crust *crust);
   void set_bc(int n, double num);
   double get_x(int i);
   double get_y(int n, int i);
