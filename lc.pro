@@ -2329,8 +2329,8 @@ pro surf
 	; and compares to the T_top - Flux from the simulation
 	!p.multi=[0,1,1,0,0]
 
-	ytop=12.0   ; log10 of column depth of outer grid point
-	;ytop=13.6   ; log10 of column depth of outer grid point
+	;ytop=10.0   ; log10 of column depth of outer grid point
+	ytop=13.6   ; log10 of column depth of outer grid point
 
 	readcol, 'out/grid', y, T, F, format=('D,D,D')
 	F=10^(F-21.0)
@@ -2382,8 +2382,8 @@ pro surf2
 	; and compares to the T_top - Flux from the simulation
 	!p.multi=[0,1,1,0,0]
 
-	ytop=12.0   ; log10 of column depth of outer grid point
-	;ytop=13.6   ; log10 of column depth of outer grid point
+	;ytop=10.0   ; log10 of column depth of outer grid point
+	ytop=13.6   ; log10 of column depth of outer grid point
 
 	readcol, 'out/grid', y, T, F, format=('D,D,D')
 	F=10^F
@@ -2391,28 +2391,36 @@ pro surf2
 	T=10^T
 	ind=where(abs(y-ytop) lt 0.01)
 
-	plot, Teff[ind], T[ind],linestyle=1,/xlog,/ylog,$
-			ytitle=textoidl("T_b"), xtitle=textoidl('T_{eff}'), charsize=1.4
+	print, y[ind], T[ind], Teff[ind]
 
-		readcol, 'out/grid', y, T, F, format=('D,D,D')
-		F=10^F
-		Teff = (F/5.67e-5)^0.25
-		T=10^T
-		ind=where(abs(y-ytop) lt 0.01)
-		
-	;	oplot, Teff[ind], T[ind]
+	plot, Teff[ind], T[ind],linestyle=0,/xlog,/ylog,$
+			ytitle=textoidl("T_b"), xtitle=textoidl('T_{eff}'), charsize=1.4,yrange=[1e6,1e10],xrange=[1e5,3e7],xstyle=1
 
-	readcol, 'gon_out/prof', T,Teff, format=('X,X,X,X,X,F,F')
-	oplot, Teff,T, thick=3
+;	readcol, 'gon_out/prof', T,Teff, format=('X,X,X,X,X,F,F')
+;	oplot, Teff,T, thick=3
+
+readcol, 'out/grid_He4', y, T, F, format=('D,D,D')
+F=10^F
+Teff = (F/5.67e-5)^0.25
+T=10^T
+ind=where(abs(y-ytop) lt 0.01)
+oplot, Teff[ind], T[ind], col=250
+
+readcol, 'out/grid_He9', y, T, F, format=('D,D,D')
+F=10^F
+Teff = (F/5.67e-5)^0.25
+T=10^T
+ind=where(abs(y-ytop) lt 0.01)
+oplot, Teff[ind], T[ind], col=250
 
 	
 	g14=2.28
-	T=dindgen(100)*0.03 + 6.5
+	T=dindgen(100)*0.04 + 6.5
 	
 	; This is the Gudmundsson Tb-Teff
 	F=1d24*g14*5.67e-5*(10^T/1.288e8)^(1.0/0.455)
 	Teff = (F/5.67e-5)^0.25
-	oplot, Teff,10^T, col=120
+	;oplot, Teff,10^T, thick=3
 	
 	; This is the Potekhin fit
 	yhe=9.0
@@ -2426,14 +2434,28 @@ pro surf2
 	F=alog10(10^Faccr + a*10^Firon)-alog10(1+a)
 	F=10^F
 	F*=5.67e-5
-	T=10^T
 	Teff = (F/5.67e-5)^0.25
-	oplot, Teff, T, col=250
-	a=0.0
-	F=10^Faccr
+	oplot, Teff, 10^T, col=180
+	;a=0.0
+	;F=10^Faccr
+	;F*=5.67e-5
+	;Teff = (F/5.67e-5)^0.25
+	;oplot, Teff, T, col=180
+
+	; This is the Potekhin fit
+	yhe=4.0
+	Faccr=alog10(g14)+2.42*alog10(18.1)+2.42*(T-9.0)+24.0
+	T9=10^(T-9.0)
+	C=T9-sqrt(7.0*T9*sqrt(g14))/1d3
+	Firon=alog10(g14)+alog10((7.0*C)^2.25+(0.333*C)^1.25)+24.0
+	eta=g14^2*(10^yhe)*4.0*!dpi*1.12d6^2/(1.4*2d33)
+	a=alog10(1.2+(5.3d-6/eta)^0.38)+1.667*(T-9.0)
+	a=10^a
+	F=alog10(10^Faccr + a*10^Firon)-alog10(1+a)
+	F=10^F
 	F*=5.67e-5
 	Teff = (F/5.67e-5)^0.25
-	oplot, Teff, T, col=250
+	oplot, Teff, 10^T, col=180
 
 	
 ;	readcol, 'TeTb-8-9-2.10.data', Teff, Tb, format=('D,D')

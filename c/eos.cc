@@ -1147,9 +1147,11 @@ double Eos::find_rho(void)
   old=this->rho;
 
 
+	if (Wrapper_find_rho_eqn(1e-6) > 0.0) return 1e-6;
  // if (2.521967e17*pow(this->T8,4)>this->P) return 1e-1;
+	//printf("find_rho: %g %g\n", Wrapper_find_rho_eqn(1e-6),Wrapper_find_rho_eqn(1e15));
 
-  found=zbrent(Wrapper_find_rho_eqn,1e-5,1e16,1e-6);
+  found=zbrent(Wrapper_find_rho_eqn,1e-6,1e15,1e-6);
 return found;
   if (0) {
   // first guess the density

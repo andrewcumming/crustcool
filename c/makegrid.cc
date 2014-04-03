@@ -1,16 +1,9 @@
 // makegrid.cc
 //
-// The idea here is to calculate a range of constant flux solutions 
-// on a constant grid in y, so that we get a mapping between 
-// T_b,y_b and the flux
+// Makes envelope models
+//
  
 #include <stdio.h>
-#include <string.h>
-#include "math.h"
-#include <stdarg.h>
-
-#include "../h/nr.h"
-#include "../h/nrutil.h"
 #include "../h/envelope.h"
 
 //------------------------------------------------------------------------
@@ -24,5 +17,9 @@ int main(void)
 	printf("Enter B field in G (0 for unmagnetized)..."); scanf("%lg",&Bfield);
 
 	Envelope envelope;
-	envelope.make_grid(yi,Bfield);
+	envelope.use_potek_eos_in_He=0;
+	envelope.use_potek_eos_in_Fe=0;
+	envelope.use_potek_cond_in_Fe=1;
+	envelope.use_potek_cond_in_He=1;
+	envelope.make_grid(yi,Bfield);   // results are in "out/grid"
 }

@@ -7,18 +7,16 @@ public:
 	Envelope();
 	~Envelope();
 	
-	double g;
-	double F;
-	double Bfield;
-	double yi;
-	FILE *fp;
+	double g;    // gravity in cgs units
 	
-	void derivs(double t, double T[], double dTdt[]);
-    void jacobn(double, double *, double *, double **, int);
-
-	void doint(double F);
-	void calculate(void);
-
+	int use_potek_eos_in_He;
+	int use_potek_eos_in_Fe;
+	int use_potek_cond_in_He;
+	int use_potek_cond_in_Fe;
+	
+	// makes a grid of envelope models ('out/grid')
+	// yi is the He layer column depth (log10)
+	// set B=0 for unmagnetized envelope	
 	void make_grid(double yi, double B);
 
 private:
@@ -26,4 +24,12 @@ private:
 	double find_surf_eqn(double r);
 	Eos *EOS;
 	Ode_Int ODE, ODE2;
+	void doint(void);
+	void calculate(void);
+	FILE *fp;
+	double Bfield;
+	double yi;
+	double F;	
+	void derivs(double t, double T[], double dTdt[]);
+    void jacobn(double, double *, double *, double **, int);
 };
