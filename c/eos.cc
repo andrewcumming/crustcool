@@ -51,6 +51,7 @@ Eos::Eos(int n)
 	this->B=0.0; // default is unmagnetized 
 	this->use_potek_cond = 1;
 	this->use_potek_eos = 0;
+	this->use_potek_kff = 0;
 	this->kncrit=0.0;
 }
 
@@ -835,7 +836,7 @@ double Eos::opac(void)
 	kgaunt=0.0;
 	for (int i=1; i<=this->ns; i++) kgaunt+=this->Z[i]*this->Z[i]*this->X[i]*gff(this->Z[i],eta)/this->A[i];
 	this->kff*=kgaunt;
-	if (this->B > 0.0) {
+	if (this->use_potek_kff) {
 		// Free-free opacity from Potekhin's magnetized envelopes
 		double TRy = 100.0*this->T8/(0.15789*this->Z[1]*this->Z[1]);
 		double c7 = 108.8 + 77.6*pow(TRy,0.834);

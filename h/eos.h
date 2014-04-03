@@ -61,7 +61,7 @@ public:
 	double Eep(double q);
 
 	// interface to Potekhin's routines
-	int use_potek_cond, use_potek_eos;
+	int use_potek_cond, use_potek_eos, use_potek_kff;
 	double potek_cond(void);
 	void potek_eos(double *P_out, double *cv_out_i, double *cv_out_e);
 	double Kperp;

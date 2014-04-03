@@ -23,8 +23,10 @@ void Ode_Int::tidy(void)
   free_matrix(this->dydxp,1,this->nvar,1,this->kmax);
 }
 
-void Ode_Int::init(int n)
+void Ode_Int::init(int n, Ode_Int_Delegate *delegate)
 {
+	this->delegate = delegate;
+
   this->kmax=10000;
   this->nvar=n+1;
   this->ignore=0;
@@ -66,17 +68,17 @@ double Ode_Int::get_y(int n, int i)
 }
 
 void Ode_Int::go(double x1, double x2, double xstep,
-	double eps, Ode_Int_Delegate *delegate)
+	double eps)
 {
   if (this->dxsav == 0.0) this->dxsav=xstep;
 
   odeint(this->ystart,this->nvar,x1,x2,eps,xstep,this->minstep,&this->nok,
-	 &this->nbad,delegate);
+	 &this->nbad);
 }
 
-void Ode_Int::go_simple(double x1, double x2, int nstep, Ode_Int_Delegate *delegate)
+void Ode_Int::go_simple(double x1, double x2, int nstep)
 {
-  rkdumb(this->ystart,this->nvar,x1,x2,nstep,delegate);
+  rkdumb(this->ystart,this->nvar,x1,x2,nstep);
   this->kount=nstep+1;
 }
 
@@ -89,8 +91,7 @@ void Ode_Int::go_simple(double x1, double x2, int nstep, Ode_Int_Delegate *deleg
 #define TINY 1.0e-30
 
 void Ode_Int::odeint(double ystart[], int nvar, double x1, double x2, 
-		     double eps, double h1, double hmin, int *nok, int *nbad,
-		     Ode_Int_Delegate *delegate )
+		     double eps, double h1, double hmin, int *nok, int *nbad)
   // see NR pp 721.
 {
   int nstp,i;
@@ -127,10 +128,10 @@ void Ode_Int::odeint(double ystart[], int nvar, double x1, double x2,
     //printf("h=%lg\n", h);
     if (this->stiff) {
       // if we've set the stiff flag use stifbs
-      stifbs(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,delegate);
+      stifbs(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext);
     } else {
       // otherwise rkqs
-      rkqs(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,delegate);
+      rkqs(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext);
     }
     //  printf("hdid=%lg, hnext=%lg\n", hdid, hnext);
     if (hdid == h) ++(*nok); else ++(*nbad);
@@ -159,8 +160,7 @@ void Ode_Int::odeint(double ystart[], int nvar, double x1, double x2,
 
 void Ode_Int::rkqs(double y[], double dydx[], int n, double *x, 
 		   double htry, double eps, double yscal[], double *hdid, 
-		   double *hnext,
-		   Ode_Int_Delegate *delegate)
+		   double *hnext)
 
   // Numerical recipes pp 719 
 
@@ -172,7 +172,7 @@ void Ode_Int::rkqs(double y[], double dydx[], int n, double *x,
    ytemp=vector(1,n);
    h=htry;
    for (;;) {
-      rkck(y,dydx,n,*x,h,ytemp,yerr,delegate);
+      rkck(y,dydx,n,*x,h,ytemp,yerr);
       errmax=0.0;
       for (i=1;i<=(n-this->ignore);i++) {
 	//printf("%lg %lg %lg %lg\n", y[i],  yerr[i], yscal[i], yerr[i]/yscal[i]);
@@ -196,8 +196,7 @@ void Ode_Int::rkqs(double y[], double dydx[], int n, double *x,
 
 
 void Ode_Int::rkck(double y[], double dydx[], int n, double x, 
-		   double h, double yout[], double yerr[], 
-		   Ode_Int_Delegate *delegate)
+		   double h, double yout[], double yerr[])
 {
    int i;
    static double a2=0.2,a3=0.3,a4=0.6,a5=1.0,a6=0.875,b21=0.2,
@@ -252,8 +251,7 @@ void Ode_Int::rkck(double y[], double dydx[], int n, double x,
 
 #define NRANSI
 
-void Ode_Int::rkscale(float vstart[], int nvar, float x1, float x2, float h1,
-	Ode_Int_Delegate *delegate)
+void Ode_Int::rkscale(float vstart[], int nvar, float x1, float x2, float h1)
 {
 	int i,k;
 	float x,h;
@@ -282,7 +280,7 @@ void Ode_Int::rkscale(float vstart[], int nvar, float x1, float x2, float h1,
 		h=0.1/hsum;
 		//printf("x=%lg, h=%lg\n  ", x, h);
 
-		rk4(v,dv,nvar,x,h,vout,delegate);
+		rk4(v,dv,nvar,x,h,vout);
 		if ((float)(x+h) == x) nrerror("Step size too small in routine rkdumb");
 		x += h;
 		this->xp[k+1]=x;
@@ -307,8 +305,7 @@ void Ode_Int::rkscale(float vstart[], int nvar, float x1, float x2, float h1,
 	free_vector(v,1,nvar);
 }
 
-void Ode_Int::rkdumb(float vstart[], int nvar, float x1, float x2, int nstep,
-	Ode_Int_Delegate *delegate)
+void Ode_Int::rkdumb(float vstart[], int nvar, float x1, float x2, int nstep)
 {
 	int i,k;
 	float x,h;
@@ -326,7 +323,7 @@ void Ode_Int::rkdumb(float vstart[], int nvar, float x1, float x2, int nstep,
 	h=(x2-x1)/nstep;
 	for (k=1;k<=nstep;k++) {
 		delegate->derivs(x,v,dv);
-		rk4(v,dv,nvar,x,h,vout,delegate);
+		rk4(v,dv,nvar,x,h,vout);
 		if ((float)(x+h) == x) nrerror("Step size too small in routine rkdumb");
 		x += h;
 		this->xp[k+1]=x;
@@ -341,8 +338,7 @@ void Ode_Int::rkdumb(float vstart[], int nvar, float x1, float x2, int nstep,
 }
 
 
-void Ode_Int::rk4(float y[], float dydx[], int n, float x, float h, float yout[],
-	Ode_Int_Delegate *delegate)
+void Ode_Int::rk4(float y[], float dydx[], int n, float x, float h, float yout[])
 {
 	int i;
 	float xh,hh,h6,*dym,*dyt,*yt;
@@ -382,8 +378,7 @@ void Ode_Int::rk4(float y[], float dydx[], int n, float x, float h, float yout[]
 #define NRANSI
 
 void Ode_Int::simpr(float y[], float dydx[], float dfdx[], float **dfdy, int n,
-	float xs, float htot, int nstep, float yout[],
-	Ode_Int_Delegate *delegate)
+	float xs, float htot, int nstep, float yout[])
 {
   //	void lubksb(float **a, int n, int *indx, float b[]);
   //	void ludcmp(float **a, int n, int *indx, float *d);
@@ -428,8 +423,7 @@ void Ode_Int::simpr(float y[], float dydx[], float dfdx[], float **dfdy, int n,
 }
 
 void Ode_Int::bansimpr(float y[], float dydx[], float dfdx[], float **dfdy, int n,
-	float xs, float htot, int nstep, float yout[],
-	Ode_Int_Delegate *delegate)
+	float xs, float htot, int nstep, float yout[])
 {
 	int i,j,nn, *indx;
 	float d,h,x,**a,**al,*del,*ytemp;
@@ -480,8 +474,7 @@ void Ode_Int::bansimpr(float y[], float dydx[], float dfdx[], float **dfdy, int 
 }
 
 void Ode_Int::trisimpr(float y[], float dydx[], float dfdx[], float **dfdy, int n,
-	float xs, float htot, int nstep, float yout[],
-	Ode_Int_Delegate *delegate)
+	float xs, float htot, int nstep, float yout[])
 {
 	int i,nn;
 	float h,x,*del,*ytemp;
@@ -538,8 +531,7 @@ void Ode_Int::trisimpr(float y[], float dydx[], float dfdx[], float **dfdy, int 
 
 
 void Ode_Int::stifbs(float y[], float dydx[], int nv, float *xx, float htry, float eps,
-	float yscal[], float *hdid, float *hnext,
-	Ode_Int_Delegate *delegate )
+	float yscal[], float *hdid, float *hnext)
 {
 
 	int i,iq,k,kk,km=0;
@@ -597,9 +589,9 @@ void Ode_Int::stifbs(float y[], float dydx[], int nv, float *xx, float htry, flo
 			xnew=(*xx)+h;
 			if (xnew == (*xx)) { printf("stepsize underflow in stifbs, h=%lg\n",h); exitflag=1;} 
 			  //nrerror("step size underflow in stifbs");
-			if (this->tri==1) trisimpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq,delegate);
-			else if (this->tri==2) bansimpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq,delegate);
-			else simpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq,delegate);
+			if (this->tri==1) trisimpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq);
+			else if (this->tri==2) bansimpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq);
+			else simpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq);
 			float sqrarg = (h/nseq[k]);
 			xest=(sqrarg == 0.0 ? 0.0 : sqrarg*sqrarg);
 			pzextr(k,xest,yseq,y,yerr,nv);

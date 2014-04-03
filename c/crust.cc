@@ -94,7 +94,7 @@ void Crust::setup(void) {
 	get_TbTeff_relation();
 	
 	// initialize the integrator
-  	this->ODE.init(this->N+1);
+  	this->ODE.init(this->N+1,dynamic_cast<Ode_Int_Delegate *>(this));
 	this->ODE.verbose=0;
   	this->ODE.stiff=1; this->ODE.tri=1;  // stiff integrator with tridiagonal solver
 }
@@ -122,7 +122,7 @@ void Crust::evolve(double time, double mdot) {
 	for (int i=1; i<=this->N+1; i++) {
 		this->ODE.set_bc(i,this->T[i]);
 	}
-	this->ODE.go(0.0, this->outburst_duration*3.15e7, this->outburst_duration*3.15e7*0.01,1e-6,dynamic_cast<Ode_Int_Delegate *>(this));
+	this->ODE.go(0.0, this->outburst_duration*3.15e7, this->outburst_duration*3.15e7*0.01,1e-6);
 	stop_timing(&timer,"this->ODE.go");
 	printf("number of steps = %d\n", this->ODE.kount);
 

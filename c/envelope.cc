@@ -1,6 +1,7 @@
 #include "../h/envelope.h"
 #include "../h/nr.h"
 #include "math.h"
+#include <stdlib.h>
 
 void* pt2EnvObject;
 
@@ -18,10 +19,11 @@ Envelope::Envelope()
 	this->use_potek_eos_in_Fe=0;
 	this->use_potek_cond_in_He=1;
 	this->use_potek_cond_in_Fe=1;
+	this->use_potek_kff=0;
 
-	this->ODE.init(1);
-	this->ODE2.init(1);
-	
+	this->ODE.init(1,dynamic_cast<Ode_Int_Delegate *>(this));
+	this->ODE2.init(1,dynamic_cast<Ode_Int_Delegate *>(this));
+		
 	// Default values
 	this->g = 2.28e14;
 	
@@ -42,19 +44,21 @@ void Envelope::make_grid(double yi, double B)
 	this->fp = fopen("out/grid","w");
 	this->yi = yi;
 	this->Bfield = B;
+	this->EOS->B=this->Bfield;
 
-	for (int i=0; i<=100; i++) {
-		double flux=16.0+i*0.1;
+	for (int i=0; i<=90; i++) {
+		double flux=17.0+i*0.1;
 		this->F=pow(10.0,flux);
 		this->doint();
 		printf("."); fflush(stdout);
-    	for (int j=1; j<=ODE2.kount-1; j++) {
-//			fprintf(this->fp, "%lg %lg %lg\n", this->ODE2.get_x(j), log10(this->ODE2.get_y(1,j)), F);
-		}
-    	for (int j=1; j<=ODE.kount; j++) {
-			fprintf(this->fp, "%lg %lg %lg\n", this->ODE.get_x(j), log10(this->ODE.get_y(1,j)), flux);
+     	//for (int j=1; j<=ODE2.kount; j++) {
+		//	fprintf(this->fp, "%lg %lg %lg %lg\n", this->ODE2.get_x(j), log10(this->ODE2.get_y(1,j)), flux, this->yt);
+		//}
+	   	for (int j=1; j<=ODE.kount; j++) {
+				fprintf(this->fp, "%lg %lg %lg %lg\n", this->ODE.get_x(j), log10(this->ODE.get_y(1,j)), flux, this->yt);
 		}
 	}
+
 	printf("\n");
 	fclose(this->fp);
 }
@@ -64,22 +68,31 @@ void Envelope::doint(void)
 // for the specified flux, integrate inwards to see if we match the base temperature
 {
   	// we do this in two steps: light element layer first
-	this->EOS->B=this->Bfield;
 	this->EOS->use_potek_eos = use_potek_eos_in_He;
 	this->EOS->use_potek_cond = use_potek_cond_in_He;
-	this->EOS->A[1]=4.0; this->EOS->Z[1]=2.0;   // Helium
-	//this->EOS->A[1]=56.0; this->EOS->Z[1]=26.0;  // Iron
-
+	this->EOS->use_potek_kff = use_potek_kff;
+	double yi;
+	if (this->yi == 0.0) {
+		this->EOS->A[1]=56.0; this->EOS->Z[1]=26.0; // Iron		
+		yi = 8.0;
+	} else {
+		this->EOS->A[1]=4.0; this->EOS->Z[1]=2.0; // Helium
+		yi = this->yi;
+	}
   	// set surface temperature. We integrate from tau=2/3
-	double y1=1e-4,y2=1e2;
-	double yt=zbrent(this->Wrapper_find_surf_eqn,y1,y2,1e-6);
-  	if (yt==y1 || yt==y2) printf("yt out of bounds (%lg)\n", yt);
+	double y1=1e-3,y2=1e8;
+	this->yt=zbrent(this->Wrapper_find_surf_eqn,y1,y2,1e-6);
+  	if (this->yt==y1 || this->yt==y2) printf("yt out of bounds (%lg)\n", this->yt);
+	if (this->yt > pow(10.0,yi)) {
+		printf("The photosphere lies beneath the helium column! Increase yi and try again.\n");
+		exit(0);
+	}
 
   	double Tt=pow(this->F/5.67e-5,0.25);
 	this->ODE2.set_bc(1,Tt);
 
   	// integrate
-  	this->ODE2.go_simple(log10(yt),this->yi,(int)((this->yi-log10(yt))/0.1),dynamic_cast<Ode_Int_Delegate *>(this));
+  	this->ODE2.go_simple(log10(this->yt),yi,(int)((yi-log10(this->yt))/0.1));
 
   	// keep the base temperature for the next integration
   	double base_T=this->ODE2.get_y(1,this->ODE2.kount);
@@ -91,7 +104,10 @@ void Envelope::doint(void)
  	this->EOS->A[1]=56.0; this->EOS->Z[1]=26.0;  // Iron
   
   	// integrate through the ocean to the desired depth 
-	this->ODE.go_simple(this->yi,18.5,(int)((18.5-this->yi)/0.1),dynamic_cast<Ode_Int_Delegate *>(this));
+	this->ODE.go_simple(yi,18.5,(int)((18.5-yi)/0.1));
+	
+	// reset EOS for next time
+	this->EOS->Yn=0.0; this->EOS->set_Ye=0.0; 
 }
 
 

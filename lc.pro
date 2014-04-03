@@ -2523,7 +2523,7 @@ xyouts, 4d36, 2.7d9, textoidl('14'), charsize=1.1
 
 
 
-
+;
 ;	readcol, 'gon_out/prof', Teff,T, format=('X,X,D,X,X,D')
 ;	F=Teff*4.0*!dpi*(11.2*1d5)^2
 ;	print, 'max F21 in cooling curve=',max(F)
@@ -2578,33 +2578,34 @@ xyouts, 4d36, 2.7d9, textoidl('14'), charsize=1.1
 		oplot, F[ind], T[ind], col=120, linestyle=0
 
 
-		print, 'out/grid_He4'
-		readcol, 'out/grid_He4', y, T, F, format=('D,D,D')
+		print, 'out/grid'
+		readcol, 'out/grid', y, T, F, format=('D,D,D')
 		F=10^F
 		T=10^T
 		radius=11.2
 		ZZ=1.32
 		F *= 4.0*!dpi*1d10*radius^2
 		F/=ZZ^2
+
 		ytop=14.0
 		ind=where(abs(y-ytop) lt 0.01)
-		oplot, F[ind], T[ind], linestyle=0, col=80
+		oplot, F[ind], T[ind], col=250, linestyle=0
+		ytop=12.0
+		ind=where(abs(y-ytop) lt 0.01)
+		oplot, F[ind], T[ind], col=250, linestyle=0
+		ytop=9.0
+		ind=where(abs(y-ytop) lt 0.01)
+		oplot, F[ind], T[ind], col=250, linestyle=0
 
 
 
 
-		B=1d16
-		chi = 1.0 + 0.0492 * (1d-12*B)^0.292 / (T[ind]*1d-9)^0.24
-		;oplot, F[ind]*chi^4, T[ind], col=120
-		B=1d15
-		chi = 1.0 + 0.0492 * (1d-12*B)^0.292 / (T[ind]*1d-9)^0.24
-		;oplot, F[ind]*chi^4, T[ind], col=120
-		B=1d14
-		chi = 1.0 + 0.0492 * (1d-12*B)^0.292 / (T[ind]*1d-9)^0.24
-		;oplot, F[ind]*chi^4, T[ind], col=120
 
 
 	endif
+	
+
+	
 	
 	if keyword_set(ps) then begin
      	device,/close

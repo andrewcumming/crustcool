@@ -13,6 +13,7 @@ public:
 	int use_potek_eos_in_Fe;
 	int use_potek_cond_in_He;
 	int use_potek_cond_in_Fe;
+	int use_potek_kff;
 	
 	// makes a grid of envelope models ('out/grid')
 	// yi is the He layer column depth (log10)
@@ -32,4 +33,5 @@ private:
 	double F;	
 	void derivs(double t, double T[], double dTdt[]);
     void jacobn(double, double *, double *, double **, int);
+	double yt;
 };
