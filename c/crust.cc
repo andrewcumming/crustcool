@@ -151,18 +151,51 @@ void Crust::evolve(double time, double mdot) {
 }
 
 
+void Crust::set_temperature_profile(double *rhovec,double *Tvec,int nvec) 
+// sets the temperature profile by interpolating between the specified (density, temperature) pairs
+{
+	// if density is <0 it means the base density
+	// if density is 0 it means the top density
+	// if temperature is <=0 it means the core temperature
+	for (int i=1; i<nvec; i++) {
+		if (Tvec[i] <= 0.0) Tvec[i]=this->Tc;
+		if (rhovec[i] < 0.0) rhovec[i] = this->grid[this->N].rho;
+		if (rhovec[i] == 0.0) {
+			rhovec[i] = this->grid[1].rho;
+		}
+	}	
+	if (rhovec[nvec-1] != this->grid[this->N].rho) {  // if we didn't specify it in the file,
+									// set the temperature of the base to the core temperature
+		nvec++;
+		rhovec[nvec-1] = this->grid[this->N].rho;
+		Tvec[nvec-1] = this->Tc;
+	}
+
+	// now assign initial temperatures to the grid
+	// the temperature is linearly interpolated in log density
+	for (int i=1; i<=this->N+1; i++) {
+		double Ti;
+		if (i==1) {
+			Ti=Tvec[1]; 
+			this->Tt=Ti;
+		} else {
+			if (i==this->N+1) {
+				Ti=Tvec[nvec];		
+			} else {
+				int	j=0; 
+				while (rhovec[j] < this->grid[i].rho && j<nvec) j++;
+				Ti = pow(10.0,log10(Tvec[j-1]) + log10(Tvec[j]/Tvec[j-1])*log10(this->grid[i].rho/rhovec[j-1])/log10(rhovec[j]/rhovec[j-1]));
+			}
+		}	
+		
+		this->grid[i].T=Ti;
+	}
+}
+
+
 Crust::~Crust() {
 	// destructor
 	this->ODE.tidy(); 
-	/*
-	delete [] this->rho;
-	delete [] this->CP;
-	delete [] this->P;
-	delete [] this->K;
-	delete [] this->F;
-	delete [] this->NU;
-	delete [] this->EPS;
-*/
 	delete [] this->grid;
 }
 

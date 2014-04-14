@@ -133,70 +133,38 @@ void set_up_initial_temperature_profile_piecewise(char *fname,Crust *crust)
 {
 	// first read in the specified temperature-density relation from the file
 	FILE *fp;
-	char s1[100];
+	char s1[100];  // string to hold each line of the file
 	printf("Reading initial temperature profile from %s\n",fname);
 	fp = fopen(fname,"r");
-	double rhovec[101],Tvec[101];
+	double rhovec[101],Tvec[101];  // temperature and density points 
+	rhovec[0]=0.0; Tvec[0]=0.0;   // send "0.0" for the top density and temperature
+								// Crust converts this to the right values
 	int commented=0;
-	rhovec[1] = crust->grid[1].rho;
-	Tvec[1] = crust->Tc;
-	int i=2;
-	while (!feof(fp)) {		
+	int i=1;
+	while (!feof(fp)) {	
 		double rho, T,T2=0.0;
 		// new lines: read from lines marked ">" in init.dat
-		(void) fgets(s1,200,fp);		
+		(void) fgets(s1,200,fp);
 		if (!strncmp(s1,"##",2)) commented = 1-commented;
 		if (!strncmp(s1,">",1) && commented==0) {
 			int nvar = sscanf(s1,">%lg\t%lg\t%lg\n",&rho,&T,&T2);
-			// old: direct read from Tinit.dat
-			//		fscanf(fp,"%lg %lg\n",&rho,&T);
-			if (T < 0.0) T=crust->Tc;
-			if (T2 < 0.0) T2=crust->Tc;
-			if (rho < 0.0) rho = crust->grid[crust->N].rho;
-			if (rho == 0.0) {
-				Tvec[1] = T;
-			} else {
-				rhovec[i] = rho;
-				Tvec[i] = T;
+			rhovec[i] = rho;
+			Tvec[i] = T;
+			i++;
+			if (nvar == 3) {
+				rhovec[i] = rho*1.01;
+				Tvec[i] = T2;
 				i++;
-				if (nvar == 3) {
-					rhovec[i] = rho*1.01;
-					Tvec[i] = T2;
-					i++;
-				}
-			}			
-		}
+			}
+		}			
 	}
 	fclose(fp);
-	if (rhovec[i-1] != crust->grid[crust->N].rho) {  // if we didn't specify it in the file,
-									// set the temperature of the base to the core temperature
-		rhovec[i] = crust->grid[crust->N].rho;
-		Tvec[i] = crust->Tc;
-		i++;
-	}
-	int nvec=i-1;
-
+	int nvec=i;
 	if (nvec == 0) {
 		printf("ERROR:The piecewise flag is set but the temperature profile is not specified in init.dat!\n");
 		exit(0);
 	}
+	
+	crust->set_temperature_profile(rhovec,Tvec,nvec);
 
-	// now assign initial temperatures
-	for (int i=1; i<=crust->N+1; i++) {
-		double Ti;
-		if (i==1) {
-			Ti=Tvec[1]; 
-			crust->Tt=Ti;
-		} else {
-			if (i==crust->N+1) {
-				Ti=Tvec[nvec];		
-			} else {
-				int	j=1; 
-				while (rhovec[j] < crust->grid[i].rho && j<nvec) j++;
-				Ti = pow(10.0,log10(Tvec[j-1]) + log10(Tvec[j]/Tvec[j-1])*log10(crust->grid[i].rho/rhovec[j-1])/log10(rhovec[j]/rhovec[j-1]));
-			}
-		}	
-		
-		crust->grid[i].T=Ti;
-	}
 }
