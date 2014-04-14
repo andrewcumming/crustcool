@@ -138,7 +138,7 @@ void set_up_initial_temperature_profile_piecewise(char *fname,Crust *crust)
 	fp = fopen(fname,"r");
 	double rhovec[101],Tvec[101];
 	int commented=0;
-	rhovec[1] = crust->rho[1];
+	rhovec[1] = crust->grid[1].rho;
 	Tvec[1] = crust->Tc;
 	int i=2;
 	while (!feof(fp)) {		
@@ -152,7 +152,7 @@ void set_up_initial_temperature_profile_piecewise(char *fname,Crust *crust)
 			//		fscanf(fp,"%lg %lg\n",&rho,&T);
 			if (T < 0.0) T=crust->Tc;
 			if (T2 < 0.0) T2=crust->Tc;
-			if (rho < 0.0) rho = crust->rho[crust->N];
+			if (rho < 0.0) rho = crust->grid[crust->N].rho;
 			if (rho == 0.0) {
 				Tvec[1] = T;
 			} else {
@@ -168,9 +168,9 @@ void set_up_initial_temperature_profile_piecewise(char *fname,Crust *crust)
 		}
 	}
 	fclose(fp);
-	if (rhovec[i-1] != crust->rho[crust->N]) {  // if we didn't specify it in the file,
+	if (rhovec[i-1] != crust->grid[crust->N].rho) {  // if we didn't specify it in the file,
 									// set the temperature of the base to the core temperature
-		rhovec[i] = crust->rho[crust->N];
+		rhovec[i] = crust->grid[crust->N].rho;
 		Tvec[i] = crust->Tc;
 		i++;
 	}
@@ -192,11 +192,11 @@ void set_up_initial_temperature_profile_piecewise(char *fname,Crust *crust)
 				Ti=Tvec[nvec];		
 			} else {
 				int	j=1; 
-				while (rhovec[j] < crust->rho[i] && j<nvec) j++;
-				Ti = pow(10.0,log10(Tvec[j-1]) + log10(Tvec[j]/Tvec[j-1])*log10(crust->rho[i]/rhovec[j-1])/log10(rhovec[j]/rhovec[j-1]));
+				while (rhovec[j] < crust->grid[i].rho && j<nvec) j++;
+				Ti = pow(10.0,log10(Tvec[j-1]) + log10(Tvec[j]/Tvec[j-1])*log10(crust->grid[i].rho/rhovec[j-1])/log10(rhovec[j]/rhovec[j-1]));
 			}
 		}	
 		
-		crust->T[i]=Ti;
+		crust->grid[i].T=Ti;
 	}
 }

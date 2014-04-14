@@ -2,6 +2,11 @@
 #include "../h/spline.h"
 #include "../h/eos.h"
 
+struct GridPoint {
+	double rho, CP, P, K, F, T, NU, EPS, Qheat, Qimpur;
+};
+
+
 //class Eos;
 //class Spline;
 
@@ -14,7 +19,9 @@ public:
 	
 	int N;
 	double Pb, Pt, yt, dx;
-	double *P, *rho, *T;
+	//double *P, *rho, *T;
+
+	GridPoint *grid;
 
 	int output, use_my_envelope, gpe;
 	
@@ -41,7 +48,7 @@ public:
 					
 private:
 	int hardwireQ;
-	double *CP, *K, *F, *NU, *EPS, *Qheat, *Qimpur;
+	//double *CP, *K, *F, *NU, *EPS, *Qheat, *Qimpur;
 
 	int nbeta;
 	double **CP_grid, **K1_grid, **K0_grid, **NU_grid, **EPS_grid, **KAPPA_grid, **K1perp_grid, **K0perp_grid;
@@ -58,10 +65,10 @@ private:
 	void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar,double *last_time_output);
 	
 	double dTdt(int i, double *T);
-	void calculate_vars(int i, double T, double y, double *CP, double *K, double *NU, double *EPS);
-	void outer_boundary(double T1, double K1, double CP1, double NU1, double EPS1, double *T0, double *K0, double *CP0, double *NU0, double *EPS0);
-	void inner_boundary(double TN, double KN, double CPN, double NUN, double EPSN, double *TN1, double *KN1, double *CPN1, double *NUN1, double *EPSN1);
+	void calculate_vars(int i);
+	void inner_boundary(void);
 	double calculate_heat_flux(int i, double *T);
+	void outer_boundary(void);
 	
 	Spline AASpline; 
 	Spline ZZSpline;
