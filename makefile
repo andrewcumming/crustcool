@@ -19,9 +19,9 @@ CFLAGS = -O3 -pipe
 #CFLAGS = -lm -parallel -fast 
 
 # main code
-OBJS = $(LOCODIR)/crustcool.o $(LOCODIR)/crust.o $(ODIR)/root.o $(ODIR)/nr.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag12.o $(LOCODIR)/eos12.o $(LOCODIR)/timer.o $(LOCODIR)/data.o $(LOCODIR)/ns.o
-OBJS2 = $(LOCODIR)/ocean.o $(ODIR)/root.o $(ODIR)/nr.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o
-OBJS3 = $(LOCODIR)/makegrid.o $(ODIR)/root.o $(ODIR)/nr.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag12.o $(LOCODIR)/eos12.o $(LOCODIR)/envelope.o
+OBJS = $(LOCODIR)/crustcool.o $(LOCODIR)/crust.o $(ODIR)/root.o $(ODIR)/vector.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag12.o $(LOCODIR)/eos12.o $(LOCODIR)/timer.o $(LOCODIR)/data.o $(LOCODIR)/ns.o
+OBJS2 = $(LOCODIR)/ocean.o $(ODIR)/root.o $(ODIR)/vector.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o
+OBJS3 = $(LOCODIR)/makegrid.o $(ODIR)/root.o $(ODIR)/vector.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag12.o $(LOCODIR)/eos12.o $(LOCODIR)/envelope.o
 
 crustcool : $(OBJS)
 	$(CC) -o crustcool $(OBJS) $(CFLAGS) -lm -lgfortran -lgsl
@@ -67,8 +67,8 @@ $(ODIR)/envelope.o : $(CDIR)/envelope.cc
 $(ODIR)/crust.o : $(CDIR)/crust.cc
 	$(CC) -c $(CDIR)/crust.cc -o $(ODIR)/crust.o $(CFLAGS)
 
-$(ODIR)/nr.o : $(CDIR)/nr.c
-	$(CC) -c $(CDIR)/nr.c -o $(ODIR)/nr.o $(CFLAGS)
+$(ODIR)/vector.o : $(CDIR)/vector.c
+	$(CC) -c $(CDIR)/vector.c -o $(ODIR)/vector.o $(CFLAGS)
 
 $(ODIR)/odeint.o : $(CDIR)/odeint.cc
 	$(CC) -c $(CDIR)/odeint.cc -o $(ODIR)/odeint.o $(CFLAGS)

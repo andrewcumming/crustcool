@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "../h/nr.h"
 #include "../h/crust.h"
 #include "../h/data.h"
 
@@ -137,9 +136,7 @@ void set_up_initial_temperature_profile_piecewise(char *fname,Crust *crust)
 	char s1[100];
 	printf("Reading initial temperature profile from %s\n",fname);
 	fp = fopen(fname,"r");
-	double *rhovec, *Tvec;
-	rhovec=vector(1,100);
-	Tvec=vector(1,100);
+	double rhovec[101],Tvec[101];
 	int commented=0;
 	rhovec[1] = crust->rho[1];
 	Tvec[1] = crust->Tc;
@@ -202,7 +199,4 @@ void set_up_initial_temperature_profile_piecewise(char *fname,Crust *crust)
 		
 		crust->T[i]=Ti;
 	}
-	
-	free_vector(rhovec,1,100);
-	free_vector(Tvec,1,100);
 }

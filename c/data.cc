@@ -3,7 +3,6 @@
 #include <string.h>
 #include "../h/crust.h"
 #include "../h/data.h"
-#include "../h/nr.h"
 
 void Data::read_in_data(const char *sourcename) 
 {
@@ -81,7 +80,7 @@ void Data::calculate_chisq(Crust *crust)
 	for (int k=1; k<=nmodel; k++) { 
 		xx[k]=crust->ODE.get_x(k)*ZZ/(3600.0*24.0);
 		if (this->luminosity) {
-			yy[k] = crust->TEFF.get(crust->ODE.get_y(1,k))*(g/2.28e14) * 4.0*PI*1e10*R*R / (ZZ*ZZ);
+			yy[k] = crust->TEFF.get(crust->ODE.get_y(1,k))*(g/2.28e14) * 4.0*M_PI*1e10*R*R / (ZZ*ZZ);
 			yy[k] = Lscale*yy[k] + (1.0-Lscale)*Lmin;
 		} else {
 			yy[k]=1.38e-16*pow((crust->TEFF.get(crust->ODE.get_y(1,k))*(g/2.28e14))/5.67e-5,0.25)/(1.6e-12*ZZ);

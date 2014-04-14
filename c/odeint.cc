@@ -4,7 +4,7 @@
 //                  to use set "stiff" to 1
 //
 
-#include "../h/nr.h"
+#include "../h/vector.h"
 #include <stdio.h>
 #include "math.h"
 #include "../h/spline.h"
@@ -14,11 +14,11 @@
 void Ode_Int::tidy(void)
 {
   this->nvar++;
-  free_vector(this->ystart,1,this->nvar);
-  free_vector(this->hstr,1,this->kmax);
-  free_vector(this->xp,1,this->kmax);
-  free_matrix(this->yp,1,this->nvar,1,this->kmax);
-  free_matrix(this->dydxp,1,this->nvar,1,this->kmax);
+  free_vector(this->ystart);
+  free_vector(this->hstr);
+  free_vector(this->xp);
+  free_matrix(this->yp,this->nvar,this->kmax);
+  free_matrix(this->dydxp,this->nvar,this->kmax);
 }
 
 void Ode_Int::init(int n, Ode_Int_Delegate *delegate)
@@ -32,11 +32,11 @@ void Ode_Int::init(int n, Ode_Int_Delegate *delegate)
   this->minstep=0.0;
 	this->hmax=1e12;
 
-  this->xp=vector(1,this->kmax);
-  this->yp=matrix(1,this->nvar,1,this->kmax);
-  this->dydxp=matrix(1,this->nvar,1,this->kmax);
-  this->hstr=vector(1,this->kmax);
-  this->ystart=vector(1,this->nvar);
+  this->xp=vector(this->kmax);
+  this->yp=matrix(this->nvar,this->kmax);
+  this->dydxp=matrix(this->nvar,this->kmax);
+  this->hstr=vector(this->kmax);
+  this->ystart=vector(this->nvar);
 
   this->stiff = 0; // default is non-stiff eqns.
   this->verbose = 0; // turn off output
@@ -96,9 +96,9 @@ void Ode_Int::odeint(double ystart[], int nvar, double x1, double x2,
   double xsav=0.0,x,hnext,hdid,h;
   double *yscal,*y,*dydx;
 
-  yscal=vector(1,nvar);
-  y=vector(1,nvar);
-  dydx=vector(1,nvar);
+  yscal=vector(nvar);
+  y=vector(nvar);
+  dydx=vector(nvar);
   x=x1;
   h=SIGN(h1,x2-x1);
   *nok = (*nbad) = kount =0;
@@ -143,9 +143,9 @@ void Ode_Int::odeint(double ystart[], int nvar, double x1, double x2,
 	  //	  printf("--++++ %lg %lg %lg\n", this->xp[i], y[i], dydx[i]);
 	}      
       }
-      free_vector(dydx,1,nvar);
-      free_vector(y,1,nvar);
-      free_vector(yscal,1,nvar);
+      free_vector(dydx);
+      free_vector(y);
+      free_vector(yscal);
       return;
     }
     if (fabs(hnext) <= hmin) printf("Step size too small in odeint..\n");
@@ -166,8 +166,8 @@ void Ode_Int::rkqs(double y[], double dydx[], int n, double *x,
    int i;
    double errmax,h,htemp,xnew,*yerr,*ytemp;
 
-   yerr=vector(1,n);
-   ytemp=vector(1,n);
+   yerr=vector(n);
+   ytemp=vector(n);
    h=htry;
    for (;;) {
       rkck(y,dydx,n,*x,h,ytemp,yerr);
@@ -188,8 +188,8 @@ void Ode_Int::rkqs(double y[], double dydx[], int n, double *x,
    else *hnext=5.0*h;
    *x += (*hdid=h);
    for (i=1;i<=n;i++) y[i]=ytemp[i];
-   free_vector(ytemp,1,n);
-   free_vector(yerr,1,n);
+   free_vector(ytemp);
+   free_vector(yerr);
 }
 
 
@@ -207,13 +207,12 @@ void Ode_Int::rkck(double y[], double dydx[], int n, double x,
    double dc1=c1-2825.0/27648.0,dc3=c3-18575.0/48384.0,
       dc4=c4-13525.0/55296.0,dc6=c6-0.25;
    double *ak2,*ak3,*ak4,*ak5,*ak6,*ytemp;
-
-   ak2=vector(1,n);
-   ak3=vector(1,n);
-   ak4=vector(1,n);
-   ak5=vector(1,n);
-   ak6=vector(1,n);
-   ytemp=vector(1,n);
+   ak2=vector(n);
+   ak3=vector(n);
+   ak4=vector(n);
+   ak5=vector(n);
+   ak6=vector(n);
+   ytemp=vector(n);
    for (i=1;i<=n;i++)
       ytemp[i]=y[i]+b21*h*dydx[i];
    delegate->derivs(x+a2*h,ytemp,ak2);
@@ -235,12 +234,12 @@ void Ode_Int::rkck(double y[], double dydx[], int n, double x,
      //printf("&&&&& %lg %lg %lg %lg %lg\n", yerr[i], ak3[i], ak4[i], ak5[i], ak6[i]);
       yerr[i]=h*(dc1*dydx[i]+dc3*ak3[i]+dc4*ak4[i]+dc5*ak5[i]+dc6*ak6[i]);
    }
-   free_vector(ytemp,1,n);
-   free_vector(ak6,1,n);
-   free_vector(ak5,1,n);
-   free_vector(ak4,1,n);
-   free_vector(ak3,1,n);
-   free_vector(ak2,1,n);
+   free_vector(ytemp);
+   free_vector(ak6);
+   free_vector(ak5);
+   free_vector(ak4);
+   free_vector(ak3);
+   free_vector(ak2);
 }
 
 
@@ -252,9 +251,9 @@ void Ode_Int::rkscale(double vstart[], int nvar, double x1, double x2, double h1
 	double *v,*vout,*dv;
 	double hsum;
 
-	v=vector(1,nvar);
-	vout=vector(1,nvar);
-	dv=vector(1,nvar);
+	v=vector(nvar);
+	vout=vector(nvar);
+	dv=vector(nvar);
 	for (i=1;i<=nvar;i++) {
 		v[i]=vstart[i];
 		this->yp[i][1]=v[i];
@@ -294,9 +293,9 @@ void Ode_Int::rkscale(double vstart[], int nvar, double x1, double x2, double h1
 		k++;
 	}
 	this->kount=k;
-	free_vector(dv,1,nvar);
-	free_vector(vout,1,nvar);
-	free_vector(v,1,nvar);
+	free_vector(dv);
+	free_vector(vout);
+	free_vector(v);
 }
 
 void Ode_Int::rkdumb(double vstart[], int nvar, double x1, double x2, int nstep)
@@ -305,9 +304,9 @@ void Ode_Int::rkdumb(double vstart[], int nvar, double x1, double x2, int nstep)
 	double x,h;
 	double *v,*vout,*dv;
 
-	v=vector(1,nvar);
-	vout=vector(1,nvar);
-	dv=vector(1,nvar);
+	v=vector(nvar);
+	vout=vector(nvar);
+	dv=vector(nvar);
 	for (i=1;i<=nvar;i++) {
 		v[i]=vstart[i];
 		this->yp[i][1]=v[i];
@@ -326,9 +325,9 @@ void Ode_Int::rkdumb(double vstart[], int nvar, double x1, double x2, int nstep)
 			this->yp[i][k+1]=v[i];
 		}
 	}
-	free_vector(dv,1,nvar);
-	free_vector(vout,1,nvar);
-	free_vector(v,1,nvar);
+	free_vector(dv);
+	free_vector(vout);
+	free_vector(v);
 }
 
 
@@ -337,9 +336,9 @@ void Ode_Int::rk4(double y[], double dydx[], int n, double x, double h, double y
 	int i;
 	double xh,hh,h6,*dym,*dyt,*yt;
 
-	dym=vector(1,n);
-	dyt=vector(1,n);
-	yt=vector(1,n);
+	dym=vector(n);
+	dyt=vector(n);
+	yt=vector(n);
 	hh=h*0.5;
 	h6=h/6.0;
 	xh=x+hh;
@@ -354,9 +353,9 @@ void Ode_Int::rk4(double y[], double dydx[], int n, double x, double h, double y
 	delegate->derivs(x+h,yt,dyt);
 	for (i=1;i<=n;i++)
 		yout[i]=y[i]+h6*(dydx[i]+dyt[i]+2.0*dym[i]);
-	free_vector(yt,1,n);
-	free_vector(dyt,1,n);
-	free_vector(dym,1,n);
+	free_vector(yt);
+	free_vector(dyt);
+	free_vector(dym);
 }
 
 
@@ -373,11 +372,10 @@ void Ode_Int::simpr(double y[], double dydx[], double dfdx[], double **dfdy, int
 	int i,j,nn,*indx;
 	double d,h,x,**a,*del,*ytemp;
 
-	//indx=ivector(1,n);
 	indx = new int [n+1];
-	a=matrix(1,n,1,n);
-	del=vector(1,n);
-	ytemp=vector(1,n);
+	a=matrix(n,n);
+	del=vector(n);
+	ytemp=vector(n);
 	h=htot/nstep;
 	for (i=1;i<=n;i++) {
 		for (j=1;j<=n;j++) a[i][j] = -h*dfdy[i][j];
@@ -405,10 +403,9 @@ void Ode_Int::simpr(double y[], double dydx[], double dfdx[], double **dfdy, int
 	lubksb(a,n,indx,yout);
 	for (i=1;i<=n;i++)
 		yout[i] += ytemp[i];
-	free_vector(ytemp,1,n);
-	free_vector(del,1,n);
-	free_matrix(a,1,n,1,n);
-	//free_ivector(indx,1,n);
+	free_vector(ytemp);
+	free_vector(del);
+	free_matrix(a,n,n);
 	delete [] indx;
 	
 }
@@ -419,12 +416,11 @@ void Ode_Int::bansimpr(double y[], double dydx[], double dfdx[], double **dfdy, 
 	int i,j,nn, *indx;
 	double d,h,x,**a,**al,*del,*ytemp;
 
-	//indx=ivector(1,n);
 	indx = new int [n+1];
-	a=matrix(1,n,1,7);
-	al=matrix(1,n,1,3);
-	del=vector(1,n);
-	ytemp=vector(1,n);
+	a=matrix(n,7);
+	al=matrix(n,3);
+	del=vector(n);
+	ytemp=vector(n);
 	h=htot/nstep;
 	// fill up the compact representation of the band diagonal matrix a
 	for (i=1; i<=n; i++) {
@@ -459,10 +455,9 @@ void Ode_Int::bansimpr(double y[], double dydx[], double dfdx[], double **dfdy, 
 	banbks(a,n,3,3,al,indx,yout);
 	for (i=1;i<=n;i++)
 		yout[i] += ytemp[i];
-	free_vector(ytemp,1,n);
-	free_vector(del,1,n);
-	free_matrix(a,1,n,1,n);
-	//free_ivector(indx,1,n);
+	free_vector(ytemp);
+	free_vector(del);
+	free_matrix(a,n,n);
 	delete [] indx;
 }
 
@@ -473,12 +468,12 @@ void Ode_Int::trisimpr(double y[], double dydx[], double dfdx[], double **dfdy, 
 	double h,x,*del,*ytemp;
 	double *r,*AA,*BB,*CC;
 
-	del=vector(1,n);
-	ytemp=vector(1,n);
-	r=vector(1,n);
-	AA=vector(1,n);
-	BB=vector(1,n);
-	CC=vector(1,n);
+	del=vector(n);
+	ytemp=vector(n);
+	r=vector(n);
+	AA=vector(n);
+	BB=vector(n);
+	CC=vector(n);
 	h=htot/nstep;
 	for (i=1; i<=n; i++) BB[i]=1.0-h*dfdy[i][i];
 	for (i=2; i<=n; i++) AA[i]=-h*dfdy[i][i-1];
@@ -504,13 +499,13 @@ void Ode_Int::trisimpr(double y[], double dydx[], double dfdx[], double **dfdy, 
 	tridag(AA,BB,CC,r,yout,n);
 	for (i=1;i<=n;i++)
 		yout[i] += ytemp[i];
-	free_vector(ytemp,1,n);
-	free_vector(del,1,n);
+	free_vector(ytemp);
+	free_vector(del);
 
-	free_vector(r,1,n);
-	free_vector(AA,1,n);
-	free_vector(BB,1,n);
-	free_vector(CC,1,n);
+	free_vector(r);
+	free_vector(AA);
+	free_vector(BB);
+	free_vector(CC);
 }
 
 #define KMAXX 7
@@ -537,14 +532,14 @@ void Ode_Int::stifbs(double y[], double dydx[], int nv, double *xx, double htry,
 	static int nseq[IMAXX+1]={0,2,6,10,14,22,34,50,70};
 	int reduct,exitflag=0;
 
-	d=matrix(1,nv,1,KMAXX);
-	dfdx=vector(1,nv);
-	dfdy=matrix(1,nv,1,nv);
-	err=vector(1,KMAXX);
-	x=vector(1,KMAXX);
-	yerr=vector(1,nv);
-	ysav=vector(1,nv);
-	yseq=vector(1,nv);
+	d=matrix(nv,KMAXX);
+	dfdx=vector(nv);
+	dfdy=matrix(nv,nv);
+	err=vector(KMAXX);
+	x=vector(KMAXX);
+	yerr=vector(nv);
+	ysav=vector(nv);
+	yseq=vector(nv);
 	for (int i=1; i<=nv; i++) {
 	  dfdx[i]=0.0;
 	  for (int j=1; j<=nv; j++)
@@ -644,14 +639,14 @@ void Ode_Int::stifbs(double y[], double dydx[], int nv, double *xx, double htry,
 			kopt++;
 		}
 	}
-	free_vector(yseq,1,nv);
-	free_vector(ysav,1,nv);
-	free_vector(yerr,1,nv);
-	free_vector(x,1,KMAXX);
-	free_vector(err,1,KMAXX);
-	free_matrix(dfdy,1,nv,1,nv);
-	free_vector(dfdx,1,nv);
-	free_matrix(d,1,nv,1,KMAXX);
+	free_vector(yseq);
+	free_vector(ysav);
+	free_vector(yerr);
+	free_vector(x);
+	free_vector(err);
+	free_matrix(dfdy,nv,nv);
+	free_vector(dfdx);
+	free_matrix(d,nv,KMAXX);
 }
 
 #undef KMAXX
@@ -672,7 +667,7 @@ void Ode_Int::pzextr(int iest, double xest, double yest[], double yz[], double d
 	int k1,j;
 	double q,f2,f1,delta,*c;
 
-	c=vector(1,nv);
+	c=vector(nv);
 	x[iest]=xest;
 	for (j=1;j<=nv;j++) dy[j]=yz[j]=yest[j];
 	if (iest == 1) {
@@ -694,7 +689,7 @@ void Ode_Int::pzextr(int iest, double xest, double yest[], double yz[], double d
 		}
 		for (j=1;j<=nv;j++) d[j][iest]=dy[j];
 	}
-	free_vector(c,1,nv);
+	free_vector(c);
 }
 
 
@@ -732,7 +727,7 @@ void Ode_Int::ludcmp(double **a, int n, int *indx, double *d)
 	double big,dum,sum,temp;
 	double *vv;
 
-	vv=vector(1,n);
+	vv=vector(n);
 	*d=1.0;
 	for (i=1;i<=n;i++) {
 		big=0.0;
@@ -774,7 +769,7 @@ void Ode_Int::ludcmp(double **a, int n, int *indx, double *d)
 			for (i=j+1;i<=n;i++) a[i][j] *= dum;
 		}
 	}
-	free_vector(vv,1,n);
+	free_vector(vv);
 }
 #undef TINY
 
@@ -789,7 +784,7 @@ void Ode_Int::tridag(double a[], double b[], double c[], double r[], double u[],
 	unsigned long j;
 	double bet,*gam;
 
-	gam=vector(1,n);
+	gam=vector(n);
 	if (b[1] == 0.0) printf("Error 1 in tridag\n");
 	u[1]=r[1]/(bet=b[1]);
 	for (j=2;j<=n;j++) {
@@ -800,7 +795,7 @@ void Ode_Int::tridag(double a[], double b[], double c[], double r[], double u[],
 	}
 	for (j=(n-1);j>=1;j--)
 		u[j] -= gam[j+1]*u[j+1];
-	free_vector(gam,1,n);
+	free_vector(gam);
 }
 
 

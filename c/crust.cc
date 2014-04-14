@@ -3,9 +3,9 @@
 #include "math.h"
 #include <stdarg.h>
 #include <stdlib.h>
-#include "../h/nr.h"
-#include "../h/crust.h"
 #include "../h/ns.h"
+#include "../h/vector.h"
+#include "../h/crust.h"
 #include "../h/timer.h"
 
 Crust::Crust() {
@@ -154,13 +154,13 @@ void Crust::evolve(double time, double mdot) {
 Crust::~Crust() {
 	// destructor
 	this->ODE.tidy(); 
-  	free_vector(this->rho,0,this->N+2);
-  	free_vector(this->CP,0,this->N+2);
-  	free_vector(this->P,0,this->N+2);
-  	free_vector(this->K,0,this->N+2);
-  	free_vector(this->F,0,this->N+2);
-  	free_vector(this->NU,0,this->N+2);
-  	free_vector(this->EPS,0,this->N+2);
+	delete [] this->rho;
+	delete [] this->CP;
+	delete [] this->P;
+	delete [] this->K;
+	delete [] this->F;
+	delete [] this->NU;
+	delete [] this->EPS;
 }
 
 
@@ -183,12 +183,11 @@ void Crust::output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar,d
 		if (j==1) dt=this->ODE.get_x(j); else dt=this->ODE.get_x(j)-this->ODE.get_x(j-1);
 
 		// heat fluxes on the grid
-		double *TT;
-		TT=vector(1,this->N+1);
+		double *TT=new double [this->N+2];
 		for (int i=1; i<=this->N+1; i++) TT[i]=this->ODE.get_y(i,j);
 		double FF = calculate_heat_flux(1,TT);
 		for (int i=1; i<=this->N+1; i++) this->F[i] = calculate_heat_flux(i,TT);
-		free_vector(TT,1,this->N+1);
+		delete [] TT;
 
 		// total neutrino luminosity
 		double Lnu=0.0;
@@ -201,7 +200,7 @@ void Crust::output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar,d
 			this->ODE.get_y(this->N-5,j), pow((this->g/2.28e14)*TEFF.get(this->ODE.get_y(1,j))/5.67e-5,0.25)/this->ZZ, 
 			this->ODE.get_y(1,j), pow((this->g/2.28e14)*TEFF.get(this->ODE.get_y(1,j))/5.67e-5,0.25),
 			pow((this->radius/11.2),2.0)*this->F[this->N+1]/(this->ZZ*this->ZZ),pow((this->radius/11.2),2.0)*this->F[this->N]/(this->ZZ*this->ZZ),
-			4.0*PI*pow(1e5*this->radius,2.0)*Lnu/(this->ZZ*this->ZZ), dt);
+			4.0*M_PI*pow(1e5*this->radius,2.0)*Lnu/(this->ZZ*this->ZZ), dt);
 			
 		if ((fabs(log10(fabs(timesofar+this->ODE.get_x(j))*this->ZZ)-log10(fabs(*last_time_output))) >= 1000.0) ||
 			(fabs(timesofar)+this->ODE.get_x(j))*this->ZZ < 1e10) {
@@ -242,12 +241,12 @@ void Crust::set_up_grid(const char *fname)
 		printf("Crust model has %d points\n",npoints);
 		
 		double *Qi,*Qh,*AA,*ZZ,*P,*Yn;
-		Qi=vector(1,npoints);
-		Qh=vector(1,npoints);
-		AA=vector(1,npoints);
-		ZZ=vector(1,npoints);
-		Yn=vector(1,npoints);
-		P=vector(1,npoints);
+		Qi=new double [npoints+1];
+		Qh=new double [npoints+1];
+		AA=new double [npoints+1];
+		ZZ=new double [npoints+1];
+		Yn=new double [npoints+1];
+		P=new double [npoints+1];
 
 		for (int i=1; i<=npoints; i++) {
 			double dummy;
@@ -263,27 +262,27 @@ void Crust::set_up_grid(const char *fname)
 		QiSpline.minit(P,Qi,npoints);
 		QhSpline.minit(P,Qh,npoints);
 
-		free_vector(Qi,1,npoints);
-		free_vector(Qh,1,npoints);
-		free_vector(AA,1,npoints);
-		free_vector(ZZ,1,npoints);		
-		free_vector(Yn,1,npoints);		
-		free_vector(P,1,npoints);		
+		delete [] Qi;
+		delete [] Qh;
+		delete [] AA;
+		delete [] ZZ;
+		delete [] Yn;
+		delete [] P;
 		fclose(fp);
 
 	}
 
   	// storage
-  	this->rho=vector(0,this->N+2);  
-  	this->CP=vector(0,this->N+2);
-  	this->P=vector(0,this->N+2);
-  	this->K=vector(0,this->N+2);
-  	this->F=vector(0,this->N+2);
-  	this->T=vector(0,this->N+2);
-  	this->NU=vector(0,this->N+2);
-  	this->EPS=vector(0,this->N+2);
-  	this->Qheat=vector(0,this->N+2);
-  	this->Qimpur=vector(0,this->N+2);
+  	this->rho=new double [this->N+3];  
+  	this->CP=new double [this->N+3];  
+  	this->P=new double [this->N+3];  
+  	this->K=new double [this->N+3];  
+  	this->F=new double [this->N+3];  
+  	this->T=new double [this->N+3];  
+  	this->NU=new double [this->N+3];  
+  	this->EPS=new double [this->N+3];  
+  	this->Qheat=new double [this->N+3];  
+  	this->Qimpur=new double [this->N+3];  
 
   	this->dx=log(this->Pb/this->Pt)/(this->N-1);   // the grid is equally spaced in log column
   
@@ -308,9 +307,9 @@ void Crust::set_up_grid(const char *fname)
 		double GammaT;
 		if (0) {
 			double Z=26.0,A=56.0;   // 28Si
-			GammaT = pow(Z*4.8023e-10,2.0)*pow(4.0*PI*this->EOS->rho/(3.0*A*1.67e-24),1.0/3.0)/1.38e-16;
+			GammaT = pow(Z*4.8023e-10,2.0)*pow(4.0*M_PI*this->EOS->rho/(3.0*A*1.67e-24),1.0/3.0)/1.38e-16;
 		} else {
-			GammaT = pow(this->EOS->Z[1]*4.8023e-10,2.0)*pow(4.0*PI*this->EOS->rho/(3.0*this->EOS->A[1]*1.67e-24),1.0/3.0)/1.38e-16;
+			GammaT = pow(this->EOS->Z[1]*4.8023e-10,2.0)*pow(4.0*M_PI*this->EOS->rho/(3.0*this->EOS->A[1]*1.67e-24),1.0/3.0)/1.38e-16;
 		}
 
 		double Tmelt = 5e8*pow(this->P[i]/(2.28e14*1.9e13),0.25)*pow(this->EOS->Z[1]/30.0,5.0/3.0);
@@ -352,8 +351,8 @@ void Crust::get_TbTeff_relation(void)
 {
 	double *temp, *flux;  // temporary storage to initialize the spline
 	int npoints = 195;  //  needs to be >= number of points read in
-	temp = vector(1,npoints);
-	flux = vector(1,npoints);
+	temp = new double [npoints+1];
+	flux = new double [npoints+1];
 	
 	// the file "out/grid" is made by makegrid.cc
 	// it contains  (column depth, T, flux)  in cgs
@@ -393,8 +392,8 @@ void Crust::get_TbTeff_relation(void)
 	// the following spline contains the flux as a function of temperature at column depth this->yt
 	this->TEFF.minit(temp,flux,count);
 	
-	free_vector(temp,1,npoints);
-	free_vector(flux,1,npoints);
+	delete [] temp;
+	delete [] flux;
 }
 
 
@@ -434,14 +433,14 @@ void Crust::precalculate_vars(void)
 	this->betamax=10.0;
 	this->deltabeta = (this->betamax-this->betamin)/(1.0*(this->nbeta-1));	
 
-	this->CP_grid = matrix(1,this->N+2,1,this->nbeta);	
-	this->K1_grid = matrix(1,this->N+2,1,this->nbeta);	
-	this->K0_grid = matrix(1,this->N+2,1,this->nbeta);	
-	this->KAPPA_grid = matrix(1,this->N+2,1,this->nbeta);	
-	this->K1perp_grid = matrix(1,this->N+2,1,this->nbeta);	
-	this->K0perp_grid = matrix(1,this->N+2,1,this->nbeta);	
-	this->NU_grid = matrix(1,this->N+2,1,this->nbeta);	
-	this->EPS_grid = matrix(1,this->N+2,1,this->nbeta);	
+	this->CP_grid = matrix(this->N+2,this->nbeta);	
+	this->K1_grid = matrix(this->N+2,this->nbeta);	
+	this->K0_grid = matrix(this->N+2,this->nbeta);	
+	this->KAPPA_grid = matrix(this->N+2,this->nbeta);	
+	this->K1perp_grid = matrix(this->N+2,this->nbeta);	
+	this->K0perp_grid = matrix(this->N+2,this->nbeta);	
+	this->NU_grid = matrix(this->N+2,this->nbeta);	
+	this->EPS_grid = matrix(this->N+2,this->nbeta);	
 
 	// For the crust heating, we need to convert the density limits into 
 	// pressures

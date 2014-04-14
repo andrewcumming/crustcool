@@ -3,15 +3,13 @@
 #include "math.h"
 #include <stdarg.h>
 #include <stdlib.h>
+#include <gsl/gsl_sf.h>
 #include "../h/root.h"
-#include "../h/nr.h"
+#include "../h/odeint.h"
+#include "../h/eos.h"
 
 #define me 510.999
 #define RADa 7.5657e-15
-
-#include "../h/odeint.h"
-#include "../h/eos.h"
-#include <gsl/gsl_sf.h>
 
 void* pt2Object;
 
@@ -30,17 +28,17 @@ extern "C"{
 
 Eos::~Eos()
 {
-    free_vector(this->A,1,this->ns);
-    free_vector(this->Z,1,this->ns);
-    free_vector(this->X,1,this->ns);
+    delete [] this->A;
+    delete [] this->Z;
+    delete [] this->X;
 }
 
 Eos::Eos(int n)
 {
 	this->ns=n;
-	this->A=vector(1,this->ns);
-	this->Z=vector(1,this->ns);
-	this->X=vector(1,this->ns);
+	this->A=new double[this->ns+1];
+	this->Z=new double[this->ns+1];
+	this->X=new double[this->ns+1];
 	this->set_YZ2=0.0;
 	this->Yn=0.0;
 	this->set_Ye=0.0;
@@ -189,7 +187,7 @@ double Eos::FermiI(int k, double T8, double EF)
     }
   }
   if (chi >= 14.0) {
-    I=F+(PI*PI/6.0)*pow(chi, 1.0*k)*(1.0*k+0.5+0.5*(k+1)*chi*tau)/R;
+    I=F+(M_PI*M_PI/6.0)*pow(chi, 1.0*k)*(1.0*k+0.5+0.5*(k+1)*chi*tau)/R;
   }
 
   return I;
@@ -575,9 +573,9 @@ double Eos::eps_nu(void)
 		double Qc=1.023e23;
 		double xr = 100.9*pow(1e-12*this->rho*this->Ye(),1.0/3.0);
 		double tr = 1.38e-8*this->T8/(9.11e-28*9e20);
-		double fp = sqrt(4.0*(1.0/137.0)*pow(xr,3.0)/(3.0*PI*sqrt(1.0+xr*xr)))/tr;
+		double fp = sqrt(4.0*(1.0/137.0)*pow(xr,3.0)/(3.0*M_PI*sqrt(1.0+xr*xr)))/tr;
 		double Ip = pow(tr,9.0)*(16.23*pow(fp,6.0)+4.604*pow(fp,15.0/2.0))*exp(-fp);
-		Q6 = Ip*Qc*0.9248*137.0/(96.0*pow(PI,4.0));
+		Q6 = Ip*Qc*0.9248*137.0/(96.0*pow(M_PI,4.0));
 	}
 	
 	
@@ -704,7 +702,7 @@ double Eos::eps_nu(void)
 			y2 = pow(pow(1.0+alpha2*pow(xi,2.0/3.0),2.0/3.0)-1.0,1.5);
 			Fp = DD1 * pow(1.0+c1*y1,2.0)/pow(1.0+a1*y1+b1*y1*y1,4.0);
 			Fm = DD2 * (1.0+c2*y2+d2*y2*y2+e2*y2*y2*y2)/pow(1.0+a2*y2+b2*y2*y2,5.0);	
-			SAB = (27.0*pow(xi,4.0)/(PI*PI*512.0*1.037))*(Fp-0.175*Fm/1.675);
+			SAB = (27.0*pow(xi,4.0)/(M_PI*M_PI*512.0*1.037))*(Fp-0.175*Fm/1.675);
 		}
 		
 		//SAB=1.0; SBC=1.0;  // turn off regimes A and C
@@ -799,7 +797,7 @@ double Eos::TC(void)
 		case 6: { //BCS
 			double Tc;
 			if (k >0.0) {
-				double xx = PI / (2.0*18.5*k);	
+				double xx = M_PI / (2.0*18.5*k);	
 				Tc = (8.0/137.0) * exp(-xx) * pow(1.05e-27*1e13*k,2.0)/(2.0*1.67e-24);
 				Tc/=1.38e-16;
 			} else Tc=0.0;
@@ -897,7 +895,7 @@ double Eos::gff(double Z1, double eta)
 	gaunt=1.16*8.02e3*x*T8_32/rY;  // normalisation and degeneracy piece
 	x=pow(1+x,2.0/3.0);
 	gam=sqrt(1.58e-3/this->T8)*Z1;
-	gaunt*=(1.0-exp(-2*PI*gam/sqrt(x+10.0)))/(1.0-exp(-2*PI*gam/sqrt(x))); // Elwert factor
+	gaunt*=(1.0-exp(-2*M_PI*gam/sqrt(x+10.0)))/(1.0-exp(-2*M_PI*gam/sqrt(x))); // Elwert factor
 	gaunt*=1.0+pow(this->T8/7.7, 1.5);  // relativistic piece
 	return gaunt;
 }
@@ -949,17 +947,17 @@ double Eos::Fep(int flag)
   //  g=0.0;  switch off finite size effects
   P0=4.787-0.0346*ZZ;
   R2=(exp(-alpha*s)*(alpha*alpha*s*s+2*alpha*s+2)-exp(-alpha)*(alpha*alpha+2*alpha+2))/(alpha*alpha*alpha);
-  c1=pow(1.0+pow(18.0*ZZ*PI,2.0/3.0)*g*g*(0.5*R1-beta*beta*R2)/(2.5*K0*P0),-P0);
+  c1=pow(1.0+pow(18.0*ZZ*M_PI,2.0/3.0)*g*g*(0.5*R1-beta*beta*R2)/(2.5*K0*P0),-P0);
   
   F=G0*K0*c1;
   
   if (flag > 0) { // thermal conductivity so add an extra piece
     P2=2.729-0.0204*ZZ;
     R2=this->Eep(alpha*s)-this->Eep(alpha);
-    G2=t/(PI*PI*pow(t*t+a2,1.5));
+    G2=t/(M_PI*M_PI*pow(t*t+a2,1.5));
     K2=0.5*R2-0.5*beta*beta*R0;
     // correction for finite nuclear size
-    c2=pow(1.0+pow(18.0*PI*ZZ,2.0/3.0)*g*g*0.5*K0/(10.0*K2*P2),-P2);
+    c2=pow(1.0+pow(18.0*M_PI*ZZ,2.0/3.0)*g*g*0.5*K0/(10.0*K2*P2),-P2);
     F+=G2*(3*K2-0.5*K0)*c2;
   }
   return F;
@@ -1025,7 +1023,7 @@ vc=x/sqrt(1+x*x);
 
   //if (gam < 1.0) return 1.0;
 
-  beta=ZZ*PI*vc/137.0;
+  beta=ZZ*M_PI*vc/137.0;
   eta0=0.19/pow(ZZ,1.0/6.0);
   
   // the easy part is to calculate G
@@ -1034,8 +1032,8 @@ vc=x/sqrt(1+x*x);
   
   // next the s and w parameters
   double rtf, rd;
-  rtf=1.0/(PI*137.0*beta);
-  rd=(59.41/this->T8)*ZZ*x/(PI*3.0*137.0);
+  rtf=1.0/(M_PI*137.0*beta);
+  rd=(59.41/this->T8)*ZZ*x/(M_PI*3.0*137.0);
 
   // printf("%lg %lg %lg %lg %lg %lg ", this->T8, this->rho, beta, rd, gam, x);
   s=exp(-beta)*(rtf+rd*(1.0+0.06*gam)*exp(-sqrt(gam)));
@@ -1104,9 +1102,9 @@ vc=x/sqrt(1+x*x);
 	double nu = xr*xr/(2.0*bn);
 	int nmax = (int) nu;
 	//double gamma = 22.75*pow(this->Z[1],2.0)*pow(1e-6*this->rho/this->A[1],1.0/3.0)/(100.0*this->T8);
-	double aDW = 13.0*4.0*pow(9.0*PI*this->Z[1]/4.0,2.0/3.0)/(3.0*gam);
-	double beta = this->Z[1]*PI*xr/(137.0*gr);
-	double as = exp(-2.0*beta)*(13.0*(1.0+0.06*gam)*exp(-sqrt(gam))/aDW + gr/(137.0*PI*xr));
+	double aDW = 13.0*4.0*pow(9.0*M_PI*this->Z[1]/4.0,2.0/3.0)/(3.0*gam);
+	double beta = this->Z[1]*M_PI*xr/(137.0*gr);
+	double as = exp(-2.0*beta)*(13.0*(1.0+0.06*gam)*exp(-sqrt(gam))/aDW + gr/(137.0*M_PI*xr));
 	double at = pow(sqrt(as)+pow(2.0+0.5*aDW,-1.0),2.0);
 	double LL=log(1.0+1.0/at);
 	double EE=(1.0-exp(-aDW))/aDW;
@@ -1227,7 +1225,7 @@ double Eos::K_cond(double ef)
 	double gam=this->gamma();
 
 	// Coulomb logarithm from Yakovlev and Urpin
-	//double lam=log(pow(2*PI*Ye()/(3*Yi()),1.0/3.0)*sqrt(1.5+3.0/gam));
+	//double lam=log(pow(2*M_PI*Ye()/(3*Yi()),1.0/3.0)*sqrt(1.5+3.0/gam));
 	//lam-=0.5*beta*beta;
 	//this->lambda2=lam;
 
@@ -1277,7 +1275,7 @@ double Eos::K_cond(double ef)
 			// the following is eq.(20) of IK93 for ka
 			//ka=1.92*pow(this->Ye()/this->Yi(),1.0/3.0);
 			// instead, we use the substitution  ka -> 2k/kTF and kTF is given by eq.(3) of Potekhin et al. 1999
-			ka=sqrt(137.0*PI*beta);
+			ka=sqrt(137.0*M_PI*beta);
 			// and then put into eqs (10,16,17) of IK93
 			sm1=0.5*log(1.0+0.4*ka*ka);
 			lam=sm1*(1.0+2.5*beta*beta/(ka*ka))-0.5*beta*beta;
@@ -1303,7 +1301,7 @@ double Eos::J(double x,double y)
 	double b2=x2/(1.+x2);
 	double y3=y*y*y;
 	double y4=y3*y;
-	return (1.+0.4*(3.+1./x2)/x2)*(y3*pow(1.+0.07414*y,-3.)*log((2.810-0.810*b2+y)/y)/3.+ pow(PI,5)*y4*pow(13.91+y,-4.)/6);
+	return (1.+0.4*(3.+1./x2)/x2)*(y3*pow(1.+0.07414*y,-3.)*log((2.810-0.810*b2+y)/y)/3.+ pow(M_PI,5)*y4*pow(13.91+y,-4.)/6);
 }
 
 
@@ -1377,7 +1375,7 @@ double Eos::potek_cond(void)
 			double lsph = 0.001 * pow(EOS.rho/4e11,-1.0/3.0);  // mfp in cm
 
 			double vs = 1.05e-27/(sqrt(3.0)*1.67e-24*3e10);
-			vs*=pow(3.0*PI*PI*EOS.rho*EOS.Yn/1.67e-24,1.0/3.0);	
+			vs*=pow(3.0*M_PI*M_PI*EOS.rho*EOS.Yn/1.67e-24,1.0/3.0);	
 			//printf("%lg %lg %lg %lg\n", EOS.T8, EOS.rho, EOS.Yn, vs);
 
 	//		double vs = 0.1 * pow(EOS.rho/4e11,1.0/3.0);

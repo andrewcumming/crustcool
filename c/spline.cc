@@ -99,8 +99,8 @@ void Spline::minit(double *x, double *y, int n)
   // initialize from memory rather than a file
 {
   this->num=n;
-  this->xtab=new double[n+1];
-  this->ytab=new double[n+1];
+  this->xtab=new double[n];
+  this->ytab=new double[n];
 
   for(int i=0; i<n; i++) {  // copy x and y arrays
     this->xtab[i]=x[i+1];
