@@ -3,7 +3,7 @@
 #include "math.h"
 #include <stdarg.h>
 #include <stdlib.h>
-#include "../h/nrutil.h"
+#include "../h/nr.h"
 #include "../h/crust.h"
 #include "../h/ns.h"
 #include "../h/timer.h"

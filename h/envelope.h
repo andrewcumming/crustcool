@@ -1,5 +1,6 @@
 #include "../h/odeint.h"
 #include "../h/eos.h"
+#include "../h/root.h"
 #include <stdio.h>
 
 class Envelope: public Ode_Int_Delegate {

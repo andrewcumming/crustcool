@@ -1,11 +1,9 @@
 #include <stdio.h>
 #include <math.h>
-#include "../h/crust.h"
-#include "../h/nrutil.h"
 #include <string.h>
-
+#include "../h/crust.h"
 #include "../h/data.h"
-
+#include "../h/nr.h"
 
 void Data::read_in_data(const char *sourcename) 
 {
@@ -19,9 +17,9 @@ void Data::read_in_data(const char *sourcename)
 		if (!strncmp(sourcename,"1659",4)) {  // MXB 1659	
 			t0=52159.5;
 			this->n=8;    // 7 data points in BC09
-			this->t = vector(1,this->n);
-			this->TT = vector(1,this->n);
-			this->Te = vector(1,this->n);
+			this->t = new double[this->n+1];
+			this->TT = new double[this->n+1];
+			this->Te = new double[this->n+1];
 
 			this->t[1]=52197.8; this->TT[1]= 121; this->Te[1]= 1;
 			this->t[2]=52563.2; this->TT[2]= 85; this->Te[2]= 1;
@@ -49,9 +47,9 @@ void Data::read_in_data(const char *sourcename)
 		double t0;
 		fscanf(fp, "%lg %d\n", &t0, &this->n);
 	
-		this->t = vector(1,this->n);
-		this->TT = vector(1,this->n);
-		this->Te = vector(1,this->n);
+		this->t = new double[this->n+1];
+		this->TT = new double[this->n+1];
+		this->Te = new double[this->n+1];
 		
 		for (int i=1; i<=this->n; i++) {
 			double dummy;
@@ -78,8 +76,8 @@ void Data::calculate_chisq(Crust *crust)
 	
 	// set up a spline which has the prediction for observed Teff vs time 
 	Spline TE;
-	double *yy = vector(1,nmodel);
-	double *xx = vector(1,nmodel);
+	double *yy = new double[nmodel+1];
+	double *xx = new double[nmodel+1];
 	for (int k=1; k<=nmodel; k++) { 
 		xx[k]=crust->ODE.get_x(k)*ZZ/(3600.0*24.0);
 		if (this->luminosity) {
@@ -90,8 +88,8 @@ void Data::calculate_chisq(Crust *crust)
 		}
 	}
 	TE.minit(xx,yy,nmodel);
-	free_vector(xx,1,nmodel);
-	free_vector(yy,1,nmodel);
+	delete [] xx;
+	delete [] yy;
 
 	// calculate chisq
 	double chisq=0.0;

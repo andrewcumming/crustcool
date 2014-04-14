@@ -4,7 +4,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include "../h/root.h"
-#include "../h/nrutil.h"
+#include "../h/nr.h"
 
 #define me 510.999
 #define RADa 7.5657e-15

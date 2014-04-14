@@ -4,7 +4,7 @@
 //                  to use set "stiff" to 1
 //
 
-#include "../h/nrutil.h"
+#include "../h/nr.h"
 #include <stdio.h>
 #include "math.h"
 #include "../h/spline.h"
@@ -275,7 +275,7 @@ void Ode_Int::rkscale(double vstart[], int nvar, double x1, double x2, double h1
 		//printf("x=%lg, h=%lg\n  ", x, h);
 
 		rk4(v,dv,nvar,x,h,vout);
-		if ((double)(x+h) == x) nrerror("Step size too small in routine rkdumb");
+		if ((double)(x+h) == x) printf("Step size too small in routine rkdumb\n");
 		x += h;
 		this->xp[k+1]=x;
 		for (i=1;i<=nvar;i++) {
@@ -318,7 +318,7 @@ void Ode_Int::rkdumb(double vstart[], int nvar, double x1, double x2, int nstep)
 	for (k=1;k<=nstep;k++) {
 		delegate->derivs(x,v,dv);
 		rk4(v,dv,nvar,x,h,vout);
-		if ((double)(x+h) == x) nrerror("Step size too small in routine rkdumb");
+		if ((double)(x+h) == x) printf("Step size too small in routine rkdumb\n");
 		x += h;
 		this->xp[k+1]=x;
 		for (i=1;i<=nvar;i++) {
@@ -373,7 +373,8 @@ void Ode_Int::simpr(double y[], double dydx[], double dfdx[], double **dfdy, int
 	int i,j,nn,*indx;
 	double d,h,x,**a,*del,*ytemp;
 
-	indx=ivector(1,n);
+	//indx=ivector(1,n);
+	indx = new int [n+1];
 	a=matrix(1,n,1,n);
 	del=vector(1,n);
 	ytemp=vector(1,n);
@@ -407,7 +408,9 @@ void Ode_Int::simpr(double y[], double dydx[], double dfdx[], double **dfdy, int
 	free_vector(ytemp,1,n);
 	free_vector(del,1,n);
 	free_matrix(a,1,n,1,n);
-	free_ivector(indx,1,n);
+	//free_ivector(indx,1,n);
+	delete [] indx;
+	
 }
 
 void Ode_Int::bansimpr(double y[], double dydx[], double dfdx[], double **dfdy, int n,
@@ -416,7 +419,8 @@ void Ode_Int::bansimpr(double y[], double dydx[], double dfdx[], double **dfdy, 
 	int i,j,nn, *indx;
 	double d,h,x,**a,**al,*del,*ytemp;
 
-	indx=ivector(1,n);
+	//indx=ivector(1,n);
+	indx = new int [n+1];
 	a=matrix(1,n,1,7);
 	al=matrix(1,n,1,3);
 	del=vector(1,n);
@@ -458,7 +462,8 @@ void Ode_Int::bansimpr(double y[], double dydx[], double dfdx[], double **dfdy, 
 	free_vector(ytemp,1,n);
 	free_vector(del,1,n);
 	free_matrix(a,1,n,1,n);
-	free_ivector(indx,1,n);
+	//free_ivector(indx,1,n);
+	delete [] indx;
 }
 
 void Ode_Int::trisimpr(double y[], double dydx[], double dfdx[], double **dfdy, int n,
@@ -576,7 +581,6 @@ void Ode_Int::stifbs(double y[], double dydx[], int nv, double *xx, double htry,
 		for (k=1;k<=kmax;k++) {
 			xnew=(*xx)+h;
 			if (xnew == (*xx)) { printf("stepsize underflow in stifbs, h=%lg\n",h); exitflag=1;} 
-			  //nrerror("step size underflow in stifbs");
 			if (this->tri==1) trisimpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq);
 			else if (this->tri==2) bansimpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq);
 			else simpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq);
@@ -734,7 +738,7 @@ void Ode_Int::ludcmp(double **a, int n, int *indx, double *d)
 		big=0.0;
 		for (j=1;j<=n;j++)
 			if ((temp=fabs(a[i][j])) > big) big=temp;
-		if (big == 0.0) nrerror("Singular matrix in routine ludcmp");
+		if (big == 0.0) printf("Singular matrix in routine ludcmp\n");
 		vv[i]=1.0/big;
 	}
 	for (j=1;j<=n;j++) {

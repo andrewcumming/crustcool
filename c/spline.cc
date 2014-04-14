@@ -24,7 +24,6 @@
 //
 
 #include <stdio.h>
-#include "../h/nrutil.h"
 #include "math.h"
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_spline.h>
@@ -100,8 +99,8 @@ void Spline::minit(double *x, double *y, int n)
   // initialize from memory rather than a file
 {
   this->num=n;
-  this->xtab=vector(0,n);
-  this->ytab=vector(0,n); 
+  this->xtab=new double[n+1];
+  this->ytab=new double[n+1];
 
   for(int i=0; i<n; i++) {  // copy x and y arrays
     this->xtab[i]=x[i+1];
@@ -125,7 +124,8 @@ void Spline::minit(double *x, double *y, int n)
 
 void Spline::tidy()
 {
-  free_vector(this->ytab,0,this->num);
+	delete [] this->xtab;
+	delete [] this->ytab;
   gsl_spline_free (spline);
   gsl_interp_accel_free (acc);
 }
