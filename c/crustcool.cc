@@ -160,7 +160,7 @@ void set_up_initial_temperature_profile_piecewise(char *fname,Crust *crust)
 	}
 	fclose(fp);
 	int nvec=i;
-	if (nvec == 0) {
+	if (nvec == 1) {
 		printf("ERROR:The piecewise flag is set but the temperature profile is not specified in init.dat!\n");
 		exit(0);
 	}
