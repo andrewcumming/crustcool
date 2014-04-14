@@ -7,9 +7,6 @@ struct GridPoint {
 };
 
 
-//class Eos;
-//class Spline;
-
 class Crust: public Ode_Int_Delegate {
 public:
 	Crust();
@@ -19,7 +16,6 @@ public:
 	
 	int N;
 	double Pb, Pt, yt, dx;
-	//double *P, *rho, *T;
 
 	GridPoint *grid;
 
@@ -48,7 +44,6 @@ public:
 					
 private:
 	int hardwireQ;
-	//double *CP, *K, *F, *NU, *EPS, *Qheat, *Qimpur;
 
 	int nbeta;
 	double **CP_grid, **K1_grid, **K0_grid, **NU_grid, **EPS_grid, **KAPPA_grid, **K1perp_grid, **K0perp_grid;
