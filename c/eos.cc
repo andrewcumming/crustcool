@@ -3,7 +3,7 @@
 #include "math.h"
 #include <stdarg.h>
 #include <stdlib.h>
-#include "../h/nr.h"
+#include "../h/root.h"
 #include "../h/nrutil.h"
 
 #define me 510.999

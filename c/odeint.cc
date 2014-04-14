@@ -4,8 +4,6 @@
 //                  to use set "stiff" to 1
 //
 
-
-#include "../h/nr.h"
 #include "../h/nrutil.h"
 #include <stdio.h>
 #include "math.h"
@@ -247,16 +245,12 @@ void Ode_Int::rkck(double y[], double dydx[], int n, double x,
 
 
 
-#define float double
-
-#define NRANSI
-
-void Ode_Int::rkscale(float vstart[], int nvar, float x1, float x2, float h1)
+void Ode_Int::rkscale(double vstart[], int nvar, double x1, double x2, double h1)
 {
 	int i,k;
-	float x,h;
-	float *v,*vout,*dv;
-	float hsum;
+	double x,h;
+	double *v,*vout,*dv;
+	double hsum;
 
 	v=vector(1,nvar);
 	vout=vector(1,nvar);
@@ -281,7 +275,7 @@ void Ode_Int::rkscale(float vstart[], int nvar, float x1, float x2, float h1)
 		//printf("x=%lg, h=%lg\n  ", x, h);
 
 		rk4(v,dv,nvar,x,h,vout);
-		if ((float)(x+h) == x) nrerror("Step size too small in routine rkdumb");
+		if ((double)(x+h) == x) nrerror("Step size too small in routine rkdumb");
 		x += h;
 		this->xp[k+1]=x;
 		for (i=1;i<=nvar;i++) {
@@ -305,11 +299,11 @@ void Ode_Int::rkscale(float vstart[], int nvar, float x1, float x2, float h1)
 	free_vector(v,1,nvar);
 }
 
-void Ode_Int::rkdumb(float vstart[], int nvar, float x1, float x2, int nstep)
+void Ode_Int::rkdumb(double vstart[], int nvar, double x1, double x2, int nstep)
 {
 	int i,k;
-	float x,h;
-	float *v,*vout,*dv;
+	double x,h;
+	double *v,*vout,*dv;
 
 	v=vector(1,nvar);
 	vout=vector(1,nvar);
@@ -324,7 +318,7 @@ void Ode_Int::rkdumb(float vstart[], int nvar, float x1, float x2, int nstep)
 	for (k=1;k<=nstep;k++) {
 		delegate->derivs(x,v,dv);
 		rk4(v,dv,nvar,x,h,vout);
-		if ((float)(x+h) == x) nrerror("Step size too small in routine rkdumb");
+		if ((double)(x+h) == x) nrerror("Step size too small in routine rkdumb");
 		x += h;
 		this->xp[k+1]=x;
 		for (i=1;i<=nvar;i++) {
@@ -338,10 +332,10 @@ void Ode_Int::rkdumb(float vstart[], int nvar, float x1, float x2, int nstep)
 }
 
 
-void Ode_Int::rk4(float y[], float dydx[], int n, float x, float h, float yout[])
+void Ode_Int::rk4(double y[], double dydx[], int n, double x, double h, double yout[])
 {
 	int i;
-	float xh,hh,h6,*dym,*dyt,*yt;
+	double xh,hh,h6,*dym,*dyt,*yt;
 
 	dym=vector(1,n);
 	dyt=vector(1,n);
@@ -364,26 +358,20 @@ void Ode_Int::rk4(float y[], float dydx[], int n, float x, float h, float yout[]
 	free_vector(dyt,1,n);
 	free_vector(dym,1,n);
 }
-#undef NRANSI
-
-#undef float
 
 
 
 // ------------------------ stiff integration routines -----------------------------
 
 
-#define float double
 
-#define NRANSI
-
-void Ode_Int::simpr(float y[], float dydx[], float dfdx[], float **dfdy, int n,
-	float xs, float htot, int nstep, float yout[])
+void Ode_Int::simpr(double y[], double dydx[], double dfdx[], double **dfdy, int n,
+	double xs, double htot, int nstep, double yout[])
 {
-  //	void lubksb(float **a, int n, int *indx, float b[]);
-  //	void ludcmp(float **a, int n, int *indx, float *d);
+  //	void lubksb(double **a, int n, int *indx, double b[]);
+  //	void ludcmp(double **a, int n, int *indx, double *d);
 	int i,j,nn,*indx;
-	float d,h,x,**a,*del,*ytemp;
+	double d,h,x,**a,*del,*ytemp;
 
 	indx=ivector(1,n);
 	a=matrix(1,n,1,n);
@@ -422,11 +410,11 @@ void Ode_Int::simpr(float y[], float dydx[], float dfdx[], float **dfdy, int n,
 	free_ivector(indx,1,n);
 }
 
-void Ode_Int::bansimpr(float y[], float dydx[], float dfdx[], float **dfdy, int n,
-	float xs, float htot, int nstep, float yout[])
+void Ode_Int::bansimpr(double y[], double dydx[], double dfdx[], double **dfdy, int n,
+	double xs, double htot, int nstep, double yout[])
 {
 	int i,j,nn, *indx;
-	float d,h,x,**a,**al,*del,*ytemp;
+	double d,h,x,**a,**al,*del,*ytemp;
 
 	indx=ivector(1,n);
 	a=matrix(1,n,1,7);
@@ -473,12 +461,12 @@ void Ode_Int::bansimpr(float y[], float dydx[], float dfdx[], float **dfdy, int 
 	free_ivector(indx,1,n);
 }
 
-void Ode_Int::trisimpr(float y[], float dydx[], float dfdx[], float **dfdy, int n,
-	float xs, float htot, int nstep, float yout[])
+void Ode_Int::trisimpr(double y[], double dydx[], double dfdx[], double **dfdy, int n,
+	double xs, double htot, int nstep, double yout[])
 {
 	int i,nn;
-	float h,x,*del,*ytemp;
-	float *r,*AA,*BB,*CC;
+	double h,x,*del,*ytemp;
+	double *r,*AA,*BB,*CC;
 
 	del=vector(1,n);
 	ytemp=vector(1,n);
@@ -530,17 +518,17 @@ void Ode_Int::trisimpr(float y[], float dydx[], float dfdx[], float **dfdy, int 
 #define SCALMX 0.1
 
 
-void Ode_Int::stifbs(float y[], float dydx[], int nv, float *xx, float htry, float eps,
-	float yscal[], float *hdid, float *hnext)
+void Ode_Int::stifbs(double y[], double dydx[], int nv, double *xx, double htry, double eps,
+	double yscal[], double *hdid, double *hnext)
 {
 
 	int i,iq,k,kk,km=0;
 	static int first=1,kmax,kopt,nvold = -1;
-	static float epsold = -1.0,xnew;
-	float eps1,errmax,fact,h,red=1.0,scale=1.0,work,wrkmin,xest;
-	float *dfdx,**dfdy,*err,*yerr,*ysav,*yseq;
-	static float a[IMAXX+1];
-	static float alf[KMAXX+1][KMAXX+1];
+	static double epsold = -1.0,xnew;
+	double eps1,errmax,fact,h,red=1.0,scale=1.0,work,wrkmin,xest;
+	double *dfdx,**dfdy,*err,*yerr,*ysav,*yseq;
+	static double a[IMAXX+1];
+	static double alf[KMAXX+1][KMAXX+1];
 	static int nseq[IMAXX+1]={0,2,6,10,14,22,34,50,70};
 	int reduct,exitflag=0;
 
@@ -592,7 +580,7 @@ void Ode_Int::stifbs(float y[], float dydx[], int nv, float *xx, float htry, flo
 			if (this->tri==1) trisimpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq);
 			else if (this->tri==2) bansimpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq);
 			else simpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq);
-			float sqrarg = (h/nseq[k]);
+			double sqrarg = (h/nseq[k]);
 			xest=(sqrarg == 0.0 ? 0.0 : sqrarg*sqrarg);
 			pzextr(k,xest,yseq,y,yerr,nv);
 			if (k != 1) {
@@ -670,15 +658,15 @@ void Ode_Int::stifbs(float y[], float dydx[], int nv, float *xx, float htry, flo
 #undef REDMIN
 #undef TINY
 #undef SCALMX
-#undef NRANSI
 
 
-#define NRANSI
 
-void Ode_Int::pzextr(int iest, float xest, float yest[], float yz[], float dy[], int nv)
+
+
+void Ode_Int::pzextr(int iest, double xest, double yest[], double yz[], double dy[], int nv)
 {
 	int k1,j;
-	float q,f2,f1,delta,*c;
+	double q,f2,f1,delta,*c;
 
 	c=vector(1,nv);
 	x[iest]=xest;
@@ -704,15 +692,15 @@ void Ode_Int::pzextr(int iest, float xest, float yest[], float yz[], float dy[],
 	}
 	free_vector(c,1,nv);
 }
-#undef NRANSI
 
 
 
 
-void Ode_Int::lubksb(float **a, int n, int *indx, float b[])
+
+void Ode_Int::lubksb(double **a, int n, int *indx, double b[])
 {
 	int i,ii=0,ip,j;
-	float sum;
+	double sum;
 
 	for (i=1;i<=n;i++) {
 		ip=indx[i];
@@ -731,14 +719,14 @@ void Ode_Int::lubksb(float **a, int n, int *indx, float b[])
 }
 
 
-#define NRANSI
+
 #define TINY 1.0e-20;
 
-void Ode_Int::ludcmp(float **a, int n, int *indx, float *d)
+void Ode_Int::ludcmp(double **a, int n, int *indx, double *d)
 {
 	int i,imax=0,j,k;
-	float big,dum,sum,temp;
-	float *vv;
+	double big,dum,sum,temp;
+	double *vv;
 
 	vv=vector(1,n);
 	*d=1.0;
@@ -785,17 +773,17 @@ void Ode_Int::ludcmp(float **a, int n, int *indx, float *d)
 	free_vector(vv,1,n);
 }
 #undef TINY
-#undef NRANSI
+
 
 
 /* note #undef's at end of file */
-#define NRANSI
 
-void Ode_Int::tridag(float a[], float b[], float c[], float r[], float u[],
+
+void Ode_Int::tridag(double a[], double b[], double c[], double r[], double u[],
 	unsigned long n)
 {
 	unsigned long j;
-	float bet,*gam;
+	double bet,*gam;
 
 	gam=vector(1,n);
 	if (b[1] == 0.0) printf("Error 1 in tridag\n");
@@ -810,18 +798,18 @@ void Ode_Int::tridag(float a[], float b[], float c[], float r[], float u[],
 		u[j] -= gam[j+1]*u[j+1];
 	free_vector(gam,1,n);
 }
-#undef NRANSI
+
 
 
 #define SWAP(a,b) {dum=(a);(a)=(b);(b)=dum;}
 #define TINY 1.0e-20
 
-void Ode_Int::bandec(float **a, unsigned long n, int m1, int m2, float **al,
-	int *indx, float *d)
+void Ode_Int::bandec(double **a, unsigned long n, int m1, int m2, double **al,
+	int *indx, double *d)
 {
 	unsigned long i,j,k,l;
 	int mm;
-	float dum;
+	double dum;
 
 	mm=m1+m2+1;
 	l=m1;
@@ -863,12 +851,12 @@ void Ode_Int::bandec(float **a, unsigned long n, int m1, int m2, float **al,
 /* note #undef's at end of file */
 #define SWAP(a,b) {dum=(a);(a)=(b);(b)=dum;}
 
-void Ode_Int::banbks(float **a, unsigned long n, int m1, int m2, float **al,
-	int *indx, float b[])
+void Ode_Int::banbks(double **a, unsigned long n, int m1, int m2, double **al,
+	int *indx, double b[])
 {
 	unsigned long i,k,l;
 	int mm;
-	float dum;
+	double dum;
 
 	mm=m1+m2+1;
 	l=m1;
@@ -887,9 +875,5 @@ void Ode_Int::banbks(float **a, unsigned long n, int m1, int m2, float **al,
 	}
 }
 #undef SWAP
-
-
-
-#undef float
 
 

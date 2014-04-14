@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <math.h>
 #include "../h/crust.h"
-#include "../h/nr.h"
 #include "../h/nrutil.h"
 #include <string.h>
 

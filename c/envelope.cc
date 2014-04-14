@@ -1,5 +1,4 @@
 #include "../h/envelope.h"
-#include "../h/nr.h"
 #include "math.h"
 #include <stdlib.h>
 

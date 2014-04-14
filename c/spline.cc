@@ -24,7 +24,6 @@
 //
 
 #include <stdio.h>
-#include "../h/nr.h"
 #include "../h/nrutil.h"
 #include "math.h"
 #include <gsl/gsl_errno.h>
