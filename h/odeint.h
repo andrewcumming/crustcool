@@ -56,15 +56,3 @@ private:
   void banbks(double **a, unsigned long n, int m1, int m2, double **al,
 	      int *indx, double b[]);
 };
-
-
-static double maxarg1,maxarg2;
-#define FMAX(a,b) (maxarg1=(a),maxarg2=(b),(maxarg1) > (maxarg2) ?\
-        (maxarg1) : (maxarg2))
-static double minarg1,minarg2;
-#define FMIN(a,b) (minarg1=(a),minarg2=(b),(minarg1) < (minarg2) ?\
-        (minarg1) : (minarg2))
-#define SIGN(a,b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
-
-
-
