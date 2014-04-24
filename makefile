@@ -24,7 +24,7 @@ OBJS2 = $(LOCODIR)/ocean.o $(ODIR)/root.o $(ODIR)/vector.o $(ODIR)/odeint.o $(OD
 OBJS3 = $(LOCODIR)/makegrid.o $(ODIR)/root.o $(ODIR)/vector.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag12.o $(LOCODIR)/eos12.o $(LOCODIR)/envelope.o
 
 crustcool : $(OBJS)
-	$(CC) -o crustcool $(OBJS) $(CFLAGS) -lm -lgfortran -lgsl
+	$(CC) -o crustcool $(OBJS) $(CFLAGS) -lm -lgfortran -lgsl -lgslcblas
 
 $(LOCODIR)/crustcool.o : $(LOCCDIR)/crustcool.cc
 	$(CC) -c $(LOCCDIR)/crustcool.cc -o $(LOCODIR)/crustcool.o $(CFLAGS)

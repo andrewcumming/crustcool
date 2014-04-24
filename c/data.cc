@@ -61,29 +61,29 @@ void Data::read_in_data(const char *sourcename)
 
 
 
-void Data::calculate_chisq(Crust *crust)	
+void Data::calculate_chisq(Crust &crust)	
 //void Data::calculate_chisq(Ode_Int *ODE, Spline *TEFF, double g, double ZZ, double R,double Lscale,double Lmin)	
 // uses the result of the cooling to calculate chi-squared
 {
-	int nmodel = crust->ODE.kount;
+	int nmodel = crust.ODE.kount;
 	
-	double g=crust->g;
-	double ZZ=crust->ZZ;
-	double R=crust->radius;
-	double Lscale=crust->Lscale;
-	double Lmin=crust->Lmin;
+	double g=crust.g;
+	double ZZ=crust.ZZ;
+	double R=crust.radius;
+	double Lscale=crust.Lscale;
+	double Lmin=crust.Lmin;
 	
 	// set up a spline which has the prediction for observed Teff vs time 
 	Spline TE;
 	double *yy = new double[nmodel+1];
 	double *xx = new double[nmodel+1];
 	for (int k=1; k<=nmodel; k++) { 
-		xx[k]=crust->ODE.get_x(k)*ZZ/(3600.0*24.0);
+		xx[k]=crust.ODE.get_x(k)*ZZ/(3600.0*24.0);
 		if (this->luminosity) {
-			yy[k] = crust->TEFF.get(crust->ODE.get_y(1,k))*(g/2.28e14) * 4.0*M_PI*1e10*R*R / (ZZ*ZZ);
+			yy[k] = crust.TEFF.get(crust.ODE.get_y(1,k))*(g/2.28e14) * 4.0*M_PI*1e10*R*R / (ZZ*ZZ);
 			yy[k] = Lscale*yy[k] + (1.0-Lscale)*Lmin;
 		} else {
-			yy[k]=1.38e-16*pow((crust->TEFF.get(crust->ODE.get_y(1,k))*(g/2.28e14))/5.67e-5,0.25)/(1.6e-12*ZZ);
+			yy[k]=1.38e-16*pow((crust.TEFF.get(crust.ODE.get_y(1,k))*(g/2.28e14))/5.67e-5,0.25)/(1.6e-12*ZZ);
 		}
 	}
 	TE.minit(xx,yy,nmodel);

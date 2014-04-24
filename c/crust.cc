@@ -121,7 +121,7 @@ void Crust::evolve(double time, double mdot) {
 	for (int i=1; i<=this->N+1; i++) {
 		this->ODE.set_bc(i,this->grid[i].T);
 	}
-	this->ODE.go(0.0, this->outburst_duration*3.15e7, this->outburst_duration*3.15e7*0.01,1e-6);
+	this->ODE.go(0.0, this->outburst_duration*3.15e7, this->outburst_duration*3.15e7*0.01,1e-7);
 	stop_timing(&timer,"this->ODE.go");
 	printf("number of steps = %d\n", this->ODE.kount);
 

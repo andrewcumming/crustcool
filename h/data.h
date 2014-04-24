@@ -7,7 +7,7 @@ public:
 	int luminosity;
 	
 	void read_in_data(const char *fname);
-	void calculate_chisq(Crust *crust);
+	void calculate_chisq(Crust &crust);
 };
 
 
