@@ -30,7 +30,7 @@ $(LOCODIR)/crustcool.o : $(LOCCDIR)/crustcool.cc
 	$(CC) -c $(LOCCDIR)/crustcool.cc -o $(LOCODIR)/crustcool.o $(CFLAGS)
 
 makegrid : $(OBJS3)
-	$(CC) -o makegrid $(OBJS3) $(CFLAGS) -lgfortran -lgsl
+	$(CC) -o makegrid $(OBJS3) $(CFLAGS) -lgfortran -lgsl -lgslcblas
 
 $(LOCODIR)/makegrid.o : $(LOCCDIR)/makegrid.cc
 	$(CC) -c $(LOCCDIR)/makegrid.cc -o $(LOCODIR)/makegrid.o $(CFLAGS) 

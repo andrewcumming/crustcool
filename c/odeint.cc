@@ -33,16 +33,14 @@ int Ode_Int::gsl_jacobn (double t, const double y[], double *dfdy,double dfdt[],
 
 	for (int i=1; i<=myself->nvar; i++)
 		myself->derivs_y[i] = y[i-1];
-
-	myself->delegate->jacobn(t,myself->derivs_y,dfdt,myself->derivs_dfdy,myself->nvar);
+		
+	myself->delegate->derivs(t,myself->derivs_y,myself->derivs_dydt);
+	
+	myself->delegate->jacobn(t,myself->derivs_y,myself->derivs_dydt,myself->derivs_dfdy,myself->nvar);
 
 	for (int i=1; i<=myself->nvar; i++)
 		for (int j=1; j<=myself->nvar; j++)
 			dfdy[(i-1)*myself->nvar + (j-1)] = myself->derivs_dfdy[j][i];
-
-//	myself->delegate->derivs(t,myself->derivs_y,myself->derivs_dydt);
-//	for (int i=1; i<=myself->nvar; i++)
-//		dfdt[i-1] = myself->derivs_dydt[i];	
 
 	return GSL_SUCCESS;	
 }
@@ -81,8 +79,6 @@ void Ode_Int::init(int n, Ode_Int_Delegate *delegate)
 		// if we are using GSL, this has no effect
 
 	this->use_gsl=1;  // use the GSL integrator
-
-	this->nvar--;
 }
 
 void Ode_Int::set_bc(int n, double num)
@@ -133,8 +129,7 @@ void Ode_Int::go_gsl(double x1, double x2, int nsteps, double eps, int log_flag)
 		for (int j=1; j<=this->nvar; j++)
 			this->derivs_dfdy[i][j] = 0.0;
 
-	int params=this->nvar;
-	this->sys = (gsl_odeiv2_system) {gsl_derivs,gsl_jacobn,this->nvar,(void *) &params};
+	this->sys = (gsl_odeiv2_system) {gsl_derivs,gsl_jacobn,this->nvar,NULL};
 //	if (this->stiff) this->step=gsl_odeiv2_step_alloc (gsl_odeiv2_step_bsimp,this->nvar);
 //	else this->step=gsl_odeiv2_step_alloc (gsl_odeiv2_step_rkf45,this->nvar);
 //	this->control=gsl_odeiv2_control_y_new(0.0,eps);
