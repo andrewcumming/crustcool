@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 	if (use_piecewise) {
 		set_up_initial_temperature_profile_piecewise(fname,crust);
 	} else {
-		crust.output=0;
+		crust.output=0;   // don't output lightcurve while heating
 		crust.evolve(crust.outburst_duration*365.0,crust.mdot);
 	}
 

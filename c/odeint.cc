@@ -103,7 +103,7 @@ double Ode_Int::get_y(int n, int i)
 
 void Ode_Int::go(double x1, double x2, double xstep, double eps)
 {
-	go_gsl(x1,x2,(int)(x2-x1)/xstep,eps,1);
+	go_gsl(x1,x2,(long int)(x2-x1)/xstep,eps,1);
 }
 
 
@@ -117,6 +117,8 @@ void Ode_Int::go_simple(double x1, double x2, int nstep)
 void Ode_Int::go_gsl(double x1, double x2, int nsteps, double eps, int log_flag)
 {
 	pointer_to_OdeInt = (void*) this;
+
+	if (this->verbose) printf("Number of steps=%d\n",nsteps);
 
 	double xstep;
 	if (log_flag) xstep = pow(10.0,log10(x2)/(1.0*nsteps));
@@ -154,6 +156,8 @@ void Ode_Int::go_gsl(double x1, double x2, int nsteps, double eps, int log_flag)
 		if (log_flag) xnext = pow(10.0,log10(x2)*j/(1.0*nsteps));
 		else xnext = (x2-x1)*j/(1.0*nsteps);
 		status=gsl_odeiv2_driver_apply (this->driver,&x,xnext,this->ynext);
+
+		if (this->verbose) printf("%lg %lg %lg %d\n",x1,x2,xnext,status);
 
 		if (status != GSL_SUCCESS) break;
 

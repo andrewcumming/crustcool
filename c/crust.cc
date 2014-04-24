@@ -98,12 +98,12 @@ void Crust::setup(void) {
   	this->ODE.stiff=1; this->ODE.tri=1;  // stiff integrator with tridiagonal solver
 }
 
-void Crust::evolve(double time, double mdot) {
+void Crust::evolve(double timetorun, double mdot) {
 
 	// time is the time to evolve in days
 	// mdot is the accretion rate in Eddington units
-	printf("Now evolve in time for %lg days at mdot=%lg\n",time,mdot);
-	this->outburst_duration=time/(365.0*this->ZZ);
+	this->outburst_duration=timetorun/(365.0*this->ZZ);
+	printf("Now evolve in time for %lg days at mdot=%lg (star time=%lg yrs)\n",timetorun,mdot,this->outburst_duration);
 	if (mdot > 0.0) this->accreting = 1; else this->accreting = 0;
 	this->mdot = mdot;
 
