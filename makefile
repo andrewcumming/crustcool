@@ -15,22 +15,21 @@ CC=c++
 #FORTRAN=ifort
 FORTRAN=gfortran -m64 -O3
 #FORTRAN=gfortran -m64 -O3
-CFLAGS = -O3 -pipe
+CFLAGS = -O3 -pipe -lm -lgfortran -lgsl -lgslcblas
 #CFLAGS = -lm -parallel -fast 
 
 # main code
-OBJS = $(LOCODIR)/crustcool.o $(LOCODIR)/crust.o $(ODIR)/root.o $(ODIR)/vector.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag12.o $(LOCODIR)/eos12.o $(LOCODIR)/timer.o $(LOCODIR)/data.o $(LOCODIR)/ns.o
-OBJS2 = $(LOCODIR)/ocean.o $(ODIR)/root.o $(ODIR)/vector.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o
-OBJS3 = $(LOCODIR)/makegrid.o $(ODIR)/root.o $(ODIR)/vector.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag12.o $(LOCODIR)/eos12.o $(LOCODIR)/envelope.o
+OBJS = $(LOCODIR)/crustcool.o $(LOCODIR)/crust.o $(ODIR)/root.o $(ODIR)/vector.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag13.o $(LOCODIR)/eos13.o $(LOCODIR)/timer.o $(LOCODIR)/data.o $(LOCODIR)/ns.o
+OBJS3 = $(LOCODIR)/makegrid.o $(ODIR)/root.o $(ODIR)/vector.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag13.o $(LOCODIR)/eos13.o $(LOCODIR)/envelope.o
 
 crustcool : $(OBJS)
-	$(CC) -o crustcool $(OBJS) $(CFLAGS) -lm -lgfortran -lgsl -lgslcblas
+	$(CC) -o crustcool $(OBJS) $(CFLAGS)
 
 $(LOCODIR)/crustcool.o : $(LOCCDIR)/crustcool.cc
 	$(CC) -c $(LOCCDIR)/crustcool.cc -o $(LOCODIR)/crustcool.o $(CFLAGS)
 
 makegrid : $(OBJS3)
-	$(CC) -o makegrid $(OBJS3) $(CFLAGS) -lgfortran -lgsl -lgslcblas
+	$(CC) -o makegrid $(OBJS3) $(CFLAGS)
 
 $(LOCODIR)/makegrid.o : $(LOCCDIR)/makegrid.cc
 	$(CC) -c $(LOCCDIR)/makegrid.cc -o $(LOCODIR)/makegrid.o $(CFLAGS) 
@@ -38,11 +37,11 @@ $(LOCODIR)/makegrid.o : $(LOCCDIR)/makegrid.cc
 $(LOCODIR)/condegin13.o : $(LOCCDIR)/condegin13.f
 	$(FORTRAN) -c $(LOCCDIR)/condegin13.f -o $(LOCODIR)/condegin13.o
 
-$(LOCODIR)/eosmag12.o : $(LOCCDIR)/eosmag12.f
-	$(FORTRAN) -c $(LOCCDIR)/eosmag12.f -o $(LOCODIR)/eosmag12.o
+$(LOCODIR)/eosmag13.o : $(LOCCDIR)/eosmag13.f
+	$(FORTRAN) -c $(LOCCDIR)/eosmag13.f -o $(LOCODIR)/eosmag13.o
 
-$(LOCODIR)/eos12.o : $(LOCCDIR)/eos12.f
-	$(FORTRAN) -c $(LOCCDIR)/eos12.f -o $(LOCODIR)/eos12.o
+$(LOCODIR)/eos13.o : $(LOCCDIR)/eos13.f
+	$(FORTRAN) -c $(LOCCDIR)/eos13.f -o $(LOCODIR)/eos13.o
 
 # compile routines from the common directory
 

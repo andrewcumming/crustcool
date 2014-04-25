@@ -7,7 +7,8 @@ To compile, `make` should compile the cooling code `crustcool`. You will need to
 #### Requirements
 
 * GNU Scientific Library [GSL](http://www.gnu.org/software/gsl/) 
-* [condegin13.f](http://www.ioffe.ru/astro/conduct/index.html) fortran routine by A. Potekhin to calculate thermal conductivity
+* [condegin13.f](http://www.ioffe.ru/astro/conduct/index.html) fortran routine by A. Potekhin to calculate thermal conductivity (put in directory `c`)
+* [eos13.f](http://www.ioffe.ru/astro/EIP/index.html) and [eosmag13.f](http://www.ioffe.ru/astro/EIP/index.html) fortran routines by A. Potekhin which calculate equation of state (put in directory `c`)
 * For MCMC, [emcee](http://dan.iel.fm/emcee/current) and [triangle_plot](http://pypi.python.org/pypi/triangle_plot)
 
 ### Setting parameters 
@@ -70,7 +71,6 @@ The file `init.dat` sets up the run. The parameters are
 				format in the lines beginning with > in this file
 	timetorun	time to run in days
 	neutrinos	include neutrino cooling (1=yes 0=no)
-	instant		heat "instantly" if =1, otherwise model the outburst
 
 	toutburst	accretion outburst duration in years
 	accreted	crust composition  1=accreted crust (HZ1990)
