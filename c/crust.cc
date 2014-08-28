@@ -511,7 +511,10 @@ void Crust::precalculate_vars(void)
 				EOS->T8 = 1e-8*pow(10.0,beta);
 
 				this->CP_grid[i][j]=EOS->CV();
-				this->NU_grid[i][j]=EOS->eps_nu();			
+				this->NU_grid[i][j]=EOS->eps_nu();	
+				//if (this->grid[i].P*exp(-0.5*this->dx) < 1e14*2.28e14 && this->grid[i].P*exp(0.5*this->dx)>1e14*2.28e14)
+				//	this->NU_grid[i][j]+=this->g*1e20*pow(EOS->T8,5)/(EOS->P*this->dx);
+												
 				this->EPS_grid[i][j]=heating;
 
 				// we calculate the thermal conductivity for Q=0 and Q=1, and later interpolate to the
@@ -636,14 +639,16 @@ double Crust::crust_heating(int i)
 				double P2 = P*exp(0.5*this->dx);
 				double geff=2.28e14;
 
+				double Q_heat = this->extra_Q;
+
 				if (P1 > extra_y1*geff && P2 < extra_y2*geff)   // we are within the heating zone
-					eps_extra=8.8e4*this->extra_Q*9.64e17/(P*log(extra_y2/extra_y1));
+					eps_extra=8.8e4*Q_heat*9.64e17/(P*log(extra_y2/extra_y1));
 				if (P1 < extra_y1*geff && P2 < extra_y2*geff && extra_y1*geff<P2) {   // left hand edge of heated region
-					eps_extra=8.8e4*this->extra_Q*9.64e17/(P*log(extra_y2/extra_y1));
+					eps_extra=8.8e4*Q_heat*9.64e17/(P*log(extra_y2/extra_y1));
 					eps_extra *= log(P2/(extra_y1*geff))/this->dx;
 				}
 				if (P1 > extra_y1*geff && P2 > extra_y2*geff && extra_y2*geff>P1) {  // right hand edge of heated region
-					eps_extra=8.8e4*this->extra_Q*9.64e17/(P*log(extra_y2/extra_y1));
+					eps_extra=8.8e4*Q_heat*9.64e17/(P*log(extra_y2/extra_y1));
 					eps_extra *= log(extra_y2*geff/P1)/this->dx;
 				}
 				eps+=eps_extra;
@@ -760,8 +765,9 @@ double Crust::dTdt(int i, double *T)
 
 	double f=this->g*(calculate_heat_flux(i+1,T)-calculate_heat_flux(i,T))/(this->dx*this->grid[i].CP*this->grid[i].P);
 	if (this->nuflag) f+=-(this->grid[i].NU/this->grid[i].CP);
+	
 	if (this->accreting) f+=this->grid[i].EPS/this->grid[i].CP;
-
+	
 	return f;
 }
 

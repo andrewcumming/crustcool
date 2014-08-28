@@ -8,14 +8,14 @@ LOCCDIR = c
 LOCODIR = o
 
 # compiler
-#CC = xcrun c++ 
+#CC = xcrun c++
 ##CC = clang 
 CC=c++
 #CC=icpc
 #FORTRAN=ifort
 FORTRAN=gfortran -m64 -O3
 #FORTRAN=gfortran -m64 -O3
-CFLAGS = -O3 -pipe -lm -lgfortran -lgsl -lgslcblas
+CFLAGS = -O3 -pipe -I/usr/local/include
 #CFLAGS = -lm -parallel -fast 
 
 # main code
@@ -23,10 +23,10 @@ OBJS = $(LOCODIR)/crustcool.o $(LOCODIR)/crust.o $(ODIR)/root.o $(ODIR)/vector.o
 OBJS3 = $(LOCODIR)/makegrid.o $(ODIR)/root.o $(ODIR)/vector.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag13.o $(LOCODIR)/eos13.o $(LOCODIR)/envelope.o
 
 crustcool : $(OBJS)
-	$(CC) -o crustcool $(OBJS) $(CFLAGS)
+	$(CC) -o crustcool $(OBJS) $(CFLAGS) -lm -lgfortran -L/usr/local/gfortran/lib -lgsl -lgslcblas -L/Applications/mesasdk/lib -L/usr/local/lib
 
 $(LOCODIR)/crustcool.o : $(LOCCDIR)/crustcool.cc
-	$(CC) -c $(LOCCDIR)/crustcool.cc -o $(LOCODIR)/crustcool.o $(CFLAGS)
+	$(CC) -c $(LOCCDIR)/crustcool.cc -o $(LOCODIR)/crustcool.o $(CFLAGS) 
 
 makegrid : $(OBJS3)
 	$(CC) -o makegrid $(OBJS3) $(CFLAGS)
@@ -66,8 +66,8 @@ $(ODIR)/envelope.o : $(CDIR)/envelope.cc
 $(ODIR)/crust.o : $(CDIR)/crust.cc
 	$(CC) -c $(CDIR)/crust.cc -o $(ODIR)/crust.o $(CFLAGS)
 
-$(ODIR)/vector.o : $(CDIR)/vector.c
-	$(CC) -c $(CDIR)/vector.c -o $(ODIR)/vector.o $(CFLAGS)
+$(ODIR)/vector.o : $(CDIR)/vector.cc
+	$(CC) -c $(CDIR)/vector.cc -o $(ODIR)/vector.o $(CFLAGS)
 
 $(ODIR)/odeint.o : $(CDIR)/odeint.cc
 	$(CC) -c $(CDIR)/odeint.cc -o $(ODIR)/odeint.o $(CFLAGS)
@@ -85,7 +85,7 @@ cleanprecalc:
 
 movie:
 #	ffmpeg -qscale 1 -r 20 -b 9600 
-	ffmpeg -sameq  -i png/%3d.png movie.mp4
+	ffmpeg -i png/%3d.png movie.mp4
 
 cleanpng:
 	rm -f png/*.png

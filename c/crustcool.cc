@@ -47,12 +47,15 @@ int main(int argc, char *argv[])
 		set_up_initial_temperature_profile_piecewise(fname,crust);
 	} else {
 		crust.output=0;   // don't output lightcurve while heating
+		if (time_to_run == 0.0) crust.output=1;
 		crust.evolve(crust.outburst_duration*365.0,crust.mdot);
 	}
 
 	// Cooling phase
-	crust.output=1;
-	crust.evolve(time_to_run,0.0);
+	if (time_to_run > 0.0) {
+		crust.output=1;
+		crust.evolve(time_to_run,0.0);
+	}
 	
 	// Calculate the chi-sq
 	Data data;

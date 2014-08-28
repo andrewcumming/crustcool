@@ -393,7 +393,7 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 	if (not keyword_set(source)) then source='1659'
 
 	if (source eq '1659' or source eq '1731') then begin
-		xr=[1.0,10000.0]
+		xr=[8.0,10000.0]
 		yr=[40,140]
 		;xr=[30.0,10000.0]
 		;yr=[40,110]
@@ -404,11 +404,11 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 	endif
 	if (source eq '0556') then begin
 		xr=[1.0,5000.0]
-		yr=[150,370]
+		yr=[50,370]
 	endif
 
 
-	if (source eq 'xtej') then begin
+	if (source eq 'XTEJ') then begin
 		xr=[1.0,6000.0]
 		yr=[100,185]
 	endif
@@ -431,8 +431,8 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 ;			ytitle=textoidl('T_{eff} (keV)'), charsize=1.4, xrange=xr,xstyle=1,$
 ;			yrange=yr, ystyle=1,/ylog
 
-		ploterror, t, temp, tempe, psym=1, /xlog, xtitle=textoidl('Time (d)'),$
-				ytitle=textoidl('T_{eff} (eV)'), charsize=1.4, xrange=xr,xstyle=1,$
+		ploterror, t, temp, tempe, psym=1, /xlog, xtitle=textoidl('Time (days)'),$
+				ytitle=textoidl('T_{eff} (eV)'), charsize=1.2, xrange=xr,xstyle=1,$
 				yrange=yr, ystyle=1,/nohat
 
 
@@ -513,7 +513,7 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 
 
 
-	if (source eq '1731' ) then begin
+	if (source eq '1731' and 0) then begin
 
 		readcol, 'gon_out/prof_mcmc1', tt,Teff, format=('F,X,X,X,F')
 		tt/=(24*3600.0)
@@ -573,14 +573,14 @@ pro tc,source=source,ps=ps,noplot=noplot,noextras=noextras
 		; the output is already redshifted
 		; but needs to be converted to eV
 		FF = 1.38d-16*Teff/(1.6d-12)
-		;oplot, tt,FF,linestyle=0
+		oplot, tt,FF,linestyle=0,col=80
 		; plot lightcurve from simulation
 		readcol, 'gon_out/prof_'+source+'_B', tt,Teff, format=('F,X,X,X,F')
 		tt/=(24*3600.0)
 		; the output is already redshifted
 		; but needs to be converted to eV
 		FF = 1.38d-16*Teff/(1.6d-12)
-		;oplot, tt,FF,linestyle=1
+		oplot, tt,FF,linestyle=0,col=80
 
 ;		readcol, 'gon_out/prof_'+source+'_C', tt,Teff, format=('F,X,X,X,F')
 ;		tt/=(24*3600.0)
@@ -2915,11 +2915,11 @@ pro initial,ps=ps
 			;rho2=y/2.28d14
 
 	!p.multi=[0,2,2,0,0]
-	plot, rho, T,/xlog,/ylog, ytitle=textoidl('T (K)'),xtitle=textoidl('Column depth (g cm^{-2})'),xrange=[1d7,1d14]
+	plot, rho, T,/xlog,/ylog, ytitle=textoidl('T (K)'),xtitle=textoidl('Column depth (g cm^{-2})'),xrange=[1d7,2d14]
 	oplot,rho2,T2,linestyle=1
 	oplot, rho,TC+1e5, linestyle=2
 
-	plot, rho, CV,/xlog,/ylog, ytitle=textoidl('C_V'),xtitle=textoidl('Column depth (g cm^{-2})'), yrange=[1d3,5d7],xrange=[1d11,1d14]
+	plot, rho, CV,/xlog,/ylog, ytitle=textoidl('C_V'),xtitle=textoidl('Column depth (g cm^{-2})'), yrange=[1d3,5d7],xrange=[1d11,2d14]
 ;	oplot,rho2,CV2,linestyle=1
 	oplot,rho,cve,linestyle=2
 ;	oplot,rho,cve*(rho/1e9)^0.3333*1e9/T,linestyle=2
@@ -3554,17 +3554,39 @@ endif
 end
 
 
-pro times
+pro times,ps=ps
 
-	T10, nread=15, tt=0.01, ls=2
-	T10, nread=15, tt=0.02, ls=0,/overplot
-	T10, nread=15, tt=0.1, ls=0,/overplot
-	T10, nread=15, tt=1.0, ls=0,/overplot
-	T10, nread=15, tt=3.0, ls=0,/overplot
-	T10, nread=15, tt=10.0, ls=0,/overplot
-	T10, nread=15, tt=30.0, ls=0,/overplot
-	T10, nread=15, tt=100.0, ls=0,/overplot
-	T10, nread=15, tt=300.0, ls=0,/overplot
+	if keyword_set(ps) then open_ps,'T10.ps'
+
+	T10, nread=13, tt=0.01, ls=1,source='1659_pasta_1'
+	T10, nread=13, tt=500.0, ls=1,/overplot,source='1659_pasta_1'
+	T10, nread=13, tt=1000.0, ls=1,/overplot,source='1659_pasta_1'
+	T10, nread=13, tt=2000.0, ls=1,/overplot,source='1659_pasta_1'
+	T10, nread=13, tt=4000.0, ls=1,/overplot,source='1659_pasta_1'
+
+	T10, nread=13, tt=0.01, ls=0,source='1659_pasta_2',/overplot
+	T10, nread=13, tt=500.0, ls=0,/overplot,source='1659_pasta_2'
+	T10, nread=13, tt=1000.0, ls=0,/overplot,source='1659_pasta_2'
+	T10, nread=13, tt=2000.0, ls=0,/overplot,source='1659_pasta_2'
+	T10, nread=13, tt=4000.0, ls=0,/overplot,source='1659_pasta_2'
+
+	if (0) then begin
+		T10, nread=13, tt=0.01, ls=0,/overplot
+		T10, nread=13, tt=500.0, ls=0,/overplot
+		T10, nread=13, tt=1000.0, ls=0,/overplot
+		T10, nread=13, tt=2000.0, ls=0,/overplot
+		T10, nread=13, tt=4000.0, ls=0,/overplot
+	endif
+
+	xyouts, 8e11, 9e7, textoidl('t=0'),charsize=1.05
+	xyouts, 8e11, 4.5e7, textoidl('500 days'),charsize=1.05
+	xyouts, 8e11, 3.3e7, textoidl('1000 days'),charsize=1.05
+	xyouts, 8e11, 2.4e7, textoidl('2000 days'),charsize=1.05
+	xyouts, 8e11, 1.9e7, textoidl('4000 days'),charsize=1.05
+
+	oplot, [8e13,8e13],[5e6,5e8],linestyle=2
+
+	if keyword_set(ps) then close_ps
 
 end
 
@@ -3622,16 +3644,16 @@ pro T10, delay=delay, png=png, source=source,overplot=overplot, ls=ls, nread=nre
 				oplot, rho, T,linestyle=ls
 			endif else begin
 				plot, rho, T, /xlog, /ylog, ytitle=textoidl('T (K)'),$
-					xtitle=textoidl('\rho (g cm^{-3})'), yrange=[5e7,1e10],ystyle=1, $
-					xrange=[1d7,5d11], xstyle=1,linestyle=ls, charsize=1.3
-				oplot, ym, Tm, linestyle=2, col=80
+					xtitle=textoidl('\rho (g cm^{-3})'), yrange=[1e7,2e8],ystyle=1, $
+					xrange=[3d10,2d14], xstyle=1,linestyle=ls, charsize=1.3
+			;	oplot, ym, Tm, linestyle=2, col=80
 				;oplot, ym, TD/3.5, linestyle=4
-				oplot, rhoc, cv*1e8, linestyle=3, col=250
+			;	oplot, rhoc, cv*1e8, linestyle=3, col=250
 			;	oplot, rhonu, Tnu*1e8, linestyle=4
-				xyouts, 1.5e11,3e9,textoidl('\Gamma=175')	,charsize=1.01, orientation=20, col=80	
-				xyouts, 1.2e11,1.1e9,textoidl('C_{V,e}=C_{V,ion}')	,charsize=1.01, orientation=20, col=250	
+			;	xyouts, 1.5e11,3e9,textoidl('\Gamma=175')	,charsize=1.01, orientation=20, col=80	
+			;	xyouts, 1.2e11,1.1e9,textoidl('C_{V,e}=C_{V,ion}')	,charsize=1.01, orientation=20, col=250	
 			;	xyouts, 1.5e11,1.2e9,textoidl('t_{therm}=t_\nu')	,charsize=1.01, orientation=0	
-				xyouts, 1e10,6.5e7,textoidl('E_{25}=0.3,1,3,10,30,100'),charsize=1.2
+			;	xyouts, 1e10,6.5e7,textoidl('E_{25}=0.3,1,3,10,30,100'),charsize=1.2
 				;xyouts, 6d10,6d9, textoidl('t=1 day'),charsize=1.1
 			endelse
 			flag=0
