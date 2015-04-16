@@ -96,8 +96,9 @@ then the code will look for the file `init/init.dat.source` instead of `init.dat
 
 ### Published cooling curves from this code
 
-* [Scholz et al. (2014)](http://lanl.arxiv.org/abs/1401.6965) submitted paper on 1822
-* [Cackett et al. (2013)](http://arxiv.org/abs/1306.1776) MXB 1659-29
-* [An et al. (2013)](http://arxiv.org/abs/1212.0184) Fig. 1 (see `init.dat.1647`)
-* [Scholz et al. (2012)](http://lanl.arxiv.org/abs/1204.1034) Fig. 8 (`init.dat.1822`)
-* [An et al. (2012)](http://arxiv.org/abs/1208.1419) Fig.3 (1998 and 2008 outbursts, see `init.dat.1627`)
+* [Horowitz et al. (2015)](http://arxiv.org/abs/1410.2197) MXB 1659-29 (Figs 2 and 3)
+* [Scholz et al. (2014)](http://lanl.arxiv.org/abs/1401.6965) Swift J1822.3-1606 (Fig. 2)
+* [Cackett et al. (2013)](http://arxiv.org/abs/1306.1776) MXB 1659-29 (Figure 4)
+* [An et al. (2013)](http://arxiv.org/abs/1212.0184) CXOU J164710.2-455216 (Fig. 1, see `init.dat.1647`)
+* [Scholz et al. (2012)](http://lanl.arxiv.org/abs/1204.1034) Swift J1822.3-1606 (Fig. 8, see `init.dat.1822`)
+* [An et al. (2012)](http://arxiv.org/abs/1208.1419) SGR 1627-41 (Fig.3, 1998 and 2008 outbursts, see `init.dat.1627`)
