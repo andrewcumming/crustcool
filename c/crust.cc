@@ -622,8 +622,10 @@ double Crust::crust_heating(int i)
 			eps = this->grid[i].Qheat*8.8e4*9.64e17/(this->grid[i].P*this->dx);
 		} else {
 			// simple "smeared out" heating function, 1.2MeV in inner crust, 0.2MeV in outer crust
-			if (P >= 1e16*2.28e14 && P <= 1e17*2.28e14) eps=8.8e4*this->deep_heating_factor*1.7*9.64e17/(P*log(1e17/1e16));
-		 	if (P >= 3e12*2.28e14 && P < 3e15*2.28e14) eps=8.8e4*this->deep_heating_factor*0.2*9.64e17/(P*log(3e15/3e12));
+			eps += eps_from_heat_source(P,1e16,1e17,1.5);	
+			eps += eps_from_heat_source(P,3e12,3e15,0.2);
+//			if (P >= 1e16*2.28e14 && P <= 1e17*2.28e14) eps=8.8e4*this->deep_heating_factor*1.5*9.64e17/(P*log(1e17/1e16));
+//		 	if (P >= 3e12*2.28e14 && P < 3e15*2.28e14) eps=8.8e4*this->deep_heating_factor*0.2*9.64e17/(P*log(3e15/3e12));
 
 			// Extra heat source in the ocean
 			if (this->extra_heating) {	
@@ -631,27 +633,9 @@ double Crust::crust_heating(int i)
 				//if (this->grid[i].P*exp(-0.5*this->dx) <this->extra_y*2.28e14 && this->grid[i].P*exp(0.5*this->dx)>this->extra_y*2.28e14)
 				//		eps+=8.8e4*this->extra_Q*9.64e17/(P*this->dx);
 
-				// More distributed heating
-				double extra_y1 = this->extra_y/3.0;	
-				double extra_y2 = this->extra_y*3.0;
-				double eps_extra=0.0;
-				double P1 = P*exp(-0.5*this->dx);
-				double P2 = P*exp(0.5*this->dx);
-				double geff=2.28e14;
-
-				double Q_heat = this->extra_Q;
-
-				if (P1 > extra_y1*geff && P2 < extra_y2*geff)   // we are within the heating zone
-					eps_extra=8.8e4*Q_heat*9.64e17/(P*log(extra_y2/extra_y1));
-				if (P1 < extra_y1*geff && P2 < extra_y2*geff && extra_y1*geff<P2) {   // left hand edge of heated region
-					eps_extra=8.8e4*Q_heat*9.64e17/(P*log(extra_y2/extra_y1));
-					eps_extra *= log(P2/(extra_y1*geff))/this->dx;
-				}
-				if (P1 > extra_y1*geff && P2 > extra_y2*geff && extra_y2*geff>P1) {  // right hand edge of heated region
-					eps_extra=8.8e4*Q_heat*9.64e17/(P*log(extra_y2/extra_y1));
-					eps_extra *= log(extra_y2*geff/P1)/this->dx;
-				}
-				eps+=eps_extra;
+				double heating_spread = 3.0;
+				eps += eps_from_heat_source(P,this->extra_y/heating_spread,this->extra_y*heating_spread,this->extra_Q);
+				
 			}
 		}
 	}
@@ -659,6 +643,28 @@ double Crust::crust_heating(int i)
 	return eps;	
 }
 
+
+
+double Crust::eps_from_heat_source(double P,double y1,double y2,double Q_heat)
+{
+	double eps = 0.0;
+	double P1 = P*exp(-0.5*this->dx);
+	double P2 = P*exp(0.5*this->dx);
+	double geff=2.28e14;
+
+	if (P1 > y1*geff && P2 < y2*geff)   // we are within the heating zone
+		eps=8.8e4*Q_heat*9.64e17/(P*log(y2/y1));
+	if (P1 < y1*geff && P2 < y2*geff && y1*geff<P2) {   // left hand edge of heated region
+		eps=8.8e4*Q_heat*9.64e17/(P*log(y2/y1));
+		eps *= log(P2/(y1*geff))/this->dx;
+	}
+	if (P1 > y1*geff && P2 > y2*geff && y2*geff>P1) {  // right hand edge of heated region
+		eps=8.8e4*Q_heat*9.64e17/(P*log(y2/y1));
+		eps *= log(y2*geff/P1)/this->dx;
+	}
+	
+	return eps;
+}
 
 
 

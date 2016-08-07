@@ -57,7 +57,8 @@ private:
 	double crust_heating(int i);
 	double energy_deposited(int i);
 	void precalculate_vars(void);
-	
+	double eps_from_heat_source(double P,double y1,double y2,double Q_heat);
+
 	void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar,double *last_time_output);
 	
 	double dTdt(int i, double *T);
