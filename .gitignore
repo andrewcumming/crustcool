@@ -4,7 +4,6 @@ makegrid
 png/*
 movie*.mp4
 .DS_Store
-data
 gon_out/*
 out/*
 !out/grid_He*
@@ -19,3 +18,4 @@ mcgrid*
 c/odeint_gsl.cc
 h/odeint_gsl.h
 c/*.f
+*.pdf

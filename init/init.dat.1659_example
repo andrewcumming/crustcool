@@ -7,12 +7,12 @@ toutburst 2.5
 mdot	0.1
 
 precalc 1
-ngrid	100
+ngrid	50
 SFgap	1
 kncrit	0
 accreted 1
 
-Qimp	4.4
+Qimp	3.3
 Tc	3.1e7
 Tt	4.2e8
 
