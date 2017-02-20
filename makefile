@@ -19,7 +19,7 @@ CFLAGS = -O3 -pipe -I/usr/local/include
 #CFLAGS = -lm -parallel -fast 
 
 # main code
-OBJS = $(LOCODIR)/crustcool.o $(LOCODIR)/crust.o $(ODIR)/root.o $(ODIR)/vector.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag13.o $(LOCODIR)/eos13.o $(LOCODIR)/timer.o $(LOCODIR)/data.o $(LOCODIR)/ns.o
+OBJS = $(LOCODIR)/crustcool.o $(LOCODIR)/crust.o $(ODIR)/root.o $(ODIR)/vector.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag14.o $(LOCODIR)/eos14.o $(LOCODIR)/timer.o $(LOCODIR)/data.o $(LOCODIR)/ns.o
 OBJS3 = $(LOCODIR)/makegrid.o $(ODIR)/root.o $(ODIR)/vector.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag13.o $(LOCODIR)/eos13.o $(LOCODIR)/envelope.o
 
 crustcool : $(OBJS)
@@ -42,6 +42,13 @@ $(LOCODIR)/eosmag13.o : $(LOCCDIR)/eosmag13.f
 
 $(LOCODIR)/eos13.o : $(LOCCDIR)/eos13.f
 	$(FORTRAN) -c $(LOCCDIR)/eos13.f -o $(LOCODIR)/eos13.o
+
+$(LOCODIR)/eosmag14.o : $(LOCCDIR)/eosmag14.f
+	$(FORTRAN) -c $(LOCCDIR)/eosmag14.f -o $(LOCODIR)/eosmag14.o
+
+$(LOCODIR)/eos14.o : $(LOCCDIR)/eos14.f
+	$(FORTRAN) -c $(LOCCDIR)/eos14.f -o $(LOCODIR)/eos14.o
+
 
 # compile routines from the common directory
 
