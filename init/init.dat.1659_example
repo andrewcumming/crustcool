@@ -1,5 +1,7 @@
 # Fit to MXB 1659 cooling curve
 
+resume 0
+
 mass	1.62
 radius	11.2
 timetorun	10000.0

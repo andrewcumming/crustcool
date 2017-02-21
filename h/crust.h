@@ -20,7 +20,7 @@ public:
 
 	GridPoint *grid;
 
-	int output, use_my_envelope, gpe;
+	int output, use_my_envelope, gpe, resume;
 	
 	double mass,radius,g,ZZ;
 	
@@ -60,6 +60,7 @@ private:
 	double eps_from_heat_source(double P,double y1,double y2,double Q_heat);
 
 	void output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar,double *last_time_output);
+	void read_T_profile_from_file(void);
 	
 	double dTdt(int i, double *T);
 	void calculate_vars(int i);

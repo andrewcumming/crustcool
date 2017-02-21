@@ -58,6 +58,8 @@ Crust::Crust() {
 	this->angle_mu=-1.0;
 	
 	this->use_potek_eos=0;
+	
+	this->resume = 0;
 }
 
 void Crust::setup(void) {
@@ -261,6 +263,42 @@ void Crust::output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar,d
 
 
 
+void Crust::read_T_profile_from_file(void)
+{
+	int npoints;
+	double dd, tt;
+
+	FILE *fp = fopen("gon_out/out","r");
+
+	// first read the header
+	fscanf(fp,"%d %lg\n",&npoints,&dd);
+	if (npoints != this->N+1) {
+		printf("Problem reading previous T profile: number of grid points is different\n");
+		exit(0);
+	}
+	
+	while (!feof(fp)) {	
+		fscanf(fp,"%lg\n",&tt);		
+		for (int i=1; i<=npoints; i++) {
+			double T;
+			fscanf(fp,"%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n",&dd,&T,&dd,&dd,&dd,&dd,&dd,&dd,&dd,&dd,&dd,&dd,&dd);
+			this->grid[i].T = T;
+		}
+	}
+
+	fclose(fp);
+
+	for (int i=1; i<=npoints; i++) {
+		printf("%d %lg\n", i, this->grid[i].T);
+	}
+	this->last_time_output = tt;	
+	this->timesofar = tt / this->ZZ;
+}
+
+
+
+
+
 
 void Crust::set_up_grid(const char *fname)
 // allocates storage for the grid and also computes the density
@@ -370,6 +408,8 @@ void Crust::set_up_grid(const char *fname)
 	if (this->output) fclose(fp);
 
 	if (!this->hardwireQ) QiSpline.tidy();
+
+	if (this->resume) read_T_profile_from_file();
 
   	printf("Grid has %d points, delx=%lg, Pb=%lg, rhob=%lg, Pt=%lg, rhot=%lg\n", 
 			this->N, this->dx, this->grid[this->N].P,this->grid[this->N].rho,this->grid[1].P,this->grid[1].rho);

@@ -96,6 +96,7 @@ void parse_parameters(char *fname,char *sourcename,Crust &crust,double &time_to_
 			if (!strncmp(s,"Edep",4)) crust.energy_deposited_outer=x;
 			if (!strncmp(s,"ytop",4)) crust.yt=x;
 			if (!strncmp(s,"Einner",6)) crust.energy_deposited_inner=x;
+			if (!strncmp(s,"resume",6)) crust.resume=x;
 			if (!strncmp(s,"Qimp",4)) crust.Qimp=x;
 			if (!strncmp(s,"Qrho",4)) crust.Qrho=x;
 			if (!strncmp(s,"rhob",4)) crust.rhob=x;
