@@ -16,6 +16,11 @@ Crust::Crust() {
 	this->mass = 1.6;
 	this->radius = 11.2;
 	
+	// Heat capacity and neutrino emissivity of the core (innermost grid point)
+	this->C_core = 1e38;
+	this->Lnu_core_norm = 1e31;
+	this->Lnu_core_alpha = 8.0;
+		
 	// Set up the grid
 	this->N = 100;
 	this->output = 1;
@@ -550,10 +555,13 @@ void Crust::precalculate_vars(void)
 				double beta = this->betamin + (j-1)*(this->betamax-this->betamin)/(1.0*(this->nbeta-1));
 				EOS->T8 = 1e-8*pow(10.0,beta);
 
-				this->CP_grid[i][j]=EOS->CV();
-				this->NU_grid[i][j]=EOS->eps_nu();	
-				//if (this->grid[i].P*exp(-0.5*this->dx) < 1e14*2.28e14 && this->grid[i].P*exp(0.5*this->dx)>1e14*2.28e14)
-				//	this->NU_grid[i][j]+=this->g*1e20*pow(EOS->T8,5)/(EOS->P*this->dx);
+				if (i == this->N+1) {
+					this->CP_grid[i][j] = this->C_core * EOS->T8;
+					this->NU_grid[i][j] = this->Lnu_core_norm * pow(EOS->T8, Lnu_core_alpha);
+				} else {
+					this->CP_grid[i][j]=EOS->CV();
+					this->NU_grid[i][j]=EOS->eps_nu();
+				}
 												
 				this->EPS_grid[i][j]=heating;
 
@@ -716,14 +724,12 @@ void Crust::derivs(double t, double T[], double dTdt[])
 // calculates the time derivatives for the whole grid
 {
 	// First calculate quantities at each grid point
-	for (int j=1; j<=this->N; j++) {
+	for (int j=1; j<=this->N+1; j++) {
 		this->grid[j].T=T[j];
 		calculate_vars(j);
 	}
 	outer_boundary();
-	inner_boundary();
 	T[0]=this->grid[0].T;
-	T[this->N+1]=this->grid[this->N+1].T;
 
 	// determine the fluxes at the half-grid points
 	//  this->grid[i].F is the flux at i-1/2
@@ -735,7 +741,8 @@ void Crust::derivs(double t, double T[], double dTdt[])
 		if (this->nuflag) dTdt[i]+=-(this->grid[i].NU/this->grid[i].CP);
 		if (this->accreting) dTdt[i]+=this->grid[i].EPS/this->grid[i].CP;
 	}
-  	dTdt[this->N+1]=0.0;
+	// the cell at N+1 represents the core
+  	dTdt[this->N+1] = (this->grid[this->N+1].F * 4.0*M_PI*pow(1e5*this->radius,2.0) - this->grid[this->N+1].NU) / this->grid[this->N+1].CP;
 }
 
 double Crust::calculate_heat_flux(int i, double *T)
@@ -803,16 +810,15 @@ double Crust::dTdt(int i, double *T)
 		outer_boundary();
 		T[0]=this->grid[0].T;
 	}
-	if (i==this->N) {
-		this->grid[this->N].T=T[this->N];
-		inner_boundary();
-		T[this->N+1]=this->grid[this->N+1].T;
-	}
 
-	double f=this->g*(calculate_heat_flux(i+1,T)-calculate_heat_flux(i,T))/(this->dx*this->grid[i].CP*this->grid[i].P);
-	if (this->nuflag) f+=-(this->grid[i].NU/this->grid[i].CP);
-	
-	if (this->accreting) f+=this->grid[i].EPS/this->grid[i].CP;
+	double f;
+	if (i<this->N+1) {
+		f=this->g*(calculate_heat_flux(i+1,T)-calculate_heat_flux(i,T))/(this->dx*this->grid[i].CP*this->grid[i].P);
+		if (this->nuflag) f+=-(this->grid[i].NU/this->grid[i].CP);	
+		if (this->accreting) f+=this->grid[i].EPS/this->grid[i].CP;
+	} else {
+		f = (calculate_heat_flux(i,T) * 4.0*M_PI*pow(1e5*this->radius,2.0) - this->grid[i].NU) / this->grid[i].CP;
+	}
 	
 	return f;
 }
@@ -824,16 +830,6 @@ void Crust::outer_boundary(void)
 	this->grid[0].K=this->grid[1].K; this->grid[0].CP=this->grid[1].CP;
 	if (this->nuflag) this->grid[0].NU=this->grid[1].NU; else this->grid[0].NU=0.0;
 	if (this->accreting) this->grid[0].EPS=this->grid[1].EPS; else this->grid[0].EPS=0.0;
-}
-
-void Crust::inner_boundary(void)
-{
-	this->grid[this->N+1].T=this->Tc;   // fixed core temperature
-	//this->grid[this->N+1].T=this->grid[this->N].T;   // zero flux inner boundary
-	this->grid[this->N+1].K=this->grid[this->N].K;
-	this->grid[this->N+1].CP=this->grid[this->N].CP;
-	if (this->nuflag) this->grid[this->N+1].NU=this->grid[this->N].NU; else this->grid[this->N+1].NU=0.0;
-	if (this->accreting) this->grid[this->N+1].EPS=this->grid[this->N].EPS; else this->grid[this->N+1].EPS=0.0;
 }
 
 void Crust::jacobn(double t, double *T, double *dfdt, double **dfdT, int n)

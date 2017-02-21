@@ -23,6 +23,7 @@ public:
 	int output, use_my_envelope, gpe, resume;
 	
 	double mass,radius,g,ZZ;
+	double C_core, Lnu_core_norm, Lnu_core_alpha;
 	
 	double timesofar, last_time_output;
 	double Lmin, Lscale, Qimp, B, kncrit;
@@ -64,7 +65,6 @@ private:
 	
 	double dTdt(int i, double *T);
 	void calculate_vars(int i);
-	void inner_boundary(void);
 	double calculate_heat_flux(int i, double *T);
 	void outer_boundary(void);
 	

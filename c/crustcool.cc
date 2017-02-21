@@ -91,6 +91,9 @@ void parse_parameters(char *fname,char *sourcename,Crust &crust,double &time_to_
 			if (!strncmp(s,"kncrit",6)) crust.kncrit=x;
 			if (!strncmp(s,"mdot",4)) crust.mdot=x;
 			if (!strncmp(s,"mass",4)) crust.mass=x;
+			if (!strncmp(s,"C_core",6)) crust.C_core=x;
+			if (!strncmp(s,"Lnu_core_alpha",14)) crust.Lnu_core_alpha=x;
+			if (!strncmp(s,"Lnu_core_norm",13)) crust.Lnu_core_norm=x;
 			if (!strncmp(s,"gpe",3)) crust.gpe=(int) x;
 			if (!strncmp(s,"radius",6)) crust.radius=x;
 			if (!strncmp(s,"Edep",4)) crust.energy_deposited_outer=x;
