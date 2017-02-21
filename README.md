@@ -56,6 +56,7 @@ The file `init.dat` sets up the run. The parameters are
 	ngrid	number of grid points
 	ytop	column depth at the top of the grid (default 1e12)
 	output	write output files (=1) or suppress output (=0) (e.g. for mcmc we don't need output)
+	resume	start new output files with an intially isothermal crust (=0), or resume using the temperature profile from last time and append to the output(=1) 
 	
 	SFgap	neutron superfluid gap. Choices are
 			0=normal neutrons (not SF)
@@ -76,6 +77,11 @@ The file `init.dat` sets up the run. The parameters are
 	accreted	crust composition  1=accreted crust (HZ1990)
 					0=equilibrium crust (HP1994;DH2001)
 					2=accreted crust (HZ2003)
+					
+	C_core		core heat capacity at 1e8 K
+	Lnu_core_norm	normalization in expression for core neutrino luminosity at 1e8 K
+	Lnu_core_alpha	temperature sensitivity of core neutrino luminosity (e.g. slow process=8, fast process=6)
+	
 	
 You can include comments (`#`) in the `init.dat` file, blank lines are ignored, and lines beginning with `>` are (optionally) to specify the piecewise initial temperature profile. A pair of double comment symbols `##` can be used to comment out a block of lines.
 
