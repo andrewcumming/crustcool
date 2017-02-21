@@ -292,9 +292,6 @@ void Crust::read_T_profile_from_file(void)
 
 	fclose(fp);
 
-	for (int i=1; i<=npoints; i++) {
-		printf("%d %lg\n", i, this->grid[i].T);
-	}
 	this->last_time_output = tt;	
 	this->timesofar = tt / this->ZZ;
 }
