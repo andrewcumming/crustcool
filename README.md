@@ -2,13 +2,13 @@
 
 This code follows the thermal evolution of a neutron star crust. It is designed to model observations of accreting neutron stars in quiescence and the decline of magnetar outbursts.
 
-To compile, `make` should compile the cooling code `crustcool`. You will need to create the directory `o` for the object files, and a directory `gon_out` for output during the runs.
+To compile, `make` should compile the cooling code `crustcool`.
 
 #### Requirements
 
 * GNU Scientific Library [GSL](http://www.gnu.org/software/gsl/) 
-* [condegin13.f](http://www.ioffe.ru/astro/conduct/condin.html) fortran routine by A. Potekhin to calculate thermal conductivity (put in directory `c`)
-* [eos14.f](http://www.ioffe.ru/astro/EIP/index.html) and [eosmag14.f](http://www.ioffe.ru/astro/EIP/index.html) fortran routines by A. Potekhin which calculate equation of state (put in directory `c`)
+* [condegin13.f](http://www.ioffe.ru/astro/conduct/condin.html) fortran routine by A. Potekhin to calculate thermal conductivity (put this in the `c` directory)
+* [eos14.f](http://www.ioffe.ru/astro/EIP/index.html) and [eosmag14.f](http://www.ioffe.ru/astro/EIP/index.html) fortran routines by A. Potekhin which calculate equation of state (put this in the `c` directory)
 * For MCMC, [emcee](https://github.com/dfm/emcee) and [triangle_plot](https://github.com/dfm/triangle.py)
 
 ### Setting parameters 

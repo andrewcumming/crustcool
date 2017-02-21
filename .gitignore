@@ -1,10 +1,12 @@
-o/*
 crustcool
 makegrid
 png/*
 movie*.mp4
 .DS_Store
+o/*
+!o/README.md
 gon_out/*
+!gon_out/README.md
 out/*
 !out/grid_He*
 *.pyc
