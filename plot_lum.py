@@ -8,7 +8,7 @@ fig = plt.figure(figsize=(8,6))
 ax = fig.add_subplot(1,1,1)
 
 def read_lightcurve(name):
-	f = open("gon_out/prof"+name)
+	f = open("out/prof"+name)
 	t=np.array([])
 	L=np.array([])
 	for line in f:

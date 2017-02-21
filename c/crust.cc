@@ -140,11 +140,11 @@ void Crust::evolve(double timetorun, double mdot) {
 	if (this->output) {
 		printf("Starting output\n");
 		if (this->last_time_output == 0.0) {
-			this->fp=fopen("gon_out/out","w");
-		   	this->fp2=fopen("gon_out/prof","w");
+			this->fp=fopen("out/out","w");
+		   	this->fp2=fopen("out/prof","w");
 		} else {
-			this->fp=fopen("gon_out/out","a");
-	   		this->fp2=fopen("gon_out/prof","a");
+			this->fp=fopen("out/out","a");
+	   		this->fp2=fopen("out/prof","a");
 		}
 		if (this->last_time_output == 0.0) fprintf(this->fp,"%d %lg\n",this->N+1,this->g);
 		start_timing(&timer);
@@ -241,7 +241,7 @@ void Crust::output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar,d
 		for (int i=1; i<=this->N; i++) Lnu += this->grid[i].NU*this->dx*this->grid[i].P/this->g;
 	
 		// we output time, fluxes and TEFF that are already redshifted into the observer frame
-		// gon_out/prof
+		// out/prof
 		fprintf(fp2, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", (timesofar+this->ODE.get_x(j))*this->ZZ, 
 			pow((this->radius/11.2),2.0)*this->grid[2].F/(this->ZZ*this->ZZ), pow((this->radius/11.2),2.0)*FF/(this->ZZ*this->ZZ),
 			this->ODE.get_y(this->N-5,j), pow((this->g/2.28e14)*TEFF.get(this->ODE.get_y(1,j))/5.67e-5,0.25)/this->ZZ, 
@@ -251,7 +251,7 @@ void Crust::output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar,d
 			
 		if ((fabs(log10(fabs(timesofar+this->ODE.get_x(j))*this->ZZ)-log10(fabs(*last_time_output))) >= 1000.0) ||
 			(fabs(timesofar)+this->ODE.get_x(j))*this->ZZ < 1e10) {
-			// temperature profile into gon_out/out
+			// temperature profile into out/out
 			fprintf(fp,"%lg\n",this->ZZ*(timesofar+this->ODE.get_x(j)));
 			for (int i=1; i<=this->N+1; i++)
 				fprintf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", 
@@ -273,7 +273,7 @@ void Crust::read_T_profile_from_file(void)
 	int npoints;
 	double dd, tt;
 
-	FILE *fp = fopen("gon_out/out","r");
+	FILE *fp = fopen("out/out","r");
 
 	// first read the header
 	fscanf(fp,"%d %lg\n",&npoints,&dd);
@@ -362,7 +362,7 @@ void Crust::set_up_grid(const char *fname)
  	this->dx=log(this->Pb/this->Pt)/(this->N-1);
   
 	FILE *fp=NULL;
-	if (this->output) fp = fopen("gon_out/grid_profile","w");
+	if (this->output) fp = fopen("out/grid_profile","w");
 
 	double Qtot=0.0;
   	for (int i=0; i<=this->N+2; i++) {
@@ -448,7 +448,7 @@ void Crust::get_TbTeff_relation(void)
 		else fp = fopen("envelope_data/grid_He9","r");
 	}
 	FILE *fp2=NULL;
-	if (this->output) fp2=fopen("gon_out/TbTeff", "w");
+	if (this->output) fp2=fopen("out/TbTeff", "w");
 	
 	double y,T,F,rho,dummy;
 	int count = 0;
@@ -530,8 +530,8 @@ void Crust::precalculate_vars(void)
 
 	FILE *fp = NULL;
 	char s[100];
-	if (EOS->B > 0.0) sprintf(s,"gon_out/precalc_results_%lg",log10(EOS->B));
-	else sprintf(s,"gon_out/precalc_results_0");
+	if (EOS->B > 0.0) sprintf(s,"out/precalc_results_%lg",log10(EOS->B));
+	else sprintf(s,"out/precalc_results_0");
 	if (!this->force_precalc) fp=fopen(s,"r");
 	// if unsuccessful (or if precalc is set) we need to recalculate
 	if (fp == NULL) {

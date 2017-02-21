@@ -17,7 +17,7 @@ def read_profile():
 	timestamp = 't = '+timestamp+' d'
 	return timestamp,rho,T
 
-f = open("gon_out/out")
+f = open("out/out")
 ngrid = int(f.readline().split()[0])
 
 plt.ion()
