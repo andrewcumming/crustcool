@@ -100,6 +100,9 @@ should give the following plot in `tc.pdf`
 
 ![MXB 1659 lightcurve](https://github.com/andrewcumming/crustcool/raw/master/1659_example.png)
 
+	python plot_prof.py
+	
+will animate the temperature profile in the crust as it cools.
 
 ### MCMC
 
