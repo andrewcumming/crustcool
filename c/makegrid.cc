@@ -23,5 +23,5 @@ int main(void)
 	envelope.use_potek_cond_in_Fe=0;
 	if (Bfield > 0.0) envelope.use_potek_kff=1;
 	else envelope.use_potek_kff=0;
-	envelope.make_grid(yi,Bfield);   // results are in "out/grid"
+	envelope.make_grid(yi,Bfield);   // results are in "envelope_data/grid"
 }

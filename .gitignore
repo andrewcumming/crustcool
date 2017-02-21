@@ -7,8 +7,8 @@ o/*
 !o/README.md
 gon_out/*
 !gon_out/README.md
-out/*
-!out/grid_He*
+envelope_data/*
+!envelope_data/grid_He*
 *.pyc
 init/*
 !init/init.dat.mcmc

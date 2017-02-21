@@ -40,7 +40,7 @@ void Envelope::make_grid(double yi, double B)
 // yi is the log10 of the base column of the He layer
 // B is the magnetic field strength
 {
-	this->fp = fopen("out/grid","w");
+	this->fp = fopen("envelope_data/grid","w");
 	this->yi = yi;
 	this->Bfield = B;
 	this->EOS->B=this->Bfield;

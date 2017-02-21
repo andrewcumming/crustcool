@@ -431,21 +431,21 @@ void Crust::get_TbTeff_relation(void)
 	temp = new double [npoints+1];
 	flux = new double [npoints+1];
 	
-	// the file "out/grid" is made by makegrid.cc
+	// the file "envelope_data/grid" is made by makegrid.cc
 	// it contains  (column depth, T, flux)  in cgs
 	FILE *fp;
 	if (this->use_my_envelope) {
-		if (this->EOS->B == 1e15) fp = fopen("out/grid_1e15_nopotek","r");
-		else if (this->EOS->B == 1e14) fp = fopen("out/grid_1e14_potek","r");
-		else if (this->EOS->B == 3e14) fp = fopen("out/grid_3e14_potek","r");
-		else if (this->EOS->B == 3e15) fp = fopen("out/grid_3e15_potek","r");
+		if (this->EOS->B == 1e15) fp = fopen("envelope_data/grid_1e15_nopotek","r");
+		else if (this->EOS->B == 1e14) fp = fopen("envelope_data/grid_1e14_potek","r");
+		else if (this->EOS->B == 3e14) fp = fopen("envelope_data/grid_3e14_potek","r");
+		else if (this->EOS->B == 3e15) fp = fopen("envelope_data/grid_3e15_potek","r");
 		else {
 			printf("Don't know which envelope model to use for this B!\n");
 			exit(1);
 		}
 	} else {
-		if (this->gpe) fp = fopen("out/grid_He4","r");
-		else fp = fopen("out/grid_He9","r");
+		if (this->gpe) fp = fopen("envelope_data/grid_He4","r");
+		else fp = fopen("envelope_data/grid_He9","r");
 	}
 	FILE *fp2=NULL;
 	if (this->output) fp2=fopen("gon_out/TbTeff", "w");
