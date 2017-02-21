@@ -558,47 +558,52 @@ void Crust::precalculate_vars(void)
 				if (i == this->N+1) {
 					this->CP_grid[i][j] = this->C_core * EOS->T8;
 					this->NU_grid[i][j] = this->Lnu_core_norm * pow(EOS->T8, Lnu_core_alpha);
+					this->EPS_grid[i][j] = 0.0; // no core heating
+					this->K0_grid[i][j]=this->K0_grid[i-1][j];
+					this->K1_grid[i][j]=this->K1_grid[i-1][j];
+					this->K1perp_grid[i][j]=this->K1perp_grid[i-1][j];
+					this->K0perp_grid[i][j]=this->K0perp_grid[i-1][j];
+					
 				} else {
 					this->CP_grid[i][j]=EOS->CV();
 					this->NU_grid[i][j]=EOS->eps_nu();
+					this->EPS_grid[i][j]=heating;
+
+					// we calculate the thermal conductivity for Q=0 and Q=1, and later interpolate to the
+					// current value of Q. This means we can keep the performance of table lookup even when
+					// doing MCMC trials which vary Q.
+
+					double Q_store=EOS->Qimp;  // store Q temporarily
+
+					EOS->Qimp=0.0;
+					double Kcond,Kcondperp;
+					//Kcond = EOS->K_cond(EOS->Chabrier_EF());
+					//Kcondperp=Kcond;
+					Kcond = EOS->potek_cond();
+					Kcondperp = EOS->Kperp;   
+					this->K0_grid[i][j]=EOS->rho*Kcond/this->grid[i].P;
+					this->K0perp_grid[i][j]=EOS->rho*Kcondperp/this->grid[i].P;
+
+					EOS->Qimp=1.0;
+					//Kcond = EOS->K_cond(EOS->Chabrier_EF());
+					//Kcondperp=Kcond;
+					Kcond = EOS->potek_cond();
+					Kcondperp = EOS->Kperp;
+					this->K1_grid[i][j]=EOS->rho*Kcond/this->grid[i].P;
+					this->K1perp_grid[i][j]=EOS->rho*Kcondperp/this->grid[i].P;
+
+					EOS->Qimp=Q_store;  // restore to previous value
+
+					// conductivity due to radiation
+					(void) EOS->opac();  // call to kappa sets the variable kappa_rad
+					this->KAPPA_grid[i][j] = 3.03e20*pow(EOS->T8,3)/(EOS->kappa_rad*this->grid[i].P);
+
 				}
-												
-				this->EPS_grid[i][j]=heating;
-
-				// we calculate the thermal conductivity for Q=0 and Q=1, and later interpolate to the
-				// current value of Q. This means we can keep the performance of table lookup even when
-				// doing MCMC trials which vary Q.
-
-				double Q_store=EOS->Qimp;  // store Q temporarily
-
-				EOS->Qimp=0.0;
-				double Kcond,Kcondperp;
-				//Kcond = EOS->K_cond(EOS->Chabrier_EF());
-				//Kcondperp=Kcond;
-				Kcond = EOS->potek_cond();
-				Kcondperp = EOS->Kperp;   
-				this->K0_grid[i][j]=EOS->rho*Kcond/this->grid[i].P;
-				this->K0perp_grid[i][j]=EOS->rho*Kcondperp/this->grid[i].P;
-
-				EOS->Qimp=1.0;
-				//Kcond = EOS->K_cond(EOS->Chabrier_EF());
-				//Kcondperp=Kcond;
-				Kcond = EOS->potek_cond();
-				Kcondperp = EOS->Kperp;
-				this->K1_grid[i][j]=EOS->rho*Kcond/this->grid[i].P;
-				this->K1perp_grid[i][j]=EOS->rho*Kcondperp/this->grid[i].P;
-
-				EOS->Qimp=Q_store;  // restore to previous value
-
-				// conductivity due to radiation
-				(void) EOS->opac();  // call to kappa sets the variable kappa_rad
-				this->KAPPA_grid[i][j] = 3.03e20*pow(EOS->T8,3)/(EOS->kappa_rad*this->grid[i].P);
 
 				if (this->output) 
 					fprintf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg %lg\n", EOS->T8, this->CP_grid[i][j], 
 						this->K0_grid[i][j],this->K1_grid[i][j], this->K0perp_grid[i][j],this->K1perp_grid[i][j],
 						this->NU_grid[i][j], this->EPS_grid[i][j], this->KAPPA_grid[i][j] );
-
 				this->EPS_grid[i][j]*=energy_deposited(i);
 
 			}	
@@ -742,7 +747,7 @@ void Crust::derivs(double t, double T[], double dTdt[])
 		if (this->accreting) dTdt[i]+=this->grid[i].EPS/this->grid[i].CP;
 	}
 	// the cell at N+1 represents the core
-  	dTdt[this->N+1] = (this->grid[this->N+1].F * 4.0*M_PI*pow(1e5*this->radius,2.0) - this->grid[this->N+1].NU) / this->grid[this->N+1].CP;
+  	dTdt[this->N+1] = (-this->grid[this->N+1].F * 4.0*M_PI*pow(1e5*this->radius,2.0) - this->grid[this->N+1].NU) / this->grid[this->N+1].CP;
 }
 
 double Crust::calculate_heat_flux(int i, double *T)
@@ -752,7 +757,10 @@ double Crust::calculate_heat_flux(int i, double *T)
 //		if (i>1 || (this->accreting && EOS->B == 0.0))   
 		// use this inside the grid, or at the surface when we are accreting (which 
 		// fixes the outer temperature)
-	 	flux = 0.5*(this->grid[i].K+this->grid[i-1].K)*(T[i]-T[i-1])/this->dx;	
+		if (i==this->N+1)
+			flux = this->grid[i-1].K*(T[i]-T[i-1])/this->dx;	
+		else
+			flux = 0.5*(this->grid[i].K+this->grid[i-1].K)*(T[i]-T[i-1])/this->dx;	
 	else {
 		// cooling boundary condition
 		if (EOS->B == 0.0 || this->use_my_envelope) {
@@ -817,7 +825,7 @@ double Crust::dTdt(int i, double *T)
 		if (this->nuflag) f+=-(this->grid[i].NU/this->grid[i].CP);	
 		if (this->accreting) f+=this->grid[i].EPS/this->grid[i].CP;
 	} else {
-		f = (calculate_heat_flux(i,T) * 4.0*M_PI*pow(1e5*this->radius,2.0) - this->grid[i].NU) / this->grid[i].CP;
+		f = (-calculate_heat_flux(i,T) * 4.0*M_PI*pow(1e5*this->radius,2.0) - this->grid[i].NU) / this->grid[i].CP;
 	}
 	
 	return f;
@@ -855,6 +863,15 @@ void Crust::jacobn(double t, double *T, double *dfdt, double **dfdT, int n)
 	T[i+1]*=1.0+e; f=dTdt(i,T);
 	T[i+1]/=1.0+e; dfdT[i][i+1]=(f-dfdt[i])/(T[i+1]*e);
   }
+
+  {
+	int i=n;
+	T[i]*=1.0+e; f=dTdt(i,T);
+	T[i]/=1.0+e; dfdT[i][i]=(f-dfdt[i])/(T[i]*e);
+	T[i-1]*=1.0+e; f=dTdt(i,T);
+	T[i-1]/=1.0+e; dfdT[i][i-1]=(f-dfdt[i])/(T[i-1]*e);
+  }
+
 }  
 
 
