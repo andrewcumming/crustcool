@@ -98,7 +98,7 @@ then the code will look for the file `init/init.dat.source` instead of `init.dat
 
 should give the following plot in `tc.pdf`
 
-![MXB 1659 lightcurve](https://github.com/andrewcumming/crustpy/raw/master/tc_1659_example.png)
+![MXB 1659 lightcurve](https://github.com/andrewcumming/crustcool/raw/master/tc_1659_example.png)
 
 
 ### MCMC
