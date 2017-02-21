@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
 	
 	// Get input parameters
 	// determine the filename for the 'init.dat' parameter file
-	char fname[200];
+	char fname[200]="";
 	char fnamedefault[10]="init.dat";
 	switch(argc) {
 		case 3:
@@ -35,6 +35,7 @@ int main(int argc, char *argv[])
 	char sourcename[200]="1659";
 	double time_to_run=1e4;
 	int instant_heat=0, use_piecewise=0;
+	printf("============================================\n");
 	parse_parameters(fname,sourcename,crust,time_to_run,instant_heat,use_piecewise);
 			
 	// Setup
@@ -69,11 +70,12 @@ int main(int argc, char *argv[])
 
 void parse_parameters(char *fname,char *sourcename,Crust &crust,double &time_to_run,int &instant_heat,int &use_piecewise) {
  	// Set parameters
-	printf("============================================\n");
 	printf("Reading input data from %s\n",fname);
 	FILE *fp = fopen(fname,"r");
-	char s1[100];
-	char s[100];
+	char s[200];
+	char s1[200];
+	char s2[200];
+	char includename[200]="";
 	double x;				
 	int commented=0;
 	while (!feof(fp)) {   // we read the file line by line
@@ -81,6 +83,12 @@ void parse_parameters(char *fname,char *sourcename,Crust &crust,double &time_to_
 		// ignoring lines that begin with \n (blank) or with # (comments)
 		// or with $ (temperature profile)
 		if (!strncmp(s1,"##",2)) commented = 1-commented;
+		if (!strncmp(s1,"<",1)) {   // include another init file
+			sscanf(s1,"%s\t%s\n",s,s2);
+			strcat(includename,"init/init.dat.");
+			strcat(includename,s2);			
+			parse_parameters(includename,sourcename,crust,time_to_run,instant_heat,use_piecewise);
+		}
 		if (strncmp(s1,"#",1) && strncmp(s1,"\n",1) && strncmp(s1,">",1) && commented==0) {
 			sscanf(s1,"%s\t%lg\n",s,&x);
 			if (!strncmp(s,"Bfield",6)) crust.B=x;
