@@ -17,6 +17,8 @@ def read_profile():
 	timestamp = 't = '+timestamp+' d'
 	return timestamp,rho,T
 
+output_png = False
+
 f = open("out/out")
 ngrid = int(f.readline().split()[0])
 
@@ -34,12 +36,18 @@ x1, = plt.plot(rho,T,'k')
 ann = plt.annotate(timestamp, xy=(1e12,3e8))
 fig.canvas.draw()
 
+if output_png:
+	i=1
+	plt.savefig("png/%03d.png" % i)
 while timestamp:
 	timestamp,rho,T = read_profile()
 	if timestamp:
 		x1.set_ydata(T)
 		ann.set_text(timestamp)
 		fig.canvas.draw()
+		if output_png:
+			i = i + 1
+			plt.savefig("png/%03d.png" % i)
 		plt.pause(0.001)
 
 input('Press any key to end')
