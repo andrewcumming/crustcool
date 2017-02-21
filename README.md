@@ -91,6 +91,16 @@ If you give an argument, e.g.
 
 then the code will look for the file `init/init.dat.source` instead of `init.dat`. This is useful to keep different setups for modelling different data sets for example.
 
+### Example
+
+	crustcool 1659_example
+	python plot_tc.py
+
+should give the following plot in `tc.pdf`
+
+![MXB 1659 lightcurve](https://github.com/andrewcumming/crustpy/raw/master/tc_1659_example.png)
+
+
 ### MCMC
 
 `mcee.py` is an MCMC driver which uses the [emcee](http://dan.iel.fm/emcee/current) python code. 
