@@ -1,6 +1,6 @@
 import numpy
 import matplotlib.pyplot as plt
-fig = plt.figure(figsize=(8,6))
+fig = plt.figure()
 ax = fig.add_subplot(1,1,1)
 
 def read_profile():
