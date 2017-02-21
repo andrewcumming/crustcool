@@ -211,8 +211,7 @@ Crust::~Crust() {
 void Crust::output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar,double *last_time_output) 
 {
 	// Output if enough time has elapsed
-	if ((fabs(log10(fabs(timesofar+this->ODE.get_x(j))*this->ZZ)-log10(fabs(*last_time_output))) >= 0.01) || 
-			(fabs(timesofar)+this->ODE.get_x(j))*this->ZZ < 1e5) {
+	if (fabs(log10(this->ODE.get_x(j)/this->ODE.get_x(j-1))) >= 0.01) {
 
 		// get CP,K,eps,eps_nu at each point on the grid
 		for (int i=1; i<=this->N+1; i++) {
