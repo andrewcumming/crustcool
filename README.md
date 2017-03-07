@@ -115,6 +115,9 @@ will animate the temperature profile in the crust as it cools.
 
 ### Published cooling curves from this code
 
+* [Cumming et al. (2017)](http://arxiv.org/abs/1608.07532) KS 1731-260
+* [Deibel et al. (2016)](http://arxiv.org/abs/1609.07155) SGR 1627-41
+* [Deibel et al. (2015)](http://arxiv.org/abs/1506.03846) MAXI J0556-332
 * [Horowitz et al. (2015)](http://arxiv.org/abs/1410.2197) MXB 1659-29 (Figs 2 and 3)
 * [Scholz et al. (2014)](http://lanl.arxiv.org/abs/1401.6965) Swift J1822.3-1606 (Fig. 2)
 * [Cackett et al. (2013)](http://arxiv.org/abs/1306.1776) MXB 1659-29 (Figure 4)
