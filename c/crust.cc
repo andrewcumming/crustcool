@@ -826,7 +826,7 @@ double Crust::dTdt(int i, double *T)
 
 	double f;
 	if (i<this->N+1) {
-		f=this->g*(calculate_heat_flux(i+1,T)-calculate_heat_flux(i,T))/(this->dx*this->grid[i].CP*this->grid[i].P);
+		f=this->g*pow(this->grid[0].r/this->grid[i].r,4.0)*(calculate_heat_flux(i+1,T)-calculate_heat_flux(i,T))/(this->dx*this->grid[i].CP*this->grid[i].P);
 		if (this->nuflag) f+=-(this->grid[i].NU/this->grid[i].CP);	
 		if (this->accreting) f+=this->grid[i].EPS/this->grid[i].CP;
 	} else {
