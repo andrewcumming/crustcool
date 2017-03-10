@@ -352,7 +352,7 @@ void Crust::set_up_grid(const char *fname)
 	}
 
   	// storage
-	this->grid = new GridPoint [this->N+3];
+	this->grid = new GridPoint [this->N+2];
 
 	// grid spacing (equal spacing in log column)
  	this->dx=log(this->Pb/this->Pt)/(this->N-1);
@@ -361,7 +361,7 @@ void Crust::set_up_grid(const char *fname)
 	if (this->output) fp = fopen("out/grid_profile","w");
 
 	double Qtot=0.0;
-  	for (int i=0; i<=this->N+2; i++) {
+  	for (int i=0; i<=this->N+1; i++) {
     	double x=log(this->Pt)+this->dx*(i-1);
     	this->grid[i].P=exp(x);
 		this->EOS->P = this->grid[i].P;
@@ -372,6 +372,14 @@ void Crust::set_up_grid(const char *fname)
 		this->EOS->rho=this->EOS->find_rho();
 		this->grid[i].rho=this->EOS->rho;
 
+		// integrate the equation of hydrostatic balance to get
+		// the radial location of each grid point
+		if (i==0) {
+			this->grid[i].r = this->radius * 1e5;
+		} else {
+			this->grid[i].r = this->grid[i-1].r - this->dx * this->grid[i].P/(this->ZZ*this->grid[i].rho*this->g);
+		}
+	
 		// GammaT[i] refers to i+1/2
 		// The following line uses a composition of 56Fe to calculate gamma,
 		// it avoids jumps in the melting point associated with e-capture boundaries
@@ -401,8 +409,9 @@ void Crust::set_up_grid(const char *fname)
 		}
 
 		if (this->output) 
-			fprintf(fp, "%d %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", i, this->grid[i].P, this->grid[i].rho, this->EOS->A[1]*(1.0-this->EOS->Yn), 
-				this->EOS->Z[1], this->EOS->Yn,this->EOS->A[1],this->EOS->ptot(), Tmelt, GammaT/1e8, LoverT*1e8);
+			fprintf(fp, "%d %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", i, this->grid[i].P, this->grid[i].rho, this->EOS->A[1]*(1.0-this->EOS->Yn), 
+				this->EOS->Z[1], this->EOS->Yn,this->EOS->A[1],this->EOS->ptot(), Tmelt, GammaT/1e8, LoverT*1e8, this->grid[i].r, 
+				1.0/sqrt(1.0-2.0*6.67e-8*2e33*this->mass/(9e20*this->grid[i].r)));
 			//,AASpline.get(log10(this->grid[i].rho)),  ZZSpline.get(log10(this->grid[i].rho)), this->grid[i].Qimpur, this->grid[i].Qheat);
   	}
 
@@ -412,8 +421,8 @@ void Crust::set_up_grid(const char *fname)
 
 	if (this->resume) read_T_profile_from_file();
 
-  	printf("Grid has %d points, delx=%lg, Pb=%lg, rhob=%lg, Pt=%lg, rhot=%lg\n", 
-			this->N, this->dx, this->grid[this->N].P,this->grid[this->N].rho,this->grid[1].P,this->grid[1].rho);
+  	printf("Grid has %d points, delx=%lg, Pb=%lg, rhob=%lg, Pt=%lg, rhot=%lg, thickness=%lg m\n", 
+			this->N, this->dx, this->grid[this->N].P,this->grid[this->N].rho,this->grid[1].P,this->grid[1].rho,(this->grid[0].r-this->grid[this->N+1].r)*1e-2);
 		printf("Total heat release is %lg MeV\n",Qtot);
 }
 
@@ -738,7 +747,7 @@ void Crust::derivs(double t, double T[], double dTdt[])
 	
 	// Calculate the derivatives dT/dt
 	for (int i=1; i<=this->N; i++) {
-  		dTdt[i]=this->g*(this->grid[i+1].F-this->grid[i].F)/(this->dx*this->grid[i].CP*this->grid[i].P);
+  		dTdt[i]=this->g*pow(this->grid[0].r/this->grid[i].r,4.0)*(this->grid[i+1].F-this->grid[i].F)/(this->dx*this->grid[i].CP*this->grid[i].P);
 		if (this->nuflag) dTdt[i]+=-(this->grid[i].NU/this->grid[i].CP);
 		if (this->accreting) dTdt[i]+=this->grid[i].EPS/this->grid[i].CP;
 	}

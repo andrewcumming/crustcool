@@ -3,7 +3,7 @@
 #include "../h/eos.h"
 
 struct GridPoint {
-	double rho, CP, P, K, F, T, NU, EPS, Qheat, Qimpur;
+	double rho, CP, P, K, F, T, NU, EPS, Qheat, Qimpur, r;
 };
 
 
