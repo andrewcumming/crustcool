@@ -118,14 +118,21 @@ double Eos::ptot(void)
   P+=RADa*1e32*pow(this->T8,4)/3.0;         // radiation
   //P+=2.521967e17*pow(this->T8,4);         // radiation
   if (this->Yn > 0.0) {                   // neutrons
-    double k, EFn;
+    double k, EFn, pref, c0,c1,c2,c3, W;
     // Assume the neutrons are non-relativistic
     // EFn=1.42*pow(1e-12*rho*Yn,2.0/3.0);
     // but we use a fit for EFn which includes interactions
     // comes from Mackie and Baym
     k=0.207*pow(1e-12*this->rho*this->Yn, 1.0/3.0);
-    EFn=1.730*k+25.05*k*k-30.47*k*k*k+17.42*k*k*k*k;  // in MeV
-    P+=0.4*EFn*1.6e-6*this->rho*this->Yn/1.66e-24;
+	c0 = 1.2974;
+	c1 = 15.0298;
+	c2 = -15.2343;
+	c3 = 7.4663;
+	W = c0*k + c1*k*k + c2*k*k*k + c3*k*k*k*k;
+	EFn = (4.0*c0*k + 5.0*c1*k*k + 6.0*c2*k*k*k + 7.0*c3*k*k*k*k)/3.0;	
+	pref = (EFn-W)/W;
+//	pref = 0.4;  // non-rel ideal degenerate gas
+    P+=pref*EFn*1.6e-6*this->rho*this->Yn/1.66e-24;
   }
 	}
   	return P;
