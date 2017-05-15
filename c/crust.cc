@@ -80,6 +80,8 @@ Crust::~Crust() {
 
 void Crust::setup(void) {
 
+	printf("Setting up...\n");
+
 	if (this->yt < 10.0) this->yt=pow(10.0,this->yt);
 	if (this->extra_y < 16.0) this->extra_y=pow(10.0,this->extra_y);
 
@@ -368,6 +370,14 @@ void Crust::read_T_profile_from_file(void)
 
 
 
+double Crust::total_heating_rate(void) {
+	// calculates the total energy deposited into the crust per second
+	double Etot=0.0;
+  	for (int i=0; i<=this->N+1; i++) {
+		Etot += crust_heating(i)*this->mdot*4.0*M_PI*pow(this->grid[i].r,2.0)*this->grid[i].P*this->dx;	
+	}
+	return Etot;
+}
 
 
 
@@ -378,7 +388,7 @@ void Crust::read_T_profile_from_file(void)
 void Crust::evolve(double timetorun, double mdot) {
 	// evolve the crust for timetorun days (at infinity), accretion rate mdot in Eddington units
 	this->outburst_duration=timetorun/(365.0*this->ZZ);
-	printf("Now evolve in time for %lg days at mdot=%lg (star time=%lg yrs)\n",timetorun,mdot,this->outburst_duration);
+	printf("\nEvolving in time for %lg days at mdot=%lg (star time=%lg yrs)\n",timetorun,mdot,this->outburst_duration);
 	if (mdot > 0.0) this->heating = 1; else this->heating = 0;
 	this->mdot = mdot;
 
@@ -397,13 +407,17 @@ void Crust::evolve(double timetorun, double mdot) {
 	}
 	this->ODE.go(0.0, this->outburst_duration*3.15e7, this->outburst_duration*3.15e7*0.01,1e-7);
 	stop_timing(&timer,"this->ODE.go");
-	printf("number of steps = %d\n", this->ODE.kount);
+	printf("Number of integration steps = %d\n", this->ODE.kount);
 	for (int i=1; i<=this->N+1; i++) {
 		this->grid[i].T=ODE.get_y(i,this->ODE.kount);
 	}
 
+	// output total heating
+	printf("Energy deposited (at infinity)= %lg\n", total_heating_rate() * this->outburst_duration * 3.15e7 / this->ZZ);
+
 	// output results
 	if (this->output) {
+		printf("\nOutput\n");
 		if (this->last_time_output == 0.0) {
 			this->fp=fopen("out/out","w");
 		   	this->fp2=fopen("out/prof","w");
@@ -622,7 +636,7 @@ void Crust::precalculate_vars(void)
 
 	} else {
 		
-		printf("***Reading precalculated quantities from file %s\n", s);
+		printf("Reading precalculated quantities from file %s...\n", s);
 		
 		for (int i=1; i<=this->N+1; i++) {
 			int kk; double dd;

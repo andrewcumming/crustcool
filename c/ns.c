@@ -7,7 +7,7 @@ void set_ns_parameters(double mass, double radius, double *g, double *ZZ)
 	radius*=1e5;
 	*ZZ=1.0/sqrt(1.0-2.0*6.67e-8*2e33*mass/(9e20*radius));
 	*g=*ZZ*6.67e-8*2e33*mass/(radius*radius);	
-	printf("NS parameters: M %lg M_sun, R %lg km, g14=%lg 1+z=%lg\n",
+	printf("NS parameters: M=%lg M_sun, R=%lg km, g14=%lg 1+z=%lg\n",
 		mass, radius/1e5, *g/1e14, *ZZ);
 }
 

@@ -6,7 +6,7 @@
 
 void Data::read_in_data(const char *sourcename) 
 {
-	printf("Source = %s\n",sourcename);
+	printf("\nComparing with data: source = %s\n",sourcename);
 	this->luminosity = 0;
 	
 	if (1) {    // hardcoded data    
@@ -99,8 +99,6 @@ void Data::calculate_chisq(Crust &crust)
 	TE.tidy();
 	printf("chisq = %lg\n", chisq);
 	printf("chisq_nu = %lg/(%d-3) = %lg\n", chisq, this->n, chisq/(this->n-3));
-	//return chisq;
-
 }
 
 
