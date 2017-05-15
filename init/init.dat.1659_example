@@ -16,9 +16,14 @@ accreted 1
 
 Qimp	3.2
 Tc	3.1e7
+
+# fixed top temperature during accretion:
+cooling_bc	0
+extra_heating	0
 Tt	4.2e8
 
-cooling_bc	1
-extra_heating	1
-extra_Q	1.4
-extra_y	1e13
+# or cooling boundary condition with shallow heating:
+#cooling_bc	1
+#extra_heating	1
+#extra_Q	1.4
+#extra_y	1e13

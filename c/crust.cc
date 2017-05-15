@@ -576,7 +576,7 @@ void Crust::precalculate_vars(void)
 			fprintf(fp, "Grid point %d  P=%lg  rho=%lg  A=%lg  Z=%lg Yn=%lg:  T8,CP,K,eps_nu,eps_nuc\n",
 				i, this->grid[i].P, this->grid[i].rho, (1.0-EOS->Yn)*EOS->A[1], EOS->Z[1], EOS->Yn);
 		
-			double heating = crust_heating(i);
+			double heating_rate = crust_heating(i);
 		
 			for (int j=1; j<=this->nbeta; j++) {		
 				double beta = this->betamin + (j-1)*(this->betamax-this->betamin)/(1.0*(this->nbeta-1));
@@ -594,7 +594,7 @@ void Crust::precalculate_vars(void)
 				} else {
 					this->CP_grid[i][j]=EOS->CV();
 					this->NU_grid[i][j]=EOS->eps_nu();
-					this->EPS_grid[i][j]=heating;
+					this->EPS_grid[i][j]=heating_rate;
 
 					// we calculate the thermal conductivity for Q=0 and Q=1, and later interpolate to the
 					// current value of Q. This means we can keep the performance of table lookup even when
@@ -851,7 +851,7 @@ double Crust::dTdt(int i, double *T)
 
 void Crust::outer_boundary(void)
 {
-	if (this->heating && this->Tt>0.0) this->grid[0].T=this->Tt;   // constant temperature during accretion
+	if (this->heating && this->Tt>0.0 && !this->force_cooling_bc) this->grid[0].T=this->Tt;   // constant temperature during accretion
 	else this->grid[0].T=this->grid[1].T*(8.0-this->dx)/(8.0+this->dx);   // assumes radiative zero solution, F\propto T^4
 	this->grid[0].K=this->grid[1].K; this->grid[0].CP=this->grid[1].CP;
 	if (this->nuflag) this->grid[0].NU=this->grid[1].NU; else this->grid[0].NU=0.0;

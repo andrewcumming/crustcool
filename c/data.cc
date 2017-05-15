@@ -15,7 +15,7 @@ void Data::read_in_data(const char *sourcename)
 
 		if (!strncmp(sourcename,"1659",4)) {  // MXB 1659	
 			t0=52159.5;
-			this->n=8;    // 7 data points in BC09
+			this->n=7;    // 7 data points in BC09, 8 in Cackett et al. 2013
 			this->t = new double[this->n+1];
 			this->TT = new double[this->n+1];
 			this->Te = new double[this->n+1];
@@ -27,7 +27,7 @@ void Data::read_in_data(const char *sourcename)
 			this->t[5]=53560.0; this->TT[5]= 58; this->Te[5]= 2;
 			this->t[6]=53576.7; this->TT[6]= 54; this->Te[6]= 3;
 			this->t[7]=54583.8; this->TT[7]= 56; this->Te[7]= 2;
-			this->t[8]=56113; this->TT[8]= 48.8; this->Te[8]= 1.6;
+			//this->t[8]=56113; this->TT[8]= 48.8; this->Te[8]= 1.6;
 		}
 		
 		for (int i=1; i<=this->n; i++) {
