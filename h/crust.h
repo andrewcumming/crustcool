@@ -29,7 +29,7 @@ public:
 	double Lmin, Lscale, Qimp, B, kncrit;
 	int gap,accr,use_potek_eos;		
 			
-	int force_precalc,extra_heating,nuflag,accreting,force_cooling_bc;
+	int force_precalc,extra_heating,nuflag,force_cooling_bc;
 	double rhot,rhob,heating_P1,heating_P2;
 	double energy_deposited_outer,energy_deposited_inner,energy_slope;
 	double mdot,outburst_duration;
@@ -45,7 +45,7 @@ public:
 	void jacobn(double, double *, double *, double **, int);
 					
 private:
-	int hardwireQ;
+	int hardwireQ, heating;
 
 	int nbeta;
 	double **CP_grid, **K1_grid, **K0_grid, **NU_grid, **EPS_grid, **KAPPA_grid, **K1perp_grid, **K0perp_grid;

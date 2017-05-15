@@ -7,7 +7,7 @@
 #include "../h/crust.h"
 #include "../h/data.h"
 
-void parse_parameters(char *fname,char *sourcename,Crust &crust,double &,int &);
+void parse_parameters(char *fname,char *sourcename,Crust &crust,double &,int &, int&, int &);
 void set_up_initial_temperature_profile_piecewise(char *fname, Crust &crust);
 
 
@@ -32,23 +32,27 @@ int main(int argc, char *argv[])
 		default:
 			strcat(fname,fnamedefault);
 	}
+
+	// parse the input file
 	char sourcename[200]="1659";
 	double time_to_run=1e4;
-	int use_piecewise=0;
+	int use_piecewise=0, output_heating=0, output_cooling=1;
+	parse_parameters(fname,sourcename,crust,time_to_run,use_piecewise,output_heating,output_cooling);
+
 	printf("============================================\n");
-	parse_parameters(fname,sourcename,crust,time_to_run,use_piecewise);
 			
-	// Setup
+	// Setup the crust
 	crust.setup();
 	
 	// Evolve the crust in time
 	
 	// Heating phase 
 	if (use_piecewise) {
+		// initial temperature profile was specified in the init.dat file
 		set_up_initial_temperature_profile_piecewise(fname,crust);
 	} else {
-		crust.output=0;   // don't output lightcurve while heating
-		if (time_to_run == 0.0) crust.output=1;  // unless we're not doing any cooling
+		// evolve the crust while heating
+		crust.output=output_heating;   // default is to not output the lightcurve while heating
 		// now evolve for the set outburst_duration and mdot
 		// if these were not specified in the init.dat file,
 		// then they have default values of 1 hour and mdot=1.0 which is used for the 
@@ -58,7 +62,7 @@ int main(int argc, char *argv[])
 
 	// Cooling phase
 	if (time_to_run > 0.0) {
-		crust.output=1;
+		crust.output=output_cooling;
 		crust.evolve(time_to_run,0.0);
 	}
 	
@@ -72,7 +76,8 @@ int main(int argc, char *argv[])
 
 
 
-void parse_parameters(char *fname,char *sourcename,Crust &crust,double &time_to_run,int &use_piecewise) {
+void parse_parameters(char *fname,char *sourcename,Crust &crust,double &time_to_run,int &use_piecewise,
+			int &output_heating, int &output_cooling) {
  	// Set parameters
 	printf("Reading input data from %s\n",fname);
 	FILE *fp = fopen(fname,"r");
@@ -91,7 +96,7 @@ void parse_parameters(char *fname,char *sourcename,Crust &crust,double &time_to_
 			sscanf(s1,"%s\t%s\n",s,s2);
 			strcat(includename,"init/init.dat.");
 			strcat(includename,s2);			
-			parse_parameters(includename,sourcename,crust,time_to_run,use_piecewise);
+			parse_parameters(includename,sourcename,crust,time_to_run,use_piecewise,output_heating,output_cooling);
 		}
 		if (strncmp(s1,"#",1) && strncmp(s1,"\n",1) && strncmp(s1,">",1) && commented==0) {
 			sscanf(s1,"%s\t%lg\n",s,&x);
@@ -118,7 +123,8 @@ void parse_parameters(char *fname,char *sourcename,Crust &crust,double &time_to_
 			if (!strncmp(s,"rhot",4)) crust.rhot=x;
 			if (!strncmp(s,"precalc",7)) crust.force_precalc=(int) x;
 			if (!strncmp(s,"Qinner",6)) crust.Qinner=x;
-			if (!strncmp(s,"output",6)) crust.output=x;
+			if (!strncmp(s,"output_cooling",14)) output_cooling=x;
+			if (!strncmp(s,"output_heating",14)) output_heating=x;
 			if (!strncmp(s,"timetorun",9)) time_to_run=x;			
 			if (!strncmp(s,"toutburst",9)) crust.outburst_duration=x;
 			if (!strncmp(s,"piecewise",9)) use_piecewise=(int) x;
