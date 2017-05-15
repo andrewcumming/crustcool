@@ -8,9 +8,11 @@
 #include "../h/crust.h"
 #include "../h/timer.h"
 
+// --------------------------------- Constructor and destructor ---------------------------------------------
+
 Crust::Crust() {
 
-	// initialize default parameters
+	// initialize the default parameters
 
 	// Neutron star parameters
 	this->mass = 1.6;
@@ -24,9 +26,9 @@ Crust::Crust() {
 	// Set up the grid
 	this->N = 100;
 	this->output = 1;
-	this->hardwireQ=1;	
+	this->hardwireQ=1;	// default =1 means that Qimp is specified in the init.dat file; otherwise Qimp(rho) is read in from the crust model
 	this->B=0.0;
-	this->accr=0;
+	this->accr=0;    // accreted or non-accreted crust?
 	this->Tc = 3e7;
 	this->yt = 1e12;
 	
@@ -37,9 +39,9 @@ Crust::Crust() {
 	// Other parameters that are used during time evolution
 	this->Qimp=1.0;
 	this->rhot=1e9;
-	this->rhob=1e14;	
 	this->Tt=4e8;
-	this->outburst_duration=(1.0/24.0) * 1.0/(365.0);
+	this->rhob=1e14;
+	this->outburst_duration=(1.0/24.0) * 1.0/(365.0);   // default outburst is 1 hour => magnetar
 	this->extra_heating=0;
 	this->force_cooling_bc=0;
 	this->extra_Q=1.0;
@@ -64,8 +66,17 @@ Crust::Crust() {
 	
 	this->use_potek_eos=0;
 	
-	this->resume = 0;
+	this->resume = 0;    // if =1 then read in the temperature profile from last time and start from there
 }
+
+
+Crust::~Crust() {
+	// destructor
+	this->ODE.tidy(); 
+	delete [] this->grid;
+}
+
+// --------------------------------- Setup ---------------------------------------------
 
 void Crust::setup(void) {
 
@@ -104,201 +115,6 @@ void Crust::setup(void) {
 	this->ODE.verbose=0;
   	this->ODE.stiff=1; this->ODE.tri=1;  // stiff integrator with tridiagonal solver
 }
-
-void Crust::evolve(double timetorun, double mdot) {
-
-	// time is the time to evolve in days
-	// mdot is the accretion rate in Eddington units
-	this->outburst_duration=timetorun/(365.0*this->ZZ);
-	printf("Now evolve in time for %lg days at mdot=%lg (star time=%lg yrs)\n",timetorun,mdot,this->outburst_duration);
-	if (mdot > 0.0) this->accreting = 1; else this->accreting = 0;
-	this->mdot = mdot;
-
-	clock_t timer;
-	start_timing(&timer);
-	int store_output=this->output;
-	this->output=1;
-  	precalculate_vars();
-	this->output=store_output;
-	this->force_precalc=0;  // only precalc once per session
-	stop_timing(&timer,"precalculate_vars");
-
-	start_timing(&timer);
-	this->ODE.dxsav=1e4;
-	for (int i=1; i<=this->N+1; i++) {
-		this->ODE.set_bc(i,this->grid[i].T);
-	}
-	this->ODE.go(0.0, this->outburst_duration*3.15e7, this->outburst_duration*3.15e7*0.01,1e-7);
-	stop_timing(&timer,"this->ODE.go");
-	printf("number of steps = %d\n", this->ODE.kount);
-
-	for (int i=1; i<=this->N+1; i++) {
-		this->grid[i].T=ODE.get_y(i,this->ODE.kount);
-	}
-
-	// output results
-	if (this->output) {
-		printf("Starting output\n");
-		if (this->last_time_output == 0.0) {
-			this->fp=fopen("out/out","w");
-		   	this->fp2=fopen("out/prof","w");
-		} else {
-			this->fp=fopen("out/out","a");
-	   		this->fp2=fopen("out/prof","a");
-		}
-		if (this->last_time_output == 0.0) fprintf(this->fp,"%d %lg\n",this->N+1,this->g);
-		start_timing(&timer);
-		for (int j=1; j<=this->ODE.kount; j++) output_result_for_step(j,this->fp,this->fp2,this->timesofar,&this->last_time_output);
-		fflush(this->fp); fflush(this->fp2);
-		stop_timing(&timer,"output");
-		fclose(this->fp);
-		fclose(this->fp2);
-		this->timesofar+=this->outburst_duration*3.15e7;
-	}
-}
-
-
-void Crust::set_temperature_profile(double *rhovec,double *Tvec,int nvec) 
-// sets the temperature profile by interpolating between the specified (density, temperature) pairs
-{
-	// if density is <0 it means the base density
-	// if density is 0 it means the top density
-	// if temperature is <=0 it means the core temperature
-	for (int i=1; i<nvec; i++) {
-		if (Tvec[i] <= 0.0) Tvec[i]=this->Tc;
-		if (rhovec[i] < 0.0) rhovec[i] = this->grid[this->N].rho;
-		if (rhovec[i] == 0.0) {
-			rhovec[i] = this->grid[1].rho;
-		}
-	}	
-	if (rhovec[nvec-1] != this->grid[this->N].rho) {  // if we didn't specify it in the file,
-									// set the temperature of the base to the core temperature
-		nvec++;
-		rhovec[nvec-1] = this->grid[this->N].rho;
-		Tvec[nvec-1] = this->Tc;
-	}
-
-	// now assign initial temperatures to the grid
-	// the temperature is linearly interpolated in log density
-	for (int i=1; i<=this->N+1; i++) {
-		double Ti;
-		if (i==1) {
-			Ti=Tvec[1]; 
-			this->Tt=Ti;
-		} else {
-			if (i==this->N+1) {
-				Ti=Tvec[nvec];		
-			} else {
-				int	j=0; 
-				while (rhovec[j] < this->grid[i].rho && j<nvec) j++;
-				Ti = pow(10.0,log10(Tvec[j-1]) + log10(Tvec[j]/Tvec[j-1])*log10(this->grid[i].rho/rhovec[j-1])/log10(rhovec[j]/rhovec[j-1]));
-			}
-		}	
-		
-		this->grid[i].T=Ti;
-	}
-}
-
-
-Crust::~Crust() {
-	// destructor
-	this->ODE.tidy(); 
-	delete [] this->grid;
-}
-
-
-
-void Crust::output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar,double *last_time_output) 
-{
-	// Output if enough time has elapsed
-	if (fabs(log10(this->ODE.get_x(j)/this->ODE.get_x(j-1))) >= 0.01) {
-
-		// get CP,K,eps,eps_nu at each point on the grid
-		for (int i=1; i<=this->N+1; i++) {
-			this->grid[i].T=this->ODE.get_y(i,j);
-			calculate_vars(i);
-		}
-		// outer boundary
-		double T0;
-		this->grid[1].T=this->ODE.get_y(1,j);
-		outer_boundary();
-		T0=this->grid[0].T;
-
-		// timestep
-		double dt;
-		if (j==1) dt=this->ODE.get_x(j); else dt=this->ODE.get_x(j)-this->ODE.get_x(j-1);
-
-		// heat fluxes on the grid
-		double *TT=new double [this->N+2];
-		for (int i=1; i<=this->N+1; i++) TT[i]=this->ODE.get_y(i,j);
-		double FF = calculate_heat_flux(1,TT);
-		for (int i=1; i<=this->N+1; i++) this->grid[i].F = calculate_heat_flux(i,TT);
-		delete [] TT;
-
-		// total neutrino luminosity
-		double Lnu=0.0;
-		for (int i=1; i<=this->N; i++) Lnu += this->grid[i].NU*this->dx*this->grid[i].P/this->g;
-	
-		// we output time, fluxes and TEFF that are already redshifted into the observer frame
-		// out/prof
-		fprintf(fp2, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", (timesofar+this->ODE.get_x(j))*this->ZZ, 
-			pow((this->radius/11.2),2.0)*this->grid[2].F/(this->ZZ*this->ZZ), pow((this->radius/11.2),2.0)*FF/(this->ZZ*this->ZZ),
-			this->ODE.get_y(this->N-5,j), pow((this->g/2.28e14)*TEFF.get(this->ODE.get_y(1,j))/5.67e-5,0.25)/this->ZZ, 
-			this->ODE.get_y(1,j), pow((this->g/2.28e14)*TEFF.get(this->ODE.get_y(1,j))/5.67e-5,0.25),
-			pow((this->radius/11.2),2.0)*this->grid[this->N+1].F/(this->ZZ*this->ZZ),pow((this->radius/11.2),2.0)*this->grid[this->N].F/(this->ZZ*this->ZZ),
-			4.0*M_PI*pow(1e5*this->radius,2.0)*Lnu/(this->ZZ*this->ZZ), dt);
-			
-		if ((fabs(log10(fabs(timesofar+this->ODE.get_x(j))*this->ZZ)-log10(fabs(*last_time_output))) >= 1000.0) ||
-			(fabs(timesofar)+this->ODE.get_x(j))*this->ZZ < 1e10) {
-			// temperature profile into out/out
-			fprintf(fp,"%lg\n",this->ZZ*(timesofar+this->ODE.get_x(j)));
-			for (int i=1; i<=this->N+1; i++)
-				fprintf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", 
-					this->grid[i].P, this->ODE.get_y(i,j), this->grid[i].F, this->grid[i].NU, this->g*(this->grid[i+1].F-this->grid[i].F)/(this->dx*this->grid[i].P), this->grid[i].rho, this->grid[i].CP*this->grid[i].rho, 
-					this->ODE.get_d(i,j),1e8*pow(this->grid[i].P/2.521967e17,0.25), this->grid[i].K, 2.521967e-15*pow(this->ODE.get_y(i,j),4)/this->grid[i].P,
-					this->grid[i].NU,this->grid[i].EPS);
- 		}
-		*last_time_output=(timesofar+this->ODE.get_x(j))*this->ZZ;
-
-	}
-
-
-}
-
-
-
-void Crust::read_T_profile_from_file(void)
-{
-	int npoints;
-	double dd, tt;
-
-	FILE *fp = fopen("out/out","r");
-
-	// first read the header
-	fscanf(fp,"%d %lg\n",&npoints,&dd);
-	if (npoints != this->N+1) {
-		printf("Problem reading previous T profile: number of grid points is different\n");
-		exit(0);
-	}
-	
-	while (!feof(fp)) {	
-		fscanf(fp,"%lg\n",&tt);		
-		for (int i=1; i<=npoints; i++) {
-			double T;
-			fscanf(fp,"%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n",&dd,&T,&dd,&dd,&dd,&dd,&dd,&dd,&dd,&dd,&dd,&dd,&dd);
-			this->grid[i].T = T;
-		}
-	}
-
-	fclose(fp);
-
-	this->last_time_output = tt;	
-	this->timesofar = tt / this->ZZ;
-}
-
-
-
-
 
 
 void Crust::set_up_grid(const char *fname)
@@ -385,7 +201,7 @@ void Crust::set_up_grid(const char *fname)
 		// it avoids jumps in the melting point associated with e-capture boundaries
 		double GammaT;
 		if (0) {
-			double Z=26.0,A=56.0;   // 28Si
+			double Z=26.0,A=56.0;   // 56Fe
 			GammaT = pow(Z*4.8023e-10,2.0)*pow(4.0*M_PI*this->EOS->rho/(3.0*A*1.67e-24),1.0/3.0)/1.38e-16;
 		} else {
 			GammaT = pow(this->EOS->Z[1]*4.8023e-10,2.0)*pow(4.0*M_PI*this->EOS->rho/(3.0*this->EOS->A[1]*1.67e-24),1.0/3.0)/1.38e-16;
@@ -395,13 +211,13 @@ void Crust::set_up_grid(const char *fname)
 		double LoverT = 0.8 * 1.38e-16 /(this->EOS->A[1]*1.67e-24);
 
 		this->grid[i].Qheat=0.0;
-		if (!this->hardwireQ) {
+		if (!this->hardwireQ) {    // we're using our own crust model
 			double P1 = exp(x-0.5*this->dx);
 			double P2 = exp(x+0.5*this->dx);
 			this->grid[i].Qheat=QhSpline.get(log10(P2))-QhSpline.get(log10(P1));
 			if (this->grid[i].Qheat<0.0) this->grid[i].Qheat=0.0;
+			Qtot+=this->grid[i].Qheat;
 		}
-		Qtot+=this->grid[i].Qheat;
 
 		if (!this->hardwireQ) {
 			this->grid[i].Qimpur=QiSpline.get(log10(this->grid[i].P));
@@ -423,9 +239,9 @@ void Crust::set_up_grid(const char *fname)
 
   	printf("Grid has %d points, delx=%lg, Pb=%lg, rhob=%lg, Pt=%lg, rhot=%lg, thickness=%lg m\n", 
 			this->N, this->dx, this->grid[this->N].P,this->grid[this->N].rho,this->grid[1].P,this->grid[1].rho,(this->grid[0].r-this->grid[this->N+1].r)*1e-2);
+	if (!this->hardwireQ)
 		printf("Total heat release is %lg MeV\n",Qtot);
 }
-
 
 
 void Crust::get_TbTeff_relation(void)
@@ -479,8 +295,207 @@ void Crust::get_TbTeff_relation(void)
 }
 
 
+void Crust::set_temperature_profile(double *rhovec,double *Tvec,int nvec) 
+// sets the temperature profile by interpolating between the specified (density, temperature) pairs
+{
+	// if density is <0 it means the base density
+	// if density is 0 it means the top density
+	// if temperature is <=0 it means the core temperature
+	for (int i=1; i<nvec; i++) {
+		if (Tvec[i] <= 0.0) Tvec[i]=this->Tc;
+		if (rhovec[i] < 0.0) rhovec[i] = this->grid[this->N].rho;
+		if (rhovec[i] == 0.0) {
+			rhovec[i] = this->grid[1].rho;
+		}
+	}	
+	if (rhovec[nvec-1] != this->grid[this->N].rho) {  // if we didn't specify it in the file,
+									// set the temperature of the base to the core temperature
+		nvec++;
+		rhovec[nvec-1] = this->grid[this->N].rho;
+		Tvec[nvec-1] = this->Tc;
+	}
+
+	// now assign initial temperatures to the grid
+	// the temperature is linearly interpolated in log density
+	for (int i=1; i<=this->N+1; i++) {
+		double Ti;
+		if (i==1) {
+			Ti=Tvec[1]; 
+			this->Tt=Ti;
+		} else {
+			if (i==this->N+1) {
+				Ti=Tvec[nvec];		
+			} else {
+				int	j=0; 
+				while (rhovec[j] < this->grid[i].rho && j<nvec) j++;
+				Ti = pow(10.0,log10(Tvec[j-1]) + log10(Tvec[j]/Tvec[j-1])*log10(this->grid[i].rho/rhovec[j-1])/log10(rhovec[j]/rhovec[j-1]));
+			}
+		}	
+		
+		this->grid[i].T=Ti;
+	}
+}
+
+
+void Crust::read_T_profile_from_file(void)
+{
+	int npoints;
+	double dd, tt;
+
+	FILE *fp = fopen("out/out","r");
+
+	// first read the header
+	fscanf(fp,"%d %lg\n",&npoints,&dd);
+	if (npoints != this->N+1) {
+		printf("Problem reading previous T profile: number of grid points is different\n");
+		exit(0);
+	}
+	
+	while (!feof(fp)) {	
+		fscanf(fp,"%lg\n",&tt);		
+		for (int i=1; i<=npoints; i++) {
+			double T;
+			fscanf(fp,"%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n",&dd,&T,&dd,&dd,&dd,&dd,&dd,&dd,&dd,&dd,&dd,&dd,&dd);
+			this->grid[i].T = T;
+		}
+	}
+
+	fclose(fp);
+
+	this->last_time_output = tt;	
+	this->timesofar = tt / this->ZZ;
+}
+
+
+
+
+
+
+
+// --------------------------------- Time evolution ---------------------------------------------
+
+
+void Crust::evolve(double timetorun, double mdot) {
+
+	// time is the time to evolve in days
+	// mdot is the accretion rate in Eddington units
+	this->outburst_duration=timetorun/(365.0*this->ZZ);
+	printf("Now evolve in time for %lg days at mdot=%lg (star time=%lg yrs)\n",timetorun,mdot,this->outburst_duration);
+	if (mdot > 0.0) this->accreting = 1; else this->accreting = 0;
+	this->mdot = mdot;
+
+	clock_t timer;
+	start_timing(&timer);
+	int store_output=this->output;
+	this->output=1;
+  	precalculate_vars();
+	this->output=store_output;
+	this->force_precalc=0;  // only precalc once per session
+	stop_timing(&timer,"precalculate_vars");
+
+	start_timing(&timer);
+	this->ODE.dxsav=1e4;
+	for (int i=1; i<=this->N+1; i++) {
+		this->ODE.set_bc(i,this->grid[i].T);
+	}
+	this->ODE.go(0.0, this->outburst_duration*3.15e7, this->outburst_duration*3.15e7*0.01,1e-7);
+	stop_timing(&timer,"this->ODE.go");
+	printf("number of steps = %d\n", this->ODE.kount);
+
+	for (int i=1; i<=this->N+1; i++) {
+		this->grid[i].T=ODE.get_y(i,this->ODE.kount);
+	}
+
+	// output results
+	if (this->output) {
+		printf("Starting output\n");
+		if (this->last_time_output == 0.0) {
+			this->fp=fopen("out/out","w");
+		   	this->fp2=fopen("out/prof","w");
+		} else {
+			this->fp=fopen("out/out","a");
+	   		this->fp2=fopen("out/prof","a");
+		}
+		if (this->last_time_output == 0.0) fprintf(this->fp,"%d %lg\n",this->N+1,this->g);
+		start_timing(&timer);
+		for (int j=1; j<=this->ODE.kount; j++) output_result_for_step(j,this->fp,this->fp2,this->timesofar,&this->last_time_output);
+		fflush(this->fp); fflush(this->fp2);
+		stop_timing(&timer,"output");
+		fclose(this->fp);
+		fclose(this->fp2);
+		this->timesofar+=this->outburst_duration*3.15e7;
+	}
+}
+
+
+
+
+void Crust::output_result_for_step(int j, FILE *fp, FILE *fp2,double timesofar,double *last_time_output) 
+{
+	// Output if enough time has elapsed
+	if (fabs(log10(this->ODE.get_x(j)/this->ODE.get_x(j-1))) >= 0.01) {
+
+		// get CP,K,eps,eps_nu at each point on the grid
+		for (int i=1; i<=this->N+1; i++) {
+			this->grid[i].T=this->ODE.get_y(i,j);
+			calculate_vars(i);
+		}
+		// outer boundary
+		double T0;
+		this->grid[1].T=this->ODE.get_y(1,j);
+		outer_boundary();
+		T0=this->grid[0].T;
+
+		// timestep
+		double dt;
+		if (j==1) dt=this->ODE.get_x(j); else dt=this->ODE.get_x(j)-this->ODE.get_x(j-1);
+
+		// heat fluxes on the grid
+		double *TT=new double [this->N+2];
+		for (int i=1; i<=this->N+1; i++) TT[i]=this->ODE.get_y(i,j);
+		double FF = calculate_heat_flux(1,TT);
+		for (int i=1; i<=this->N+1; i++) this->grid[i].F = calculate_heat_flux(i,TT);
+		delete [] TT;
+
+		// total neutrino luminosity
+		double Lnu=0.0;
+		for (int i=1; i<=this->N; i++) Lnu += this->grid[i].NU*this->dx*this->grid[i].P/this->g;
+	
+		// we output time, fluxes and TEFF that are already redshifted into the observer frame
+		// out/prof
+		fprintf(fp2, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", (timesofar+this->ODE.get_x(j))*this->ZZ, 
+			pow((this->radius/11.2),2.0)*this->grid[2].F/(this->ZZ*this->ZZ), pow((this->radius/11.2),2.0)*FF/(this->ZZ*this->ZZ),
+			this->ODE.get_y(this->N-5,j), pow((this->g/2.28e14)*TEFF.get(this->ODE.get_y(1,j))/5.67e-5,0.25)/this->ZZ, 
+			this->ODE.get_y(1,j), pow((this->g/2.28e14)*TEFF.get(this->ODE.get_y(1,j))/5.67e-5,0.25),
+			pow((this->radius/11.2),2.0)*this->grid[this->N+1].F/(this->ZZ*this->ZZ),pow((this->radius/11.2),2.0)*this->grid[this->N].F/(this->ZZ*this->ZZ),
+			4.0*M_PI*pow(1e5*this->radius,2.0)*Lnu/(this->ZZ*this->ZZ), dt);
+			
+		if ((fabs(log10(fabs(timesofar+this->ODE.get_x(j))*this->ZZ)-log10(fabs(*last_time_output))) >= 1000.0) ||
+			(fabs(timesofar)+this->ODE.get_x(j))*this->ZZ < 1e10) {
+			// temperature profile into out/out
+			fprintf(fp,"%lg\n",this->ZZ*(timesofar+this->ODE.get_x(j)));
+			for (int i=1; i<=this->N+1; i++)
+				fprintf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", 
+					this->grid[i].P, this->ODE.get_y(i,j), this->grid[i].F, this->grid[i].NU, this->g*(this->grid[i+1].F-this->grid[i].F)/(this->dx*this->grid[i].P), this->grid[i].rho, this->grid[i].CP*this->grid[i].rho, 
+					this->ODE.get_d(i,j),1e8*pow(this->grid[i].P/2.521967e17,0.25), this->grid[i].K, 2.521967e-15*pow(this->ODE.get_y(i,j),4)/this->grid[i].P,
+					this->grid[i].NU,this->grid[i].EPS);
+ 		}
+		*last_time_output=(timesofar+this->ODE.get_x(j))*this->ZZ;
+
+	}
+
+
+}
+
+
+
+
+
+// --------------------------------- Crust properties ---------------------------------------------
+
 
 void Crust::set_composition(void)
+// sets the composition appropriate for the current pressure
 {
 	if (this->hardwireQ) {
 		// use the EOS routines to get the composition
@@ -609,8 +624,6 @@ void Crust::precalculate_vars(void)
 					fprintf(fp, "%lg %lg %lg %lg %lg %lg %lg %lg %lg\n", EOS->T8, this->CP_grid[i][j], 
 						this->K0_grid[i][j],this->K1_grid[i][j], this->K0perp_grid[i][j],this->K1perp_grid[i][j],
 						this->NU_grid[i][j], this->EPS_grid[i][j], this->KAPPA_grid[i][j] );
-				this->EPS_grid[i][j]*=energy_deposited(i);
-
 			}	
 		}
 		if (this->output) fclose(fp);
@@ -629,7 +642,6 @@ void Crust::precalculate_vars(void)
 					&this->NU_grid[i][j], &this->EPS_grid[i][j],&this->KAPPA_grid[i][j]);
 				// always calculate the crust heating..
 				this->EPS_grid[i][j]=crust_heating(i);
-				this->EPS_grid[i][j]*=energy_deposited(i);
 			}
 		}
 		fclose(fp);
@@ -638,24 +650,14 @@ void Crust::precalculate_vars(void)
 	
 }
 
-
-double Crust::energy_deposited(int i)
-{
-	double ener;
-	if (this->grid[i].rho>4e11) ener = this->energy_deposited_inner;
-	else ener = this->energy_deposited_outer;
-	ener *= pow(this->grid[i].rho/1e10,this->energy_slope);
-	return ener;
-}
-
-
 double Crust::crust_heating(int i) 
-// calculates the crust heating in erg/g/s
-// for grid point i
+// calculates the crust heating for grid point i
+// units are erg/g/s  divided by (mdot*g)
+// (the mdot*g factor is put back in when we calculate dTdt, so that we don't need to precalculate when changing either mdot or g)
 {
 	double eps=0.0,P = this->grid[i].P;
 
-	// if we are heating on < 1day timescale then its a magnetar
+	// if we are heating on < 1 day timescale then it is a magnetar
 	if (this->outburst_duration<1.0/365.0) {
 		
 		// eps in erg/g/s
@@ -673,27 +675,31 @@ double Crust::crust_heating(int i)
 		if (P1 > this->heating_P1 && P2 > this->heating_P2 && this->heating_P2>P1) {  // right hand edge of heated region
 			eps = eps_heat * log(this->heating_P2/P1)/this->dx;
 		}
-
+		
+		{ // the above assumed 1e25 erg/cm^3 deposited energy; now apply a multiplier as specified in the inlist.dat
+			double ener;
+			if (this->grid[i].rho>4e11) ener = this->energy_deposited_inner;
+			else ener = this->energy_deposited_outer;
+			ener *= pow(this->grid[i].rho/1e10,this->energy_slope);
+			eps *= ener;
+		}
+		
 	} else {  // otherwise we are doing an accreting neutron star
 
-		if (!this->hardwireQ) {
+		if (!this->hardwireQ) {   // the profile of Q(rho) was specified in the crust model
 			eps = this->grid[i].Qheat*8.8e4*9.64e17/(this->grid[i].P*this->dx);
 		} else {
-			// simple "smeared out" heating function, 1.2MeV in inner crust, 0.2MeV in outer crust
+			// simple "smeared out" heating function, 1.5MeV in inner crust, 0.2MeV in outer crust (as in BC09)
 			eps += eps_from_heat_source(P,1e16,1e17,1.5);	
 			eps += eps_from_heat_source(P,3e12,3e15,0.2);
-//			if (P >= 1e16*2.28e14 && P <= 1e17*2.28e14) eps=8.8e4*this->deep_heating_factor*1.5*9.64e17/(P*log(1e17/1e16));
-//		 	if (P >= 3e12*2.28e14 && P < 3e15*2.28e14) eps=8.8e4*this->deep_heating_factor*0.2*9.64e17/(P*log(3e15/3e12));
 
 			// Extra heat source in the ocean
 			if (this->extra_heating) {	
 				// Put all of the extra heat into one grid point
 				//if (this->grid[i].P*exp(-0.5*this->dx) <this->extra_y*2.28e14 && this->grid[i].P*exp(0.5*this->dx)>this->extra_y*2.28e14)
 				//		eps+=8.8e4*this->extra_Q*9.64e17/(P*this->dx);
-
 				double heating_spread = 3.0;
-				eps += eps_from_heat_source(P,this->extra_y/heating_spread,this->extra_y*heating_spread,this->extra_Q);
-				
+				eps += eps_from_heat_source(P,this->extra_y/heating_spread,this->extra_y*heating_spread,this->extra_Q);				
 			}
 		}
 	}
@@ -704,6 +710,7 @@ double Crust::crust_heating(int i)
 
 
 double Crust::eps_from_heat_source(double P,double y1,double y2,double Q_heat)
+// returns the local heating rate at pressure P for a heat source distributed between effective pressures y1 and y2
 {
 	double eps = 0.0;
 	double P1 = P*exp(-0.5*this->dx);
@@ -727,7 +734,7 @@ double Crust::eps_from_heat_source(double P,double y1,double y2,double Q_heat)
 
 
 
-// ----------------------------- Time integration -------------------------------------------
+// ----------------------------- Integration -------------------------------------------------------------
 
 
 void Crust::derivs(double t, double T[], double dTdt[])

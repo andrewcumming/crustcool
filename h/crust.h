@@ -56,7 +56,6 @@ private:
 	void get_TbTeff_relation(void);
 	void set_composition(void);
 	double crust_heating(int i);
-	double energy_deposited(int i);
 	void precalculate_vars(void);
 	double eps_from_heat_source(double P,double y1,double y2,double Q_heat);
 

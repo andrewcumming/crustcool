@@ -23,7 +23,7 @@ OBJS = $(LOCODIR)/crustcool.o $(LOCODIR)/crust.o $(ODIR)/root.o $(ODIR)/vector.o
 OBJS3 = $(LOCODIR)/makegrid.o $(ODIR)/root.o $(ODIR)/vector.o $(ODIR)/odeint.o $(ODIR)/eos.o $(ODIR)/spline.o $(LOCODIR)/condegin13.o $(LOCODIR)/eosmag13.o $(LOCODIR)/eos13.o $(LOCODIR)/envelope.o
 
 crustcool : $(OBJS)
-	$(CC) -o crustcool $(OBJS) $(CFLAGS) -lm -lgfortran -L/usr/local/gfortran/lib -lgsl -lgslcblas -L/Applications/mesasdk/lib -L/usr/local/lib
+	$(CC) -o crustcool $(OBJS) $(CFLAGS) -lm -lgfortran -lgsl -lgslcblas -L/Applications/mesasdk/lib -L/usr/local/lib
 
 $(LOCODIR)/crustcool.o : $(LOCCDIR)/crustcool.cc
 	$(CC) -c $(LOCCDIR)/crustcool.cc -o $(LOCODIR)/crustcool.o $(CFLAGS) 

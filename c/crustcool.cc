@@ -7,7 +7,7 @@
 #include "../h/crust.h"
 #include "../h/data.h"
 
-void parse_parameters(char *fname,char *sourcename,Crust &crust,double &,int &,int &);
+void parse_parameters(char *fname,char *sourcename,Crust &crust,double &,int &);
 void set_up_initial_temperature_profile_piecewise(char *fname, Crust &crust);
 
 
@@ -34,9 +34,9 @@ int main(int argc, char *argv[])
 	}
 	char sourcename[200]="1659";
 	double time_to_run=1e4;
-	int instant_heat=0, use_piecewise=0;
+	int use_piecewise=0;
 	printf("============================================\n");
-	parse_parameters(fname,sourcename,crust,time_to_run,instant_heat,use_piecewise);
+	parse_parameters(fname,sourcename,crust,time_to_run,use_piecewise);
 			
 	// Setup
 	crust.setup();
@@ -48,7 +48,11 @@ int main(int argc, char *argv[])
 		set_up_initial_temperature_profile_piecewise(fname,crust);
 	} else {
 		crust.output=0;   // don't output lightcurve while heating
-		if (time_to_run == 0.0) crust.output=1;
+		if (time_to_run == 0.0) crust.output=1;  // unless we're not doing any cooling
+		// now evolve for the set outburst_duration and mdot
+		// if these were not specified in the init.dat file,
+		// then they have default values of 1 hour and mdot=1.0 which is used for the 
+		// magnetar case (rapid heating)
 		crust.evolve(crust.outburst_duration*365.0,crust.mdot);
 	}
 
@@ -68,7 +72,7 @@ int main(int argc, char *argv[])
 
 
 
-void parse_parameters(char *fname,char *sourcename,Crust &crust,double &time_to_run,int &instant_heat,int &use_piecewise) {
+void parse_parameters(char *fname,char *sourcename,Crust &crust,double &time_to_run,int &use_piecewise) {
  	// Set parameters
 	printf("Reading input data from %s\n",fname);
 	FILE *fp = fopen(fname,"r");
@@ -87,7 +91,7 @@ void parse_parameters(char *fname,char *sourcename,Crust &crust,double &time_to_
 			sscanf(s1,"%s\t%s\n",s,s2);
 			strcat(includename,"init/init.dat.");
 			strcat(includename,s2);			
-			parse_parameters(includename,sourcename,crust,time_to_run,instant_heat,use_piecewise);
+			parse_parameters(includename,sourcename,crust,time_to_run,use_piecewise);
 		}
 		if (strncmp(s1,"#",1) && strncmp(s1,"\n",1) && strncmp(s1,">",1) && commented==0) {
 			sscanf(s1,"%s\t%lg\n",s,&x);
@@ -113,7 +117,6 @@ void parse_parameters(char *fname,char *sourcename,Crust &crust,double &time_to_
 			if (!strncmp(s,"rhob",4)) crust.rhob=x;
 			if (!strncmp(s,"rhot",4)) crust.rhot=x;
 			if (!strncmp(s,"precalc",7)) crust.force_precalc=(int) x;
-			if (!strncmp(s,"instant",7)) instant_heat=(int) x;
 			if (!strncmp(s,"Qinner",6)) crust.Qinner=x;
 			if (!strncmp(s,"output",6)) crust.output=x;
 			if (!strncmp(s,"timetorun",9)) time_to_run=x;			
