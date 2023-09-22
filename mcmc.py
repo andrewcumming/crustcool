@@ -33,7 +33,7 @@ Tt	4.2e8
 Qimp	3.5
 Tc	3.0e7
 """
-	
+    
 	params = {
 		'Tc':x[0]*1e7,
 		'Qimp':10.0**x[1],
@@ -43,7 +43,7 @@ Tc	3.0e7
 	#	'radius':x[5]
 	}
 	
-	for key,value in params.items():
+	for key,value in list(params.items()):
 		data = re.sub("%s(\\t?\\w?).*\\n" % key,"%s\\t%f\\n" % (key,value),data)
 
 	fout = open('/tmp/init.dat.'+name,'w')
@@ -116,6 +116,6 @@ while True:
 	if count % 10 == 0:
 		fmc.flush()
 		
-	print a[0],a[1], 10.0**a[1],a[2], chisq, accept_count, count, 1.0*accept_count/count
+	print(a[0],a[1], 10.0**a[1],a[2], chisq, accept_count, count, 1.0*accept_count/count)
 
 fmc.close()

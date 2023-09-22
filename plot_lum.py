@@ -2,7 +2,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set_style("ticks",{'xtick.direction': u'in','ytick.direction': u'in'})
+sns.set_style("ticks",{'xtick.direction': 'in','ytick.direction': 'in'})
 sns.set_context("paper",font_scale=1.6)
 fig = plt.figure(figsize=(8,6))
 ax = fig.add_subplot(1,1,1)
