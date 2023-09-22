@@ -18,7 +18,7 @@ extern "C"{
   void condegin_(double *temp,double *densi,double *B,double *Zion,double *CMI,
 					double *CMI1,double *Zimp, double *RSIGMA,double *RTSIGMA,
 					double *RHSIGMA,double *RKAPPA,double *RTKAPPA,double *RHKAPPA);
-  void eosmag_(double *Zion,double *CMI,double *RHO,double *TEMP,double *GAMAG,
+  void eosm20_(double *Zion,double *CMI,double *RHO,double *TEMP,double *GAMAG,
      			double *DENS,double *GAMI,double *CHI,double *TPT,double *LIQSOL,
 				double *PnkT,double *UNkT,double *SNk,double *CVE,double *CVI,double *CHIR,double *CHIT);
 };
@@ -1353,7 +1353,7 @@ void Eos::potek_eos(double *P_out, double *cv_out_e, double *cv_out_i)
 	double GAMAG = 0.0;
 	double DENS, GAMI, CCHI, TPT, LIQSOL=1, PnkT, UNkT,SNk,CCVI,CCVE,CHIR,CHIT;
 //	if (TT<0.0) TT=100.0;
-	eosmag_(&Zion,&CMI,&RR,&TT,&GAMAG,&DENS,&GAMI,&CCHI,&TPT,&LIQSOL,&PnkT,&UNkT,&SNk,&CCVE,&CCVI,
+	eosm20_(&Zion,&CMI,&RR,&TT,&GAMAG,&DENS,&GAMI,&CCHI,&TPT,&LIQSOL,&PnkT,&UNkT,&SNk,&CCVE,&CCVI,
 			&CHIR,&CHIT);
 	//Multiply pressure by 8.31447e13 rho T6/CMImean to get cgs pressure
 	*P_out = PnkT * 8.31447e13 * this->rho * 100.0*this->T8/this->A[1];

@@ -7,8 +7,8 @@ To compile, `make` should compile the cooling code `crustcool`.
 #### Requirements
 
 * GNU Scientific Library [GSL](http://www.gnu.org/software/gsl/) 
-* [condegin13.f](http://www.ioffe.ru/astro/conduct/condin.html) fortran routine by A. Potekhin to calculate thermal conductivity (put this in the `c` directory)
-* [eos14.f](http://www.ioffe.ru/astro/EIP/index.html) and [eosmag14.f](http://www.ioffe.ru/astro/EIP/index.html) fortran routines by A. Potekhin which calculate equation of state (put this in the `c` directory)
+* [condegin19.f](http://www.ioffe.ru/astro/conduct/condin.html) fortran routine by A. Potekhin to calculate thermal conductivity (put this in the `c` directory)
+* [eos22.f](http://www.ioffe.ru/astro/EIP/index.html) and [eosmag22.f](http://www.ioffe.ru/astro/EIP/index.html) fortran routines by A. Potekhin which calculate equation of state (put this in the `c` directory)
 * For MCMC, [emcee](https://github.com/dfm/emcee) and [triangle_plot](https://github.com/dfm/triangle.py)
 
 ### Setting parameters 

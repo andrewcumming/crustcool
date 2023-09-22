@@ -1,6 +1,6 @@
 import numpy
 import matplotlib
-matplotlib.use('macosx')
+# matplotlib.use('macosx')
 import matplotlib.pyplot as plt
 import triangle
 import sys

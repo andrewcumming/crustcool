@@ -11,7 +11,7 @@ def grav(M,R):
 	return g
 
 def grav_eqn(R,M,g):
-	return grav(M,R) - g
+    return grav(M,R) - g
 
 def R(M,g):
 	return brentq(grav_eqn,1.0,20.0,xtol=1e-6,args=(M,g,))

@@ -50,5 +50,5 @@ while timestamp:
 			plt.savefig("png/%03d.png" % i)
 		plt.pause(0.001)
 
-input('Press any key to end')
+eval(input('Press any key to end'))
 f.close()
