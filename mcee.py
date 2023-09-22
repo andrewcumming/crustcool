@@ -18,10 +18,10 @@ import random
 
 def main():
 
-	nwalkers, ndim = 200, 8
-	nsteps = 10
+	nwalkers, ndim = 10, 3
+	nsteps = 1
 	# 200, 1000
-	dir = '1822_14'
+	dir = '1659'
 	if os.path.exists('mcmc/'+dir):
 		print(('The output directory mcmc/'+dir+' already exists!'))
 		exit()
@@ -34,11 +34,11 @@ def main():
 	#p0 = emcee.utils.sample_ball([3.0,13.0,1.4,10.0],[0.5,0.5,0.1,1.0],nwalkers)
 	#p0 = emcee.utils.sample_ball([9.0,1.0,4.0,0.1,1.2,13.0],[0.3,0.1,0.3,0.01,0.01,0.5],nwalkers)
 	#p0 = emcee.utils.sample_ball([7.7,0.5,4.0,0.1],[0.3,0.3,0.3,0.01],nwalkers)
-	#p0 = emcee.utils.sample_ball([7.7,0.5,4.0],[0.3,0.3,0.3],nwalkers)
+	p0 = emcee.utils.sample_ball([7.7,0.5,4.0],[0.3,0.3,0.3],nwalkers)
 	
 	# Q,Lscale,Touter,Tc,M,R,rhotransition,Tinner
-	p0 = emcee.utils.sample_ball([1.0,0.2,9.0,2.0,1.8,2.0,10.0,1.0],
-			[0.1,0.03,0.1,0.1,0.07,0.3,0.1,0.2],nwalkers)
+	#p0 = emcee.utils.sample_ball([1.0,0.2,9.0,2.0,1.8,2.0,10.0,1.0],
+			#[0.1,0.03,0.1,0.1,0.07,0.3,0.1,0.2],nwalkers)
 	# Q,Lscale,Edep,Tc,M,g
 	#p0 = emcee.utils.sample_ball([1.0,0.2,3.0,2.0,1.8,2.0],[0.1,0.03,0.1,0.1,0.07,0.3],nwalkers)
 	# Q,Lscale,Edep,Tc,M,R	
@@ -46,10 +46,10 @@ def main():
 	#p0 = emcee.utils.sample_ball([1.0,0.2,3.0,2.0,2.0,10.0],[0.1,0.03,0.1,0.1,0.07,0.3],nwalkers)
 	#p0 = emcee.utils.sample_ball([0.0,0.2,3.0,2.0,1.6,12.0],[0.3,0.03,0.1,0.1,0.1,0.8],nwalkers)
 
-	for i in range(0,nwalkers):
-		p0[i][4] = 1.1 + random.random()*(2.4-1.1)
-		(g1,g2) = gravity_range(p0[i][4])
-		p0[i][5]=g1 + random.random()*(g2-g1)
+	# for i in range(0,nwalkers):
+	# 	p0[i][4] = 1.1 + random.random()*(2.4-1.1)
+	# 	(g1,g2) = gravity_range(p0[i][4])
+	# 	p0[i][5]=g1 + random.random()*(g2-g1)
 		
 	sampler=emcee.EnsembleSampler(nwalkers,ndim,lnprob,threads=20)
 
@@ -68,14 +68,14 @@ def main():
 	samples=sampler.chain[:,nburn:,:].reshape((-1,ndim))
 
 	os.makedirs('mcmc/'+dir)
-	outputFile = open('mcmc/'+dir+'/samples.dat','w')
-	numpy.save(outputFile, samples)
+	outputFile = open('mcmc/'+dir+'/samples.dat','wb')
+	numpy.save(outputFile, numpy.array(samples))
 	outputFile.close()
-	outputFile = open('mcmc/'+dir+'/sampler_chain.dat','w')
-	numpy.save(outputFile, sampler.chain)
+	outputFile = open('mcmc/'+dir+'/sampler_chain.dat','wb')
+	numpy.save(outputFile, numpy.array(sampler.chain))
 	outputFile.close()
-	outputFile = open('mcmc/'+dir+'/sampler_lnprobability.dat','w')
-	numpy.save(outputFile, sampler.lnprobability)
+	outputFile = open('mcmc/'+dir+'/sampler_lnprobability.dat','wb')
+	numpy.save(outputFile, numpy.array(sampler.lnprobability))
 	outputFile.close()
 
 	fp = open('mcmc/'+dir+'/chi.dat','w')
@@ -84,47 +84,54 @@ def main():
 		print(i,-2.0*prob," ".join(str(x) for x in samples[i,:]), file=fp)
 	fp.close()
 
-	os.system('cp mcee mcmc/'+dir+'/')
+	os.system('cp mcee.py mcmc/'+dir+'/')
 
-	imessage.send('mcee '+dir+' has finished running')
+	#imessage.send('mcee '+dir+' has finished running')
 
 
 def set_params(x,name):
-	data="""output	0
-source	1822
-Lmin	3e31
-Lscale	0.15
-Tc	2e7
-mass	1.2
-radius	12.0
-Bfield 	1e14
-Edep	3.0
-rhob	1e14
-rhot	1e7
-ytop	1e10
-angle_mu	1
-envelope	1
-precalc	0
+	data="""resume 0
+
+mass	1.62
+radius	11.2
+timetorun	10000.0
+toutburst 2.5
+mdot	0.1
+
+precalc 1
 ngrid	50
 SFgap	1
-piecewise	1
-timetorun	2000.0
-Qimp	1
+kncrit	0
+accreted 1
+
+Qimp	3.2
+Tc	3.1e7
+
+# fixed top temperature during accretion:
+cooling_bc	0
+extra_heating	0
+Tt	4.2e8
+
+# or cooling boundary condition with shallow heating:
+#cooling_bc	1
+#extra_heating	1
+#extra_Q	1.4
+#extra_y	1e13
 """
 	# Q,Lscale,Edep,Tc,M,R	
-	radius = ns.R(x[4],x[5])
-	Lmin = PYL(x[3]*1e7, 1e14, x[4], radius)
+	#radius = ns.R(x[4],x[5])
+	#Lmin = PYL(x[3]*1e7, 1e14, x[4], radius)
 	
 	params = {
-		'Tc':x[3]*1e7,
-		'Qimp':10.0**x[0],
-		'Lscale':x[1],
+		'Tc':x[0]*1e7,
+		'Qimp':10.0**x[1],
+#		'Lscale':x[1],
 #		'Edep':x[2],
-#		'Tt':x[2]*1e8,
+		'Tt':x[2]*1e8,
 #		'mdot':x[3],
-		'mass':x[4],
-		'radius':radius,
-		'Lmin':Lmin
+#		'mass':x[4],
+#		'radius':radius,
+#		'Lmin':Lmin
 #		'extra_Q':x[0],
 #		'extra_y':x[1]
 	}
@@ -137,10 +144,10 @@ Qimp	1
 	
 	# for piecewise, x[2]=top temperature, x[6]=log10 transition density, 
 	#x[7]=inner crust temperature
-	print('>0\t%g' % (x[2]*1e8), file=fout)
-	print('>%g\t%g\t%g' % (10.0**x[6],x[2]*1e8,x[7]*1e8), file=fout)
-	print('>1e14\t%g\t-1' % (x[7]*1e8), file=fout)
-	print('>-1\t-1', file=fout)
+#	print('>0\t%g' % (x[2]*1e8), file=fout)
+#	print('>%g\t%g\t%g' % (10.0**x[6],x[2]*1e8,x[7]*1e8), file=fout)
+#	print('>1e14\t%g\t-1' % (x[7]*1e8), file=fout)
+#	print('>-1\t-1', file=fout)
 	
 	fout.close()
 
@@ -149,8 +156,9 @@ def get_chisq(x):
 	name = str(uuid.uuid4())
 	set_params(x,name)
 	# give crustcool a second parameter so that it looks in /tmp for the init.dat file
-	data = subprocess.check_output( ["crustcool",name,'1'])
-	chisq = float(re.search('chisq = ([-+]?[0-9]*\.?[0-9]+)',data).group(1))
+	data = subprocess.check_output( ["./crustcool",name,'1'])
+	# print(data)
+	chisq = float(re.search(b'chisq = ([-+]?[0-9]*\.?[0-9]+)',data).group(1))
 #	print x[0],x[1],x[2],x[3],x[4],x[5],x[6],chisq
 	os.system('rm /tmp/init.dat.'+name)
 	return chisq
@@ -161,23 +169,23 @@ def lnprob(x):
 	# (assume a flat prior within this range)
 
 	# Q,Lscale,Edep,Tc,M,R
-	(g1,g2) = gravity_range(x[4])
+	#(g1,g2) = gravity_range(x[4])
 #	xmin=numpy.array([-2.0,0.01,0.1,1.0,1.1,g1])
 #	xmax=numpy.array([2.0,0.5,100.0,3.0,2.4,g2])
 	# Q,Lscale,Touter,Tc,M,R,rhotransition,Tinner
-	xmin=numpy.array([-2.0,0.01,5.0,1.0,1.1,g1,9.0,0.1])
-	xmax=numpy.array([2.0,0.5,20.0,3.0,2.4,g2,12.0,3.0])
+#	xmin=numpy.array([-2.0,0.01,5.0,1.0,1.1,g1,9.0,0.1])
+#	xmax=numpy.array([2.0,0.5,20.0,3.0,2.4,g2,12.0,3.0])
 #	xmin=numpy.array([1.0,-3.0,0.1,0.0,1.1,8.0])
 #	xmax=numpy.array([100.0,3.0,100.0,3.0,2.5,16.0])
-	#xmin=numpy.array([0.0,-3.0,0.0])
-	#xmax=numpy.array([100.0,3.0,100.0])
+	xmin=numpy.array([0.0,-3.0,0.0])
+	xmax=numpy.array([100.0,3.0,100.0])
 	#xmin=numpy.array([0.0,-3.0,0.0,0.0])
 	#xmax=numpy.array([100.0,3.0,100.0,1.0])
 	if (len((x<xmin).nonzero()[0])>0 or len((x>xmax).nonzero()[0])>0):
 		return -numpy.inf
 	# causal limit  radius has to be R > 4.36km (M/Msun)
-	if (ns.R(x[4],x[5]) < 4.36*x[4]):
-		return -numpy.inf
+	#if (ns.R(x[4],x[5]) < 4.36*x[4]):
+	#	return -numpy.inf
 	#print 'Trying ',x
 	chisq=get_chisq(x)
 	#print x[0],x[1],x[2],chisq
