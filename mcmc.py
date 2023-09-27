@@ -5,6 +5,8 @@ import matplotlib
 matplotlib.use('macosx')
 import matplotlib.pyplot as plt
 import pylab
+import re
+import uuid
 
 pylab.ion()
 
