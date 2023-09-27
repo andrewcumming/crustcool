@@ -18,8 +18,8 @@ import random
 
 def main():
 
-	nwalkers, ndim = 10, 3
-	nsteps = 1
+	nwalkers, ndim = 20, 3
+	nsteps = 20
 	# 200, 1000
 	dir = '1659'
 	if os.path.exists('mcmc/'+dir):
