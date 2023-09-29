@@ -2,7 +2,7 @@ import numpy
 import matplotlib
 # matplotlib.use('macosx')
 import matplotlib.pyplot as plt
-import triangle
+import corner
 import sys
 import numpy
 import ns
@@ -163,7 +163,7 @@ def main():
 def read_samples(dir):
 	
 	# read in the samples
-	fp = open('mcmc/'+dir+'samples.dat','r')
+	fp = open('mcmc/'+dir+'samples.dat','rb')
 	samples = numpy.load(fp)
 	fp.close()
 	# find out how many parameters
@@ -171,7 +171,7 @@ def read_samples(dir):
 	# number of points
 	n = samples.shape[0]
 	# remove burn in points
-	samples = samples[:1.0*n/10.0,:]
+	samples = samples[:int(1*n/10.0),:]
 	
 	return samples
 
@@ -236,18 +236,18 @@ def plot_hist(samples,col_string,flag):
 		mdot = mdot[ind]
 	
 	if 0:
-		triangle.hist2d(Tc,g,plot_datapoints=False,bins=25,extent=[(1,3),(0.5,3)])
+		corner.hist2d(Tc,g,plot_datapoints=False,bins=25,extent=[(1,3),(0.5,3)])
 		#triangle.hist2d(Tc,g,plot_datapoints=False,bins=25,extent=[(2,12),(0.5,3)])
 		plt.xlabel(r'$T_c (10^7 K)$')
 		plt.ylabel(r'$g_{14}$')
 
 	if 0:
-		triangle.hist2d(g,Q,plot_datapoints=False,bins=25,extent=[(0.5,3),(-3,2)])
+		corner.hist2d(g,Q,plot_datapoints=False,bins=25,extent=[(0.5,3),(-3,2)])
 		plt.ylabel(r'$Q_{imp}$')
 		plt.xlabel(r'$g_{14}$')
 
 	if 1:
-		triangle.hist2d(R,M,plot_datapoints=False,bins=25,extent=[(8,16),(1.1,2.5)])
+		corner.hist2d(R,M,plot_datapoints=False,bins=25,extent=[(8,16),(1.1,2.5)])
 		plt.ylabel(r'$M$')
 		plt.xlabel(r'$R$')
 
@@ -278,7 +278,7 @@ def plot_hist(samples,col_string,flag):
 		
 
 	if 0:
-		triangle.hist2d(g,mdot,plot_datapoints=False,bins=25,extent=[(0.5,3),(0.0,0.5)])
+		corner.hist2d(g,mdot,plot_datapoints=False,bins=25,extent=[(0.5,3),(0.0,0.5)])
 		plt.ylabel(r'$Accretion rate$')
 		plt.xlabel(r'$g_{14}$')
 
@@ -290,42 +290,42 @@ def plot_triangle(samples,dir):
 	nparams = samples.shape[1]
 
 	if nparams == 3:
-		fig = triangle.corner(samples,labels=[r"$Q_{imp}$", r"$L_{scale}$",
+		fig = corner.corner(samples,labels=[r"$Q_{imp}$", r"$L_{scale}$",
 						r"$E_{dep}$"], 
 			quantiles=[0.16, 0.5, 0.84], plot_datapoints=True,bins=50,plot_ellipse=False)
 
 	#if nparams == 4:
-	#	fig = triangle.corner(samples,labels=[r"$T_{c,7}$", r"$Q_{imp}$", r"$T_{b,8}$",
+	#	fig = corner.corner(samples,labels=[r"$T_{c,7}$", r"$Q_{imp}$", r"$T_{b,8}$",
 	#					r"$\dot M$"], extents=[(4,11),(-3,2),(2,6),(0,0.5)],
 	#		quantiles=[0.16, 0.5, 0.84], plot_datapoints=False,bins=50,plot_ellipse=False)
 
 	#if nparams == 3:
-	#	fig = triangle.corner(samples,labels=[r"$T_{c,7}$", r"$Q_{imp}$", r"$T_{b,8}$"],
+	#	fig = corner.corner(samples,labels=[r"$T_{c,7}$", r"$Q_{imp}$", r"$T_{b,8}$"],
 	#		extents=[(4,11),(-3,2),(2,6)],
 	#				quantiles=[0.16, 0.5, 0.84], plot_datapoints=False,bins=50,plot_ellipse=False)
 
 	if nparams == 6:
-		fig = triangle.corner(samples,labels=[r"$Q_{imp}$", r"$L_{scale}$",
+		fig = corner.corner(samples,labels=[r"$Q_{imp}$", r"$L_{scale}$",
 						r"$E_{dep}$", r"$T_{c,7}$", r"$M (M_\odot)$", r"$g_{14}$"],
 				quantiles=[0.16, 0.5, 0.84], plot_datapoints=True,bins=25,plot_ellipse=False,
 				)
 
 	if nparams == 8:
-		fig = triangle.corner(samples,labels=[r"$Q_{imp}$", r"$L_{scale}$",
+		fig = corner.corner(samples,labels=[r"$Q_{imp}$", r"$L_{scale}$",
 					r"$T_{outer}$", r"$T_{c,7}$", r"$M (M_\odot)$", r"$g_{14}$",r"$\rho_{heat}$",r"$T_{inner}$"],
 			quantiles=[0.16, 0.5, 0.84], plot_datapoints=True,bins=25,plot_ellipse=False)
 
 
 				
 #	if nparams == 6:
-#		fig = triangle.corner(samples,labels=[r"$Q_{imp}$", r"$L_{scale}$",
+#		fig = corner.corner(samples,labels=[r"$Q_{imp}$", r"$L_{scale}$",
 #					r"$E_{dep}$", r"$T_{c,7}$", r"$M (M_\odot)$", r"$R (km)$"],
 #				quantiles=[0.16, 0.5, 0.84], plot_datapoints=False,bins=25,plot_ellipse=False,
 #								)
 		
 				
 #				if nparams == 6:
-#					fig = triangle.corner(samples,labels=[r"$T_{c,7}$", r"$Q_{imp}$", r"$T_{b,8}$",
+#					fig = corner.corner(samples,labels=[r"$T_{c,7}$", r"$Q_{imp}$", r"$T_{b,8}$",
 #							r"$\dot M$", r"$M (M_\odot)$", r"$R (km)$"],extents=[(3,11),(-3,2),(2,6),(0,0.5),(1.2,2.4),(8,16)],
 #							quantiles=[0.16, 0.5, 0.84], plot_datapoints=False,bins=50,plot_ellipse=False)
 
