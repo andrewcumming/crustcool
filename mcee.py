@@ -20,8 +20,8 @@ from multiprocessing import Pool
 os.environ["OMP_NUM_THREADS"] = "1"
 def main():
 
-	nwalkers, ndim = 20, 3
-	nsteps = 1000
+	nwalkers, ndim = 10, 3
+	nsteps = 10
 	# 200, 1000
 	dir = '1659'
 	if os.path.exists('mcmc/'+dir):
