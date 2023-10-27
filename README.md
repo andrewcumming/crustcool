@@ -112,6 +112,13 @@ will animate the temperature profile in the crust as it cools.
 
 `mcmc.py` is a python driver for MCMC using a simple Metropolis algorithm.
 
+#### Parallelization
+
+To run the MCMC in parallel, run the code `./crustcool` once with the default parameters.
+Then you can run `mcee.py` with "precalc" set to 0.
+
+By default, `Pool()` allows the same number of processes as the number of cores your CPU has.
+You can pass it a parameter to set the number of processes. (e.g. `Pool(2)`)
 
 ### Published cooling curves from this code
 

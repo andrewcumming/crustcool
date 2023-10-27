@@ -15,11 +15,13 @@ import imessage
 from math import sqrt, pi
 import ns
 import random
+from multiprocessing import Pool
 
+os.environ["OMP_NUM_THREADS"] = "1"
 def main():
 
-	nwalkers, ndim = 20, 3
-	nsteps = 20
+	nwalkers, ndim = 10, 3
+	nsteps = 10
 	# 200, 1000
 	dir = '1659'
 	if os.path.exists('mcmc/'+dir):
@@ -50,20 +52,20 @@ def main():
 	# 	p0[i][4] = 1.1 + random.random()*(2.4-1.1)
 	# 	(g1,g2) = gravity_range(p0[i][4])
 	# 	p0[i][5]=g1 + random.random()*(g2-g1)
-		
-	sampler=emcee.EnsembleSampler(nwalkers,ndim,lnprob,threads=20)
 
-	time_per_step = (2411.0/4000.0)*1.2/6.0   # time to run one cooling curve
-	print(('Starting run at ', str(datetime.datetime.now())))
-	start_time = time.time()
-	print(('Estimated time to run is ', time_per_step*nsteps*nwalkers, ' seconds'))
-	print('Estimated completion time is ', str(datetime.datetime.now()+datetime.timedelta(seconds=time_per_step*nsteps*nwalkers)))
-	sampler.run_mcmc(p0, nsteps)
-	print('time to run = ',time.time() - start_time,'seconds')
-	print(("Mean acceptance fraction: {0:.3f}"
-	                .format(numpy.mean(sampler.acceptance_fraction))))
+	with Pool(8) as pool:
+		sampler=emcee.EnsembleSampler(nwalkers,ndim,lnprob,pool=pool)
 
-	# throw away the first burn steps as burn-in
+		time_per_step = (2411.0/4000.0)*1.2/6.0   # time to run one cooling curve
+		print(('Starting run at ', str(datetime.datetime.now())))
+		start_time = time.time()
+		print(('Estimated time to run is ', time_per_step*nsteps*nwalkers, ' seconds'))
+		print('Estimated completion time is ', str(datetime.datetime.now()+datetime.timedelta(seconds=time_per_step*nsteps*nwalkers)))
+		sampler.run_mcmc(p0, nsteps, progress=True)
+		print('time to run = ',time.time() - start_time,'seconds')
+		print(("Mean acceptance fraction: {0:.3f}".format(numpy.mean(sampler.acceptance_fraction))))
+
+# throw away the first burn steps as burn-in
 	nburn = 0
 	samples=sampler.chain[:,nburn:,:].reshape((-1,ndim))
 
@@ -98,7 +100,7 @@ timetorun	10000.0
 toutburst 2.5
 mdot	0.1
 
-precalc 1
+precalc 0
 ngrid	50
 SFgap	1
 kncrit	0
