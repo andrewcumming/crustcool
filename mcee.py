@@ -20,8 +20,8 @@ from multiprocessing import Pool
 os.environ["OMP_NUM_THREADS"] = "1"
 def main():
 
-	nwalkers, ndim = 10, 3
-	nsteps = 10
+	nwalkers, ndim = 20, 3
+	nsteps = 1000
 	# 200, 1000
 	dir = '1659'
 	if os.path.exists('mcmc/'+dir):
@@ -53,7 +53,7 @@ def main():
 	# 	(g1,g2) = gravity_range(p0[i][4])
 	# 	p0[i][5]=g1 + random.random()*(g2-g1)
 
-	with Pool() as pool:
+	with Pool(8) as pool:
 		sampler=emcee.EnsembleSampler(nwalkers,ndim,lnprob,pool=pool)
 
 		time_per_step = (2411.0/4000.0)*1.2/6.0   # time to run one cooling curve
@@ -100,7 +100,7 @@ timetorun	10000.0
 toutburst 2.5
 mdot	0.1
 
-precalc 1
+precalc 0
 ngrid	50
 SFgap	1
 kncrit	0

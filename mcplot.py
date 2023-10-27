@@ -171,7 +171,7 @@ def read_samples(dir):
 	# number of points
 	n = samples.shape[0]
 	# remove burn in points
-	samples = samples[:int(1*n/10.0),:]
+	samples = samples[:int(1*n/5.0),:]
 	
 	return samples
 
@@ -290,8 +290,8 @@ def plot_triangle(samples,dir):
 	nparams = samples.shape[1]
 
 	if nparams == 3:
-		fig = corner.corner(samples,labels=[r"$Q_{imp}$", r"$L_{scale}$",
-						r"$E_{dep}$"], 
+		fig = corner.corner(samples,labels=[r"$T_{c,7}$", r"$Q_{imp}$", r"$T_{b,8}$"],
+				range=[(2,4), (0,1), (3.5,5)],
 			quantiles=[0.16, 0.5, 0.84], plot_datapoints=True,bins=50,plot_ellipse=False)
 
 	#if nparams == 4:
